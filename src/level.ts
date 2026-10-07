@@ -1,14 +1,15 @@
 /* 关卡：读 Blender 导出的 GLB，按物体上的自定义属性（nx_*，导出为 glTF extras → userData）装配。
    约定的全文见 docs/blender.md；这里只认那份文档里写到的属性。
    · 网格默认是像素哑光、参与碰撞。
-   · 空物体（Empty）靠 nx_type 区分：spawn 出生点 · entrance 入口 · sprite 纸片 · sky 天上的纸片。
+   · 空物体（Empty）靠 nx_type 区分：spawn 出生点 · entrance 入口 · sprite 纸片 · sky 天上的纸片 · atmosphere 天空主题（nx_sky）。
    · Blender 的日光（Sun）决定太阳方向。
    · 带 nx_spin / nx_bob / nx_face 的物体会动，不进静态碰撞。 */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH } from 'three-mesh-bvh';
-import { matte, paper, sky, shared, shadowVariant, newId, TEXEL } from './materials';
+import { asset, matte, paper, shared, shadowVariant, newId, TEXEL } from './materials';
+import { makeSky, type SkyBox } from './skybox';
 import { makeCrystal } from './crystal';
 import { loadSprite, spriteSize } from './sprites';
 
@@ -36,6 +37,7 @@ export interface Level {
   collider: MeshBVH | null;
   entrances: Entrance[];
   spawn: { pos: THREE.Vector3; yaw: number };
+  sky: SkyBox;
   update(dt: number, t: number, camera: THREE.Camera, frozen: boolean): void;
 }
 
@@ -65,9 +67,9 @@ export async function loadLevel(url: string): Promise<Level> {
   const pending: Promise<void>[] = [];
 
   // 天
-  const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 12), sky());
-  skyMesh.frustumCulled = false;
-  scene.add(skyMesh);
+  const sky = makeSky();
+  scene.add(sky.mesh);
+  let skyName = 'blank';
 
   const nodes: THREE.Object3D[] = [];
   root.traverse((o) => nodes.push(o));
@@ -99,6 +101,11 @@ export async function loadLevel(url: string): Promise<Level> {
       continue;
     }
 
+    if (type === 'atmosphere') {
+      skyName = String(u.nx_sky ?? 'blank');
+      continue;
+    }
+
     if (type === 'entrance') {
       const crystal = makeCrystal(num(u.nx_size, 0.32));
       crystal.mesh.position.copy(wpos);
@@ -122,10 +129,10 @@ export async function loadLevel(url: string): Promise<Level> {
       pending.push(
         loadSprite(name).then((tex) => {
           const { w, h } = spriteSize(tex);
-          // 纸片：每米 TEXEL 像素，底边中点落在空物体上；天上的：按 nx_size 米宽、居中
+          // 纸片：尺寸 ＝ 像素 ÷ 每米像素，底边中点落在空物体上；天上的：按 nx_size 米宽、居中
           const size = num(u.nx_size, 0);
-          const sw = isSky ? size || 20 : w / TEXEL;
-          const sh = isSky ? (sw * h) / w : h / TEXEL;
+          const sw = isSky ? size || 20 : w;
+          const sh = isSky ? (sw * h) / w : h;
           const geo = new THREE.PlaneGeometry(sw, sh);
           if (!isSky) geo.translate(0, sh / 2, 0);
           const mat = paper(tex, { back: num(u.nx_back, 6), fog: !isSky, id: newId() });
@@ -145,6 +152,12 @@ export async function loadLevel(url: string): Promise<Level> {
 
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) continue;
+    // 多材质的物体导出后拆成几块子网格，属性留在父节点上：子网格继承父节点的 nx_*，共用一个描边编号
+    if (u.nx_mat === undefined && o.parent && !(o.parent as THREE.Mesh).isMesh && o.parent.userData.nx_mat !== undefined) {
+      Object.assign(u, { ...o.parent.userData, ...u });
+      o.parent.userData.nx_id ??= newId();
+      u.nx_id = o.parent.userData.nx_id;
+    }
 
     const kind = (u.nx_mat as string | undefined) ?? 'matte';
     const geo = mesh.geometry;
@@ -160,7 +173,23 @@ export async function loadLevel(url: string): Promise<Level> {
     if (kind === 'collider' || kind === 'none') continue;
 
     const [a, bb] = palPair(u.nx_pal, [5, 4]);
-    const mat = matte({ a, b: bb, pattern: num(u.nx_pattern, 0) });
+    let mat: THREE.ShaderMaterial;
+    if (kind === 'asset') {
+      // 现成的模型：用它自己的底色贴图与颜色
+      const src = mesh.material as THREE.MeshStandardMaterial;
+      mat = asset({
+        map: src?.map ?? null,
+        color: src?.color?.clone() ?? new THREE.Color(1, 1, 1),
+        cutout: (src?.alphaTest ?? 0) > 0 || !!src?.transparent,
+        tint: num(u.nx_tint, 0),
+        a,
+        b: bb,
+        smooth: num(u.nx_smooth, 0),
+        id: u.nx_id as number | undefined,
+      });
+    } else {
+      mat = matte({ a, b: bb, pattern: num(u.nx_pattern, 0), id: u.nx_id as number | undefined });
+    }
     const m = new THREE.Mesh(geo, mat);
     m.position.copy(wpos);
     m.quaternion.copy(wquat);
@@ -176,6 +205,7 @@ export async function loadLevel(url: string): Promise<Level> {
   }
 
   await Promise.all(pending);
+  sky.set(skyName);
 
   let collider: MeshBVH | null = null;
   if (colliderGeos.length) {
@@ -184,7 +214,7 @@ export async function loadLevel(url: string): Promise<Level> {
   }
 
   function update(_dt: number, t: number, camera: THREE.Camera, frozen: boolean) {
-    skyMesh.position.copy(camera.position);
+    sky.update(frozen ? 0 : t, camera);
     for (const s of skySprites) {
       s.obj.position.copy(camera.position).addScaledVector(s.dir, s.dist);
       s.obj.lookAt(camera.position);
@@ -216,7 +246,7 @@ export async function loadLevel(url: string): Promise<Level> {
     }
   }
 
-  return { scene, crystalScene, collider, entrances, spawn, update };
+  return { scene, crystalScene, collider, entrances, spawn, sky, update };
 }
 
 function behaviorOf(obj: THREE.Object3D, u: Record<string, unknown>, faceDefault: boolean): Behavior | null {

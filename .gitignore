@@ -3,3 +3,7 @@ dist/
 .shots/
 __pycache__/
 *.blend1
+dist-sky/
+
+# Poly Haven 原始模型：体积大、可用 scripts/fetch-asset.cjs 重新取；网页只用导出后的 GLB 与 public/sprites 里渲好的剪纸
+assets/polyhaven/

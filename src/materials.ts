@@ -4,7 +4,7 @@
    · 像素哑光：三平面投影的世界空间纹素格，固定每米 TEXEL 格——全场纹素密度一致，像素才「连成一片」。
      颜色只能取色板编号；阴影按纹素中心取样，影子边缘也落在同一套纹素格上。
    · 纸片：平面手绘精灵，Nearest 采样，同样每米 TEXEL 像素；背面是空白的纸。
-   · 天空：渐变，编号 0，视深记作很远。
+   · 天空：在 skybox.ts，按主题换。
    每种可投影的材质都带一个只写深度的影子版本（shadowVariant）。 */
 import * as THREE from 'three';
 import { PALETTE } from './palette';
@@ -47,7 +47,7 @@ float hash13(vec3 p) {
 }
 `;
 
-const VERT = /* glsl */ `
+export const VERT = /* glsl */ `
 out vec3 vWorld;
 out vec3 vNormal;
 out vec2 vUv;
@@ -64,7 +64,7 @@ void main() {
 }
 `;
 
-const OUTS = /* glsl */ `
+export const OUTS = /* glsl */ `
 layout(location = 0) out vec4 oColor;
 layout(location = 1) out vec4 oData;
 `;
@@ -202,24 +202,81 @@ void main() {
   });
 }
 
-export function sky() {
+export interface AssetOpts {
+  /** 模型自带的底色贴图（没有就用纯色） */
+  map: THREE.Texture | null;
+  color: THREE.Color;
+  /** 透明度挖空（叶子之类）；同时双面 */
+  cutout: boolean;
+  /** 0..1：把贴图的明暗映射到色板两色（暗 b → 亮 a）的程度，0 ＝ 保留原色 */
+  tint: number;
+  a: number;
+  b: number;
+  /** 0 三档受光（与像素哑光一致）· 1 平滑受光 */
+  smooth: number;
+  id?: number;
+}
+
+const WHITE = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+WHITE.needsUpdate = true;
+
+/** 现成的模型（贴图、颜色都是它自己的）：受光、影子、雾、晶体光与像素哑光同一套；
+    像素化、落色板、描边都交给管线——这就是「风格化滤镜」 */
+export function asset(o: AssetOpts) {
   return new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
-    side: THREE.BackSide,
-    depthWrite: false,
-    uniforms: { ...shared },
+    side: o.cutout ? THREE.DoubleSide : THREE.FrontSide,
+    uniforms: {
+      ...shared,
+      tMap: { value: o.map ?? WHITE },
+      uColor: { value: o.color },
+      uCut: { value: o.cutout ? 1 : 0 },
+      uTint: { value: o.tint },
+      uA: { value: pal(o.a) },
+      uB: { value: pal(o.b) },
+      uSmooth: { value: o.smooth },
+      uId: { value: o.id ?? newId() },
+    },
     vertexShader: VERT,
     fragmentShader: /* glsl */ `
 precision highp float;
 ${OUTS}
 ${LIGHT_UNIFORMS}
-uniform vec3 uZenith;
+uniform sampler2D tMap;
+uniform vec3 uColor, uA, uB;
+uniform float uCut, uTint, uSmooth, uId;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
+${COMMON}
 void main() {
-  vec3 d = normalize(vWorld - cameraPosition);
-  vec3 col = mix(uFogCol, uZenith, smoothstep(0.02, 0.75, d.y));
+  vec4 t = texture(tMap, vUv);
+  if (uCut > 0.5 && t.a < 0.5) discard;
+  vec3 base = t.rgb * uColor;
+  float lum = dot(base, vec3(0.2126, 0.7152, 0.0722));
+  base = mix(base, mix(uB, uA, smoothstep(0.02, 0.6, lum)), uTint);
+
+  vec3 n = normalize(vNormal) * (gl_FrontFacing ? 1.0 : -1.0);
+  float ndl = max(dot(n, uSun), 0.0);
+  float band = uSmooth > 0.5 ? 0.22 + 0.78 * smoothstep(0.0, 0.8, ndl) : (ndl > 0.62 ? 1.0 : (ndl > 0.22 ? 0.6 : 0.22));
+
+  vec3 tp = (floor(vWorld * uTexel) + 0.5) / uTexel;
+  if (uShadowOn > 0.5 && ndl > 0.0) {
+    vec4 sc = uShadowMat * vec4(tp + n * (0.6 / uTexel), 1.0);
+    vec3 s = sc.xyz / sc.w;
+    if (all(greaterThan(s, vec3(0.0))) && all(lessThan(s, vec3(1.0))) && texture(tShadow, s.xy).r < s.z - 0.0006)
+      band = mix(band, 0.22, 0.85);
+  }
+  vec3 amb = mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5);
+  vec3 col = base * (amb + uSunCol * band);
+  for (int i = 0; i < ${MAX_GLOWS}; i++) {
+    vec4 gl = uGlows[i];
+    if (gl.w <= 0.0) continue;
+    float gd = length(tp - gl.xyz);
+    float g = floor(4.0 / (1.0 + gd * gd * 0.35)) / 4.0;
+    col += base * uGlowCol * g * gl.w * (0.6 + 0.4 * max(dot(n, normalize(gl.xyz - tp)), 0.0));
+  }
+  col = mix(col, uFogCol, smoothstep(uFogNear, uFogFar, vDepth));
   oColor = vec4(col, 1.0);
-  oData = vec4(0.0, 0.0, 1000.0, 0.0);
+  oData = vec4(octEncode(n), vDepth, uId);
 }
 `,
   });

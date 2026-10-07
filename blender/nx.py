@@ -23,6 +23,12 @@ P = {
 
 PATTERN = {"grain": 0, "tiles": 1, "bands": 2, "stripes": 3, "plain": 4}
 
+# 拼总图（blender/scenes/atlas.py）时由总图设置：
+# ATLAS=True 时，各场景的 spawn 变成路标（nx_type=waypoint，网页不认），sun / sky_sprite 不生效，只用总图自己的；
+# PREFIX 加在集合名前，Blender 里按场景分得开。
+ATLAS = False
+PREFIX = ""
+
 
 # ── 场景 ──────────────────────────────────────────────
 
@@ -47,7 +53,7 @@ _current = None
 
 def into(coll_name):
     global _current
-    _current = collection(coll_name)
+    _current = collection(PREFIX + coll_name)
 
 
 def _link(obj):
@@ -176,6 +182,10 @@ def _empty(name, loc, rot_deg, display="ARROWS", size=0.5):
 
 def spawn(loc, facing_deg=0):
     """出生点：loc 是脚底；facing_deg 是从 +Y 起绕 Z 逆时针的角度（0 ＝ 朝 +Y）"""
+    if ATLAS:
+        obj = _empty("waypoint", loc, (0, 0, facing_deg), "SINGLE_ARROW", 1.0)
+        obj["nx_type"] = "waypoint"
+        return obj
     obj = _empty("spawn", loc, (0, 0, facing_deg), "SINGLE_ARROW", 1.0)
     obj["nx_type"] = "spawn"
     return obj
@@ -204,7 +214,9 @@ def sprite(name, sprite_name, loc, rot_deg=(0, 0, 0), face=True, shadow=True, ba
 
 def sky_sprite(name, sprite_name, direction, width=20):
     """天上的纸片：沿 direction 方向、永远在远处，宽 width 米"""
-    d = Vector(direction).normalized() * 50
+    if ATLAS:
+        return None
+    d =Vector(direction).normalized() * 50
     obj = _empty(name, tuple(d), (0, 0, 0), "CIRCLE", 3)
     obj["nx_type"] = "sky"
     obj["nx_sprite"] = sprite_name
@@ -214,7 +226,9 @@ def sky_sprite(name, sprite_name, direction, width=20):
 
 def sun(to_sun):
     """太阳：to_sun 是指向太阳的方向"""
-    d = Vector(to_sun).normalized()
+    if ATLAS:
+        return None
+    d =Vector(to_sun).normalized()
     light = bpy.data.lights.new("sun", type="SUN")
     obj = bpy.data.objects.new("sun", light)
     obj.location = d * 30
@@ -243,7 +257,9 @@ def export(name):
         export_yup=True,
         export_lights=True,
         export_cameras=False,
-        export_materials="NONE",
+        # 只有现成模型（nx_mat=asset，见 blender/assets.py）带材质；搭出来的白模没有材质，导出时也就没有
+        export_materials="EXPORT",
+        export_image_format="AUTO",
         use_selection=False,
     )
     try:
@@ -254,3 +270,17 @@ def export(name):
         bpy.ops.export_scene.gltf(filepath=out, export_format="GLB", export_extras=True, export_apply=True)
     print("[nx] exported", out)
     return out
+
+
+# ── 天空主题 ───────────────────────────────────────────
+
+def atmosphere(sky="blank", seed=None):
+    """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
+    dye 洇 · silk 绸 · dawn 溶金 · night 星纸（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
+    seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1"""
+    if ATLAS:
+        return None
+    obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
+    obj["nx_type"] = "atmosphere"
+    obj["nx_sky"] = sky if seed is None else f"{sky}:{int(seed)}"
+    return obj

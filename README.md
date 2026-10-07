@@ -32,6 +32,11 @@ node scripts/walk.cjs                  # 打包后用真实按键走一遍：台
 | `src/crystal.ts` | 晶体：解析求交、体内反射、色散 |
 | `src/level.ts` | 读 GLB，按 `nx_*` 属性装配；碰撞网格；行为 |
 | `src/player.ts` | 胶囊行走、迈台阶、跳、飞行 |
-| `src/sprites.ts` | 纸片的图：内置的与 `public/sprites/*.png` |
+| `src/sprites.ts` | 纸片的图：按名字取（内置、程序化、`public/sprites/*.png`） |
+| `src/proc.ts` | 程序化的纸片：树、云、星、草、灌木、花（`族.变体:种子`） |
+| `src/paper.ts` | 剪纸的现实物：灯、椅、窗、门、杯、电话 |
+| `src/skybox.ts` | 天空主题（见 docs/sky.md） |
 | `src/palette.ts` | 16 色色板 |
 | `blender/nx.py` | Blender 侧的搭建、标注、导出函数 |
+| `blender/prefabs.py` | 预制件族（花之装置、框、阶、环、塔、台、器、纸片撒布） |
+| `blender/assets.py` | 现成模型（Poly Haven）的导入与标注；取模型用 `scripts/fetch-asset.cjs` |
