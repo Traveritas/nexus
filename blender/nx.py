@@ -284,7 +284,7 @@ def export(name):
 
 def atmosphere(sky="blank", seed=None):
     """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
-    dye 洇 · silk 绸 · dawn 溶金 · night 星纸（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
+    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
     seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1"""
     if ATLAS:
         return None

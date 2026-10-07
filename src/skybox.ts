@@ -40,6 +40,12 @@ const BASE_LIGHT: Light = {
   fogFar: 130,
 };
 
+/** 色板色（sRGB 十六进制）→ 着色器里的线性色 vec3(...) */
+function lin(hex: string) {
+  const c = new THREE.Color(hex);
+  return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
+}
+
 const NONE = /* glsl */ `void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {}`;
 
 export const THEMES: Record<string, Theme> = {
@@ -225,65 +231,85 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
 }`,
   },
 
-  // ── 染梦 · 洇：天是一张湿纸，按种子落下 3–6 滴颜色，慢慢化开、挪动，边上留一圈深一点的水痕 ──
+  // ── 染梦 · 扎染：天是一顶扎染过的布篷，从一圈挂点垂下、下摆在挂点之间荡成弧；染底上留着白的防染纹（天顶放射的菊纹、一圈圈扎线、或鹿子点），
+  //    白纹往外洇出一圈浅一点的染色、边沿是参差的纤维。布在风里缓缓鼓动，明暗褶子扫过去，纹样跟着起伏 ──
   dye: {
-    label: '洇',
+    label: '扎染',
     light: {
-      fog: '#f1e7ea',
-      zenith: '#efe8f2',
-      sky: ['#ece0ea', 0.58],
-      ground: ['#efdcdc', 0.44],
-      sun: ['#fff4ec', 0.74],
+      fog: '#ece6ee',
+      zenith: '#d6d4e6',
+      sky: ['#d2d2ea', 0.54],
+      ground: ['#e9dce2', 0.46],
+      sun: ['#fff2ea', 0.74],
     },
     glsl: /* glsl */ `
-float hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float sh(float x) { return fract(sin(x * 78.233 + uSeed * 12.9898) * 43758.5453); }
-float vnoise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash21(i), hash21(i + vec2(1, 0)), u.x), mix(hash21(i + vec2(0, 1)), hash21(i + vec2(1, 1)), u.x), u.y);
-}
-float fbm(vec2 p) {
-  float s = 0.0, a = 0.5;
-  for (int i = 0; i < 5; i++) { s += a * vnoise(p); p = p * 2.03 + 11.7; a *= 0.5; }
-  return s;
-}
-// 一滴颜色：中心 c、半径 r，边被扰动；返回浓度，rim 是边上的水痕
-float drop(vec2 p, vec2 c, float r, float seed, out float rim) {
-  vec2 w = vec2(fbm(p * 1.3 + seed), fbm(p * 1.3 - seed + 3.1)) - 0.5;
-  float dd = length(p - c + w * 0.9 * r) / r;
-  dd += (fbm(p * 3.0 + seed * 2.0) - 0.5) * 0.35;
-  float inside = 1.0 - smoothstep(0.82, 1.0, dd);
-  rim = smoothstep(0.7, 0.92, dd) * (1.0 - smoothstep(0.92, 1.0, dd));
-  return inside * (0.55 + 0.45 * smoothstep(0.9, 0.2, dd));
+float hj(float x) { return fract(sin(x * 91.345 + uSeed * 47.13) * 43758.5453); }
+// 防染：离白纹的距离 dist、白纹半宽 w → 0 染底 … 1 纯白；纤维把边咬得参差
+float resist(float dist, float w, float jag) {
+  return 1.0 - smoothstep(w * 0.6, w * 2.2, dist + jag * w);
 }
 void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
-  if (d.y < -0.02) return;
-  vec2 p = d.xz / (d.y + 0.45) * 2.2;
-  vec3 paper = col;
-  vec3 c = paper;
-  float rim;
-  vec3 inks[5] = vec3[5](vec3(0.85, 0.6, 0.67), vec3(0.6, 0.66, 0.82), vec3(0.93, 0.85, 0.62), vec3(0.62, 0.57, 0.74),
-                         vec3(0.62, 0.77, 0.72));
-  int n = 3 + int(sh(1.0) * 4.0);
-  for (int i = 0; i < 6; i++) {
-    if (i >= n) break;
-    float fi = float(i);
-    float ang = sh(fi * 3.1 + 2.0) * 6.2831853;
-    float rad = 0.3 + 2.8 * sqrt(sh(fi * 5.7 + 1.0));
-    vec2 c0 = vec2(cos(ang), sin(ang)) * rad + 0.25 * vec2(sin(uTime * 0.02 + fi * 1.7), cos(uTime * 0.017 + fi * 2.3));
-    float r = (0.6 + 1.0 * sh(fi * 7.3 + 4.0)) * (1.0 + 0.06 * sin(uTime * 0.03 + fi));
-    int ci = int(sh(fi * 11.1 + 6.0) * 5.0);
-    float a = drop(p, c0, r, fi * 5.3 + uSeed * 1.7, rim);
-    c = mix(c, inks[ci], a * 0.85);
-    c = mix(c, inks[ci] * 0.78, rim * 0.6);
+  if (d.y < 0.0) return;
+  float t = uTime;
+  float az0 = atan(d.x, -d.z);
+  // 下摆：N 个挂点之间荡成弧，跟着风轻轻摆；s 是从天顶量下来的距离，1 约在地平线以上十几度
+  float N = 6.0 + 2.0 * floor(hj(2.0) * 3.0);
+  float sway = 0.18 * sin(t * 0.45 + az0 * 2.0);
+  float zen = acos(clamp(d.y, -1.0, 1.0)) / 1.33;
+  float hem = 0.9 + 0.11 * abs(sin(az0 * N * 0.5 + sway));
+  if (zen > hem) return;
+  // 布在风里鼓动：两列波斜着跑过去，纹样随之起伏
+  vec2 q = zen * vec2(sin(az0), -cos(az0));
+  vec2 k1 = vec2(3.6, 1.4), k2 = vec2(-1.8, 3.1);
+  float w1 = dot(q, k1) - t * 0.55, w2 = dot(q, k2) - t * 0.41;
+  q += 0.025 * (vec2(sin(w1), cos(w2)) + 0.6 * vec2(cos(w2 * 1.7), sin(w1 * 1.3)));
+  float s = length(q);
+  float az = atan(q.x, -q.y) + t * 0.008;
+  float jag = texture(tNoise, q * 22.0 / 256.0).x - 0.5 + 0.5 * (texture(tNoise, q * 70.0 / 256.0).y - 0.5);
+  // 种子定纹样：几道菊纹、拧不拧成螺旋、几圈扎线、有没有鹿子点
+  float S = 8.0 + 4.0 * floor(hj(3.0) * 3.0);
+  float twist = hj(4.0) < 0.4 ? 0.0 : (hj(5.0) - 0.5) * 5.0;
+  float Nr = 3.0 + floor(hj(6.0) * 3.0);
+  bool dots = hj(7.0) > 0.3;
+  float R = 0.0;
+  // 天顶：一团白，边上被扎出放射的锯齿
+  R = max(R, resist(s - 0.07 - 0.02 * abs(fract(az * S / 6.2831853) - 0.5), 0.02, jag));
+  // 菊纹：从天顶放射出去，布折过的地方走成折线
+  float f = fract((az + twist * s) * S / 6.2831853 + 0.08 * abs(fract(s * 7.0) - 0.5)) - 0.5;
+  R = max(R, resist(abs(f) * 6.2831853 / S * max(s, 0.15) * 3.0, 0.018 + 0.02 * s, jag) * smoothstep(0.08, 0.2, s));
+  // 两者取一：一圈圈的扎线，或一圈圈鹿子点（实心的小白点）
+  float g = fract(s * Nr) - 0.5;
+  if (!dots) {
+    R = max(R, resist(abs(g) / Nr * 3.0, 0.012, jag) * step(0.15, s));
+  } else if (s > 0.15) {
+    float M = floor(6.2831853 * (floor(s * Nr) + 0.5) / Nr / 0.12);
+    vec2 cell = vec2(fract(az / 6.2831853 * M) - 0.5, g);
+    float dd = length(cell * vec2(6.2831853 * s / M, 1.0 / Nr)) * 3.0;
+    R = max(R, resist(dd, 0.04, jag * 0.5));
   }
-  // 越近地平线越淡，最后化进雾里
-  col = mix(paper, c, smoothstep(0.0, 0.3, d.y));
+  // 染色：三套里挑一套（深染底、洇开的浅色、最浅的一圈），白纹是布本来的白
+  int sc = int(hj(8.0) * 3.0);
+  vec3 deep = sc == 0 ? ${lin('#8fa3c7')} : (sc == 1 ? ${lin('#a8798c')} : ${lin('#5c5378')});
+  vec3 mid = sc == 0 ? ${lin('#c3d1e6')} : (sc == 1 ? ${lin('#d9aab5')} : ${lin('#a8a1bf')});
+  vec3 pale = sc == 0 ? ${lin('#ece9f2')} : (sc == 1 ? ${lin('#f3d6d6')} : ${lin('#cdc8db')});
+  vec3 white = ${lin('#fbf9f7')};
+  // 染得不匀：大片的深浅
+  float mott = texture(tNoise, q * 3.0 / 256.0).z;
+  vec3 c = mix(deep, mid, 0.25 * smoothstep(0.45, 0.8, mott));
+  c = mix(c, mid, smoothstep(0.12, 0.3, R));
+  c = mix(c, pale, smoothstep(0.45, 0.58, R));
+  c = mix(c, white, smoothstep(0.72, 0.84, R));
+  // 褶子：风吹出的明暗扫过去，挂点之间还有往下垂的褶
+  float shade = 0.1 * (cos(w1) * 0.8 + cos(w2) * 0.6) + 0.07 * cos(az0 * N + sway * 2.0) * smoothstep(0.3, 1.0, zen);
+  c *= 1.0 + shade;
+  // 下摆压一道深边，像布的折边
+  c = mix(c, deep * 0.8, smoothstep(hem - 0.03, hem - 0.01, zen));
+  col = c;
+  id = 9500.0; depth = 880.0;
 }`,
   },
 
-  // ── 染梦 · 绸：按种子横过 2–5 条染色的绸带；高度、起伏、翻折都由种子定，翻折处里外两面颜色不同 ──
+  // ── 染梦 · 绸：按种子横过 2–4 条染色的绸带；起伏和翻折沿着带子往前跑，翻过来是另一面的颜色，一道光泽顺着滑过去 ──
   silk: {
     label: '绸',
     light: {
@@ -295,39 +321,53 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
     },
     glsl: /* glsl */ `
 float sh(float x) { return fract(sin(x * 78.233 + uSeed * 12.9898) * 43758.5453); }
-// k、tw 取整数：绕方位一圈首尾接得上
-void ribbon(float az, float el, float base, float amp, float k, float ph, float w0, float tw, vec3 front, vec3 back,
-            float idn, inout vec3 col, inout float id, inout float depth) {
-  float t = uTime * 0.01;
-  float ce = base + amp * sin(az * k + ph + t) + amp * 0.4 * sin(az * (k + 1.0) + ph * 1.7 - t * 1.3);
-  float twist = cos(az * tw + ph * 2.0 + t * 0.7);
-  float w = w0 * (0.15 + 0.85 * abs(twist));
-  if (abs(el - ce) > w) return;
-  float along = 0.5 + 0.5 * sin(az + ph);
-  vec3 c = twist > 0.0 ? mix(front, front.zxy * 0.9 + 0.1, along * 0.35) : back;
-  float edge = abs(el - ce) / w;
-  c *= 0.9 + 0.1 * (1.0 - edge);
-  col = mix(col, c, 0.92);
+// 沿方位的频率 k、tw 都取整数：绕一圈首尾接得上。spd 带符号，几条带子往不同的方向飘
+void ribbon(float az, float el, float base, float amp, float k, float ph, float w0, float tw, float spd,
+            vec3 front, vec3 back, vec3 tint, float idn, inout vec3 col, inout float id, inout float depth) {
+  float t = uTime * spd;
+  // 起伏沿着带子往前跑，上面再叠一层更碎、跑得更快的
+  float ce = base + amp * sin(az * k + ph - t) + amp * 0.3 * sin(az * (k + 2.0) + ph * 1.7 - t * 1.9);
+  // 翻折也顺着风游走
+  float tph = az * tw + ph * 2.0 - t * 1.4;
+  float twist = cos(tph);
+  float w = w0 * (0.08 + 0.92 * abs(twist));
+  float off = (el - ce) / w;
+  if (abs(off) > 1.0) return;
+  float face = abs(twist);
+  vec3 c = twist > 0.0 ? front : back;
+  // 沿长度慢慢染到另一种颜色
+  c = mix(c, tint, 0.45 * (0.5 + 0.5 * sin(az * 2.0 + ph * 3.0)));
+  // 正对着人的亮，侧过去的暗；绸是弯的，横过带子一边亮一边暗，翻过去时亮暗跟着换边
+  c *= 0.84 + 0.16 * face + 0.1 * off * sin(tph);
+  // 光泽：一道亮沿着带子滑过，只落在正对着人的地方
+  float across = 1.0 - off * off;
+  float sheen = pow(max(0.0, cos(az * 3.0 + ph * 5.0 - uTime * spd * 2.2)), 10.0) * face * across * across * across;
+  c = mix(c, ${lin('#fbf9f7')}, sheen * 0.55);
+  col = c;
   id = idn; depth = 900.0 - (idn - 9400.0) * 15.0;
 }
 void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
   float el = asin(clamp(d.y, -1.0, 1.0));
   if (el < 0.0) return;
   float az = atan(d.x, -d.z);
-  vec3 fronts[4] = vec3[4](vec3(0.93, 0.72, 0.78), vec3(0.95, 0.88, 0.7), vec3(0.75, 0.85, 0.82), vec3(0.78, 0.8, 0.94));
-  vec3 backs[4] = vec3[4](vec3(0.72, 0.76, 0.9), vec3(0.85, 0.7, 0.8), vec3(0.95, 0.9, 0.93), vec3(0.93, 0.8, 0.84));
-  int n = 2 + int(sh(1.0) * 4.0);
-  for (int i = 0; i < 5; i++) {
+  // 正面、反面、沿长度染过去的颜色，都取色板色
+  vec3 fronts[4] = vec3[4](${lin('#d9aab5')}, ${lin('#ead7a0')}, ${lin('#86b5a5')}, ${lin('#c3d1e6')});
+  vec3 backs[4] = vec3[4](${lin('#8fa3c7')}, ${lin('#d9aab5')}, ${lin('#cdc8db')}, ${lin('#a8a1bf')});
+  vec3 tints[4] = vec3[4](${lin('#ead7a0')}, ${lin('#f3d6d6')}, ${lin('#c3d1e6')}, ${lin('#d9aab5')});
+  int n = 2 + int(sh(1.0) * 3.0);
+  for (int i = 0; i < 4; i++) {
     if (i >= n) break;
     float fi = float(i);
-    float base = 0.14 + 0.66 * sh(fi * 2.3 + 1.0);
-    float amp = 0.04 + 0.16 * sh(fi * 3.7 + 2.0);
+    // 都压在天顶以下：太高的带子在头顶会收成尖
+    float base = 0.1 + 0.55 * sh(fi * 2.3 + 1.0);
+    float amp = 0.03 + 0.12 * sh(fi * 3.7 + 2.0);
     float k = 1.0 + floor(sh(fi * 5.1 + 3.0) * 3.0);
     float ph = sh(fi * 7.9 + 4.0) * 6.2831853;
-    float w0 = 0.022 + 0.035 * sh(fi * 9.3 + 5.0);
+    float w0 = 0.02 + 0.03 * sh(fi * 9.3 + 5.0);
     float tw = 1.0 + floor(sh(fi * 4.4 + 6.0) * 5.0);
+    float spd = (0.05 + 0.06 * sh(fi * 8.2 + 8.0)) * (mod(fi, 2.0) < 0.5 ? 1.0 : -1.0);
     int ci = int(sh(fi * 6.6 + 7.0) * 4.0);
-    ribbon(az, el, base, amp, k, ph, w0, tw, fronts[ci], backs[ci], 9400.0 + fi, col, id, depth);
+    ribbon(az, el, base, amp, k, ph, w0, tw, spd, fronts[ci], backs[ci], tints[ci], 9400.0 + fi, col, id, depth);
   }
 }`,
   },
@@ -448,6 +488,28 @@ const uTime = { value: 0 };
 const uSeed = { value: 1 };
 const cache = new Map<string, THREE.ShaderMaterial>();
 
+/** 噪声纹理：256² 的随机格，双线性插值后就是可平铺的值噪声；四个通道互不相干。
+    按固定的数列生成，每次都一样。比在着色器里逐格算 hash 便宜得多 */
+function noiseTexture() {
+  const N = 256;
+  const data = new Uint8Array(N * N * 4);
+  let x = 0x9e3779b9;
+  for (let i = 0; i < data.length; i++) {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    data[i] = x & 255;
+  }
+  const t = new THREE.DataTexture(data, N, N);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.needsUpdate = true;
+  return t;
+}
+const tNoise = { value: noiseTexture() };
+
 function material(name: string) {
   let m = cache.get(name);
   if (m) return m;
@@ -455,13 +517,14 @@ function material(name: string) {
     glslVersion: THREE.GLSL3,
     side: THREE.BackSide,
     depthWrite: false,
-    uniforms: { uFogCol: shared.uFogCol, uZenith: shared.uZenith, uSun: shared.uSun, uTime, uSeed },
+    uniforms: { uFogCol: shared.uFogCol, uZenith: shared.uZenith, uSun: shared.uSun, uTime, uSeed, tNoise },
     vertexShader: VERT,
     fragmentShader: /* glsl */ `
 precision highp float;
 ${OUTS}
 uniform vec3 uFogCol, uZenith, uSun;
 uniform float uTime, uSeed;
+uniform sampler2D tNoise;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 
 ${THEMES[name].glsl}
@@ -490,8 +553,10 @@ export interface SkyBox {
 }
 
 export function makeSky(): SkyBox {
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 12), material('blank'));
+  // 半径只要在远裁面（400）以内；最后画，被世界挡住的像素靠深度测试直接跳过，不跑天空的着色器
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(370, 24, 12), material('blank'));
   mesh.frustumCulled = false;
+  mesh.renderOrder = 1e6;
   const box: SkyBox = {
     mesh,
     name: 'blank',
