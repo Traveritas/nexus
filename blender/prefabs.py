@@ -10,6 +10,7 @@
 - 台        island（下面收尖的浮岛）、pad（缺口圆台）、plinth（低矮的方台）
 - 器        vessel(lying=True|False)（杯，可以走进去）
 - 纸片撒布  paper_scatter、paper_ring
+- 世界之间  gate_home|book|bed|wardrobe|vase|glass|vessel|window：通往各个世界的东西 + 传送物 + 回来的到达点
 """
 import math
 import random
@@ -17,6 +18,7 @@ import random
 import bpy
 from mathutils import Vector
 
+import furniture as fu
 import nx
 import shapes as sh
 
@@ -404,9 +406,152 @@ def halo_gate(name, loc, yaw, size=5.0, seed=0, styles=None, stair_style=None):
 
 # ── 世界之间 ─────────────────────────────────────
 
-def return_door(world, loc, yaw=0.0, title="回家"):
-    """回家的门：一扇自己站着的门框，走过去就回到家里这个世界那扇门的门前（到达点 door_<world>）"""
-    frame(f"home_door_{world}", loc, yaw, w=1.4, h=2.45, depth=0.35, t=0.16, kind="door",
-          a="pink_pale", b="rose", pattern="plain")
-    nx.portal(f"portal_home_{world}", (loc[0], loc[1], loc[2] + 1.0), "home", at=f"door_{world}", mode="walk",
-              title=title, radius=0.5)
+# 每个世界有一个认得出的意象，去哪个世界就碰那个世界的东西（在家里和在别的世界里是同一样东西）：
+#   家 ← 灯（E「关灯」）          回廊 ← 摊开的书（E「翻开」）   下沉 ← 床（E「睡」）
+#   无墙之屋 ← 衣柜（走进去）     花房 ← 插着花的瓶（E「凑近」）  浅滩 ← 一杯水（E）
+#   云阶 ← 落地窗（走出去）
+# 来回成对：A 里通往 B 的东西旁边，就是从 B 回来时落脚的地方。所以每个 gate_* 都同时放三样：
+# 东西本身、传送物（去 to，落在 to 里名为 here 的到达点）、到达点（名字是 to，在东西正前方，背对它）。
+# 东西的正面朝本地 +Y（yaw 同 nx.spawn），人从正面来、也从正面离开。
+# 走进去的两样（衣柜、窗）洞口里有一层膜（nx.veil），走近时铺满，颜色是要去的世界的。
+VEIL = {"room": ("pink", "pink_pale"), "isles": ("blue_pale", "white")}
+
+
+def _ahead(loc, yaw, d, side=0.0):
+    a = math.radians(yaw)
+    return (loc[0] - math.sin(a) * d + math.cos(a) * side, loc[1] + math.cos(a) * d + math.sin(a) * side, loc[2])
+
+
+def _pair(name, here, to, loc, yaw, portal_at, mode, title, radius, land=2.0, spawn=False):
+    nx.portal(f"portal_{name}", portal_at, to, at=here, mode=mode, title=title, radius=radius)
+    p = _ahead(loc, yaw, land)
+    nx.arrive(to, p, facing_deg=yaw)
+    if spawn:
+        nx.spawn(p, facing_deg=yaw)
+
+
+def gate_home(here, loc, yaw=0.0, height=3.4, spawn=True):
+    """回家：一盏路灯，E「关灯」，醒在家里通往这个世界的那样东西旁边。默认这里也是出生点（从家里来的人落在这里）"""
+    fu.street_lamp(f"lamp_home_{here}", loc, yaw, height)
+    _pair(f"home_{here}", here, "home", loc, yaw, (loc[0], loc[1], loc[2] + 1.5), "key", "关灯", 0.8, spawn=spawn)
+
+
+def gate_book(here, loc, yaw=0.0, **kw):
+    """去回廊：一只斜面的书台，上面摊着一本比人肩还宽的书，E「翻开」"""
+    p = fu.Piece(f"book_{here}", loc, yaw)
+    p["stand"].box((0.7, 0.5, 0.08), bevel=0.02)
+    p["stand"].box((0.26, 0.26, 0.9), (0, -0.05, 0.08), bevel=0.03)
+    # 斜面朝人（本地 +Y 低）；封面、书页沿斜面的法线一层层叠上去，各让开 5mm，不共面
+    tilt = math.radians(18)
+    n = (0, math.sin(tilt), math.cos(tilt))
+
+    def on(z0, d):
+        return (0, n[1] * d, z0 + n[2] * d)
+    p["stand"].box((1.3, 0.85, 0.06), (0, 0, 0.98), rot=(-18, 0, 0), bevel=0.02)
+    p["cover"].box((1.24, 0.8, 0.03), on(0.98, 0.065), rot=(-18, 0, 0))
+    # 两页从书脊往外翘起，摊成浅浅的 V；左右页分开建（之间勾一道线），一条丝带从书脊垂到台前
+    for s in (-1, 1):
+        x, y, z = on(0.98, 0.1)
+        p[f"page{s}"].box((0.58, 0.74, 0.06), (s * 0.3, y, z + 0.03), rot=(-18, s * -9, 0))
+    x, y, z = on(0.98, 0.1)
+    p["ribbon"].box((0.08, 0.03, 0.42), (0, y + 0.42, z - 0.42), rot=(-8, 0, 0))
+    page = dict(a="white", b="mist", pattern="bands")
+    p.done({"stand": fu.WOOD_DARK, "cover": dict(a="violet", b="violet_deep", pattern="plain"),
+            "page-1": page, "page1": page, "ribbon": dict(a="pink", b="rose", pattern="plain")},
+           ribbon=dict(collide=False))
+    _pair(f"book_{here}", here, "procession", loc, yaw, (loc[0], loc[1], loc[2] + 1.2), "key", "翻开", 0.9, **kw)
+
+
+def gate_bed(here, loc, yaw=0.0, **kw):
+    """去下沉：一张床（床头朝本地 +Y），E「睡」；到达点在床的右手边"""
+    fu.bed(f"bed_{here}", loc, yaw)
+    nx.portal(f"portal_bed_{here}", (loc[0], loc[1], loc[2] + 0.8), "descent", at=here, mode="key", title="睡", radius=1.3)
+    p = _ahead(loc, yaw, -0.3, side=2.1)
+    nx.arrive("descent", p, facing_deg=yaw - 90)
+    if kw.get("spawn"):
+        nx.spawn(p, facing_deg=yaw - 90)
+
+
+def wardrobe(name, loc, yaw, to, here, land=2.2):
+    """衣柜：开着的两扇门，里面挂着衣服，衣服后面一层膜；走进去就走了。loc 是柜背中点，柜门朝本地 +Y"""
+    x, y, z = loc
+    W, D, Ht = 1.8, 0.9, 2.35
+    g = nx.group(name, loc, (0, 0, yaw))
+    st = dict(a="lilac_pale", b="lilac", pattern="tiles")
+    wood = dict(a="rose", b="rose_deep", pattern="bands")
+    # 背板、侧板、顶板各接各的，不叠出共面
+    nx.box(f"{name}_back", (W, 0.06, Ht - 0.08), (0, 0.03, 0), parent=g, **st)
+    for s in (-1, 1):
+        nx.box(f"{name}_side{s}", (0.06, D - 0.06, Ht - 0.08), (s * (W / 2 - 0.03), (D + 0.06) / 2, 0), parent=g, **st)
+    nx.box(f"{name}_top", (W, D, 0.08), (0, D / 2, Ht - 0.08), parent=g, **st)
+    nx.box(f"{name}_crown", (W + 0.12, D + 0.08, 0.1), (0, D / 2, Ht), parent=g, **wood)
+    nx.box(f"{name}_inside", (W - 0.12, 0.02, Ht - 0.2), (0, 0.07, 0.05), parent=g, collide=False,
+           a="violet_deep", b="violet", pattern="plain")
+    a, b = VEIL[to]
+    nx.veil(f"{name}_veil", W - 0.2, Ht - 0.3, (0, 0.13, 0.06), 0, a=a, b=b, parent=g)  # 在衣服后面、柜里衬板前面
+    for s in (-1, 1):
+        h = nx.group(f"{name}_hinge{s}", (s * W / 2, D, 0), (0, 0, s * 105))
+        h.parent = g
+        nx.box(f"{name}_door{s}", (W / 2 - 0.02, 0.05, Ht - 0.1), (-s * (W / 4), 0.025, 0.04), parent=h,
+               a="lilac_pale", b="mist", pattern="tiles")
+        nx.box(f"{name}_knob{s}", (0.05, 0.08, 0.14), (-s * (W / 2 - 0.12), 0.08, 1.05), parent=h, collide=False,
+               a="gold", b="white", pattern="plain")
+    # 衣杆与衣服：衣服不挡人，走进去就是拨开它们
+    nx.box(f"{name}_rail", (W - 0.14, 0.05, 0.05), (0, D * 0.5, Ht - 0.35), parent=g, collide=False,
+           a="rose_deep", b="violet", pattern="bands")
+    r = random.Random(3)
+    cols = ["pink", "blue_pale", "white", "lilac", "rose", "mist", "gold", "blue"]
+    for k in range(9):
+        L = r.uniform(0.75, 1.3)
+        nx.box(f"{name}_cloth{k}", (0.12, r.uniform(0.42, 0.55), L), (-W / 2 + 0.2 + k * 0.175, D * 0.5, Ht - 0.4 - L),
+               parent=g, collide=False, a=cols[k % len(cols)], b="mist", pattern="stripes" if k % 3 == 0 else "plain")
+    _pair(name, here, to, loc, yaw, (*_ahead(loc, yaw, 0.45)[:2], z + 1.0), "walk", "", 0.5, land=land)
+    return g
+
+
+def gate_wardrobe(here, loc, yaw=0.0):
+    """去无墙之屋：一只自己站着的衣柜，走进去"""
+    return wardrobe(f"wardrobe_{here}", loc, yaw, "room", here)
+
+
+def gate_window(here, loc, yaw=0.0, w=1.8, h=2.6, land=2.4):
+    """去云阶：一扇自己站着的落地窗，两扇窗扇往后推开，洞口里一层天色的膜；走出去"""
+    name = f"window_{here}"
+    st = dict(a="white", b="mist", pattern="plain")
+    g = frame(name, loc, yaw, w=w, h=h, depth=0.3, t=0.14, kind="door", **st)
+    nx.box(f"{name}_transom", (w, 0.1, 0.1), (0, 0, h * 0.78), parent=g, collide=False, **st)
+    nx.box(f"{name}_sill", (w + 0.5, 0.6, 0.09), (0, 0, 0.01), parent=g, **st)  # 离地 1cm，底面不贴着地面
+    for s in (-1, 1):
+        hinge = nx.group(f"{name}_hinge{s}", (s * w / 2, -0.15, 0.1), (0, 0, s * 70))
+        hinge.parent = g
+        nx.box(f"{name}_leaf{s}", (w / 2 - 0.04, 0.06, h - 0.15), (-s * (w / 4), -0.03, 0.02), parent=hinge,
+               collide=False, a="mist", b="blue_pale", pattern="tiles")
+    a, b = VEIL["isles"]
+    nx.veil(f"{name}_veil", w - 0.02, h - 0.11, (0, 0.04, 0.1), 0, a=a, b=b, parent=g)
+    _pair(name, here, "isles", loc, yaw, (loc[0], loc[1], loc[2] + 1.0), "walk", "", 0.5, land=land)
+    return g
+
+
+def gate_vase(here, loc, yaw=0.0, **kw):
+    """去花房：方台上一只插满花的大瓶，E「凑近」"""
+    plinth(f"vase_{here}_plinth", loc, 0.9, 0.9, h=0.5, yaw=yaw, a="white", b="mist", pattern="plain")
+    fu.vase(f"vase_{here}", (loc[0], loc[1], loc[2] + 0.5), 0.8, "round", flowers=9, seed=len(here),
+            style=dict(a="pink_pale", b="white", pattern="plain"))
+    _pair(f"vase_{here}", here, "glasshouse", loc, yaw, (loc[0], loc[1], loc[2] + 1.4), "key", "凑近", 0.9, **kw)
+
+
+def gate_glass(here, loc, yaw=0.0, **kw):
+    """去浅滩：一只齐腰高的玻璃杯立在地上，盛着水，E「一杯水」"""
+    x, y, z = loc
+    sh.tube(f"glass_{here}", 0.5, 0.44, 1.05, (x, y, z + 0.08), segments=20, a="blue_pale", b="white", pattern="plain")
+    nx.cylinder(f"glass_{here}_base", 0.52, 0.52, 0.08, (x, y, z), segments=20, a="white", b="blue_pale", pattern="plain")
+    nx.cylinder(f"glass_{here}_water", 0.43, 0.43, 0.7, (x, y, z + 0.08), segments=20, collide=False,
+                a="blue", b="blue_pale", pattern="bands")
+    _pair(f"glass_{here}", here, "shoal", loc, yaw, (x, y, z + 1.3), "key", "一杯水", 0.9, **kw)
+
+
+def gate_vessel(here, loc, yaw=0.0, R=2.5, length=5.5):
+    """去浅滩（大的）：横躺的杯，走进杯里，E「一杯水」"""
+    _, inside = vessel(f"vessel_{here}", loc, yaw=yaw, R=R, length=length)
+    _pair(f"vessel_{here}", here, "shoal", loc, yaw, (inside[0], inside[1], inside[2] + 1.0), "key", "一杯水", 1.0,
+          land=1.0)  # 杯口前一步；传送物在杯里深处

@@ -424,6 +424,7 @@ def vase(name, loc, height=0.4, kind="round", style=None, flowers=0, seed=0, par
     r = random.Random(seed)
     heads = [dict(a="pink", b="pink_pale", pattern="plain"), dict(a="white", b="pink_pale", pattern="plain"),
              dict(a="blue_pale", b="white", pattern="plain")]
+    s = max(1.0, height / 0.4)  # 大瓶子的花杆、花头跟着放大（细杆远看会闪）
     for k in range(flowers):
         az = 360 * k / flowers + r.uniform(-25, 25)
         lean = r.uniform(8, 22)
@@ -432,8 +433,8 @@ def vase(name, loc, height=0.4, kind="round", style=None, flowers=0, seed=0, par
         tilt = math.radians(lean)
         top = (math.cos(a) * math.sin(tilt) * L, math.sin(a) * math.sin(tilt) * L, height * 0.85 + math.cos(tilt) * L)
         # 杆：从瓶口向外斜（rot 的 Y 轴先倾、Z 轴再转到方位上）
-        p["stem"].box((0.018, 0.018, L), (0, 0, height * 0.85), rot=(0, lean, az))
-        p[f"head{k % 3}"].lathe([(0.0, -0.02), (0.035, 0.0), (0.075, 0.05), (0.06, 0.06), (0.0, 0.035)], top,
+        p["stem"].box((0.018 * s, 0.018 * s, L), (0, 0, height * 0.85), rot=(0, lean, az))
+        p[f"head{k % 3}"].lathe([(0.0, -0.02 * s), (0.035 * s, 0.0), (0.075 * s, 0.05 * s), (0.06 * s, 0.06 * s), (0.0, 0.035 * s)], top,
                                 rot=(0, lean, az), seg=6, start=r.uniform(0, 60))
     styles = {"vase": style or dict(a="blue_pale", b="white", pattern="plain"), "stem": LEAF}
     styles.update({f"head{i}": heads[i] for i in range(3)})
@@ -481,3 +482,43 @@ def planter(name, loc, yaw=0.0, length=1.2, seed=0, parent=None):
     for k in range(3):
         plant(f"{name}_tuft{k}", ((k - 1) * length / 3, 0, 0.38), height=0.5, kind="tuft", seed=seed * 7 + k, parent=p.g)
     return p.g
+
+
+# ── 床 ───────────────────────────────────────────
+
+def bed(name, loc, yaw=0.0, parent=None):
+    """床：床头朝本地 +Y，loc 是床的底面中心。床架、床头板、床尾板、床垫、被子（两侧与床尾垂下）、翻折的被头、
+    两只枕头、床尾搭着一条毯子。零件各是一个物体（之间有轮廓线）"""
+    L, W = 2.2, 1.85
+    g = nx.group(name, loc, (0, 0, yaw))
+    if parent is not None:
+        g.parent = parent
+    g["nx_piece"] = 1  # 穿模检查按它认「一件」
+    y0, y1 = -L / 2, L / 2
+
+    def b(part, size, at, rot=(0, 0, 0), collide=True, **style):
+        nx.box(f"{name}_{part}", size, at, rot=rot, parent=g, collide=collide, **style)
+    b("frame", (W + 0.08, L, 0.32), (0, 0, 0), **WOOD)
+    b("head", (W + 0.12, 0.1, 1.15), (0, y1 + 0.02, 0), **WOOD)
+    b("head_cap", (W + 0.22, 0.16, 0.08), (0, y1 + 0.02, 1.15), **WOOD_DARK)
+    for i in range(5):
+        b(f"head_slat{i}", (0.1, 0.03, 0.55), (-0.7 + i * 0.35, y1 - 0.04, 0.45), collide=False, a="rose_deep", b="rose", pattern="plain")
+    b("foot", (W + 0.12, 0.1, 0.62), (0, y0 - 0.02, 0), **WOOD)
+    top = 0.32
+    b("mattress", (W - 0.05, L - 0.12, 0.24), (0, 0, top), **WHITE)
+    m = top + 0.24
+    quilt = dict(a="blue_pale", b="white", pattern="tiles")
+    ql = 1.45
+    qc = y0 + 0.08 + ql / 2
+    b("quilt", (W + 0.06, ql, 0.1), (0, qc, m), **quilt)
+    for sx in (-1, 1):
+        b(f"quilt_side{sx}", (0.06, ql - 0.02, 0.41), (sx * (W / 2 + 0.03), qc, m - 0.32), collide=False, **quilt)
+    b("quilt_fold", (W + 0.06, 0.26, 0.15), (0, qc + ql / 2 - 0.05, m), collide=False, a="white", b="blue_pale", pattern="plain")
+    for i, (dx, r) in enumerate([(-0.45, 4), (0.42, -6)]):
+        b(f"pillow{i}", (0.72, 0.42, 0.17), (dx, y1 - 0.32, m), rot=(0, 0, r), collide=False,
+          a="white" if i == 0 else "pink_pale", b="mist", pattern="plain")
+    b("cushion", (0.36, 0.14, 0.32), (0.05, y1 - 0.55, m + 0.02), rot=(-18, 0, 10), collide=False, a="pink", b="rose", pattern="stripes")
+    blanket = dict(a="pink", b="pink_pale", pattern="stripes")
+    b("throw", (W + 0.1, 0.55, 0.05), (0, y0 + 0.4, m + 0.1), collide=False, **blanket)
+    b("throw_drop", (W + 0.1, 0.05, 0.28), (0, y0 + 0.1, m - 0.2), collide=False, **blanket)
+    return g

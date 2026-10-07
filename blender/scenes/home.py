@@ -5,9 +5,9 @@
 唯一一扇真正的门是前门：开向院子，院子就是院子。
 
 布局（俯视，x 向右、y 向上）：西北卧室、西南书房、东边一整间客厅兼餐厅（头顶天窗）；南墙前门 → 门廊 → 小径 → 院门。
-到达点：wake（床边，也是出生点）、window（落地窗内）、door_descent（床边）、door_room（衣柜前）、
-       door_procession（书桌旁）、door_glasshouse（花瓶旁）、cup（餐桌旁）。
-各世界回家的门用 door_<世界> 这些名字，见 prefabs.return_door。
+到达点按「从哪个世界回来」命名，就在通往那个世界的东西旁边：wake（床边，也是出生点，Q 醒来落在这里）、
+descent（床边）、isles（落地窗内）、room（衣柜前）、procession（书桌旁）、glasshouse（花瓶旁）、shoal（餐桌旁）。
+各世界回家是一盏灯（E「关灯」），见 prefabs.gate_home；这里的传送物都落在那边名为 home 的到达点（灯前）。
 运行：node scripts/blender.cjs build home
 """
 import math
@@ -104,43 +104,8 @@ def curtains(name, x, y, yaw, width, height):
     nx.box(f"{name}_rod", (width + 1.8, 0.08, 0.08), (0, 0.15, height + 0.05), parent=g, collide=False, **WOOD_DARK)
 
 
-def wardrobe(name, cx, cy, yaw, to, at_name):
-    """衣柜：开着的两扇门，里面挂着衣服；走进去就走了。cy 是柜背贴墙处，yaw=0 时柜门朝 +Y"""
-    a = math.radians(yaw)
-    fx, fy = -math.sin(a), math.cos(a)
-    W, D, Ht = 1.8, 0.9, 2.35
-    g = nx.group(name, (cx, cy, F), (0, 0, yaw))
-    st = dict(a="lilac_pale", b="lilac", pattern="tiles")
-    # 背板、侧板、顶板各接各的，不叠出共面
-    nx.box(f"{name}_back", (W, 0.06, Ht - 0.08), (0, 0.03, 0), parent=g, **st)
-    for s in (-1, 1):
-        nx.box(f"{name}_side{s}", (0.06, D - 0.06, Ht - 0.08), (s * (W / 2 - 0.03), (D + 0.06) / 2, 0), parent=g, **st)
-    nx.box(f"{name}_top", (W, D, 0.08), (0, D / 2, Ht - 0.08), parent=g, **st)
-    nx.box(f"{name}_crown", (W + 0.12, D + 0.08, 0.1), (0, D / 2, Ht), parent=g, **WOOD)
-    nx.box(f"{name}_inside", (W - 0.12, 0.02, Ht - 0.2), (0, 0.07, 0.05), parent=g, collide=False,
-           a="violet_deep", b="violet", pattern="plain")
-    # 两扇门开着，贴向两侧
-    for s in (-1, 1):
-        h = nx.group(f"{name}_hinge{s}", (s * W / 2, D, 0), (0, 0, s * 105))
-        h.parent = g
-        nx.box(f"{name}_door{s}", (W / 2 - 0.02, 0.05, Ht - 0.1), (-s * (W / 4), 0.025, 0.04), parent=h,
-               a="lilac_pale", b="mist", pattern="tiles")
-        nx.box(f"{name}_knob{s}", (0.05, 0.08, 0.14), (-s * (W / 2 - 0.12), 0.08, 1.05), parent=h, collide=False,
-               a="gold", b="white", pattern="plain")
-    # 衣杆与衣服：衣服不挡人，走进去就是拨开它们
-    nx.box(f"{name}_rail", (W - 0.14, 0.05, 0.05), (0, D * 0.5, Ht - 0.35), parent=g, collide=False, **WOOD_DARK)
-    r = random.Random(3)
-    cols = ["pink", "blue_pale", "white", "lilac", "rose", "mist", "gold", "blue"]
-    for k in range(9):
-        L = r.uniform(0.75, 1.3)
-        nx.box(f"{name}_cloth{k}", (0.12, r.uniform(0.42, 0.55), L), (-W / 2 + 0.2 + k * 0.175, D * 0.5, Ht - 0.4 - L),
-               parent=g, collide=False, a=cols[k % len(cols)], b="mist", pattern="stripes" if k % 3 == 0 else "plain")
-    nx.portal(f"portal_{name}", (cx + fx * 0.45, cy + fy * 0.45, F + 1.0), to, mode="walk", radius=0.5)
-    nx.arrive(at_name, (cx + fx * 2.2, cy + fy * 2.2, F), facing_deg=yaw)
-
-
-def french_window(name, x, y0, y1, to, at_name):
-    """西墙上的落地窗（x 处，朝 -X 开出去）：两扇窗扇推开在屋里，帘子，窗外一小片露台；走出去就走了"""
+def french_window(name, x, y0, y1, to, here):
+    """西墙上的落地窗（x 处，朝 -X 开出去）：两扇窗扇推开在屋里，帘子，窗外一小片露台，洞口里一层天色的膜；走出去就走了"""
     w = y1 - y0
     yc = (y0 + y1) / 2
     hgt = 2.55
@@ -153,40 +118,11 @@ def french_window(name, x, y0, y1, to, at_name):
         leaf = dict(a="mist", b="blue_pale", pattern="tiles")
         nx.box(f"{name}_leaf{s}", (w / 2 - 0.04, 0.06, hgt - 0.05), (-s * (w / 4), 0, 0.02), parent=hinge, collide=False, **leaf)
     nx.box(f"{name}_sill", (0.8, w + 0.4, 0.12), (x - T / 2 - 0.4, yc, F - 0.04), **st)
+    a, b = pf.VEIL[to]
+    nx.veil(f"{name}_veil", w - 0.04, hgt - 0.03, (x - 0.05, yc, F + 0.01), 90, a=a, b=b)
     curtains(f"{name}_curtain", x + T / 2 + 0.05, yc, -90, w, hgt)
-    nx.portal(f"portal_{name}", (x - 0.35, yc, F + 1.0), to, mode="walk", radius=1.05)
-    nx.arrive(at_name, (x + 2.4, yc, F), facing_deg=-90)
-
-
-def bed(cx, cy):
-    """床：床头朝北（+Y）。床架、床头板、床尾板、床垫、被子（两侧与床尾垂下）、翻折的被头、两只枕头、床尾搭着一条毯子"""
-    L, W = 2.2, 1.85
-    y0, y1 = cy - L / 2, cy + L / 2
-    nx.box("bed_frame", (W + 0.08, L, 0.32), (cx, cy, F), **WOOD)
-    nx.box("bed_head", (W + 0.12, 0.1, 1.15), (cx, y1 + 0.02, F), **WOOD)
-    nx.box("bed_head_cap", (W + 0.22, 0.16, 0.08), (cx, y1 + 0.02, F + 1.15), **WOOD_DARK)
-    for i in range(5):
-        nx.box(f"bed_head_slat{i}", (0.1, 0.03, 0.55), (cx - 0.7 + i * 0.35, y1 - 0.04, F + 0.45), collide=False,
-               a="rose_deep", b="rose", pattern="plain")
-    nx.box("bed_foot", (W + 0.12, 0.1, 0.62), (cx, y0 - 0.02, F), **WOOD)
-    top = F + 0.32
-    nx.box("bed_mattress", (W - 0.05, L - 0.12, 0.24), (cx, cy, top), **WHITE)
-    m = top + 0.24
-    quilt = dict(a="blue_pale", b="white", pattern="tiles")
-    ql = 1.45
-    qc = y0 + 0.08 + ql / 2
-    nx.box("bed_quilt", (W + 0.06, ql, 0.1), (cx, qc, m), **quilt)
-    for sx in (-1, 1):
-        nx.box(f"bed_quilt_side{sx}", (0.06, ql - 0.02, 0.41), (cx + sx * (W / 2 + 0.03), qc, m - 0.32), collide=False, **quilt)
-    nx.box("bed_quilt_fold", (W + 0.06, 0.26, 0.15), (cx, qc + ql / 2 - 0.05, m), collide=False, a="white", b="blue_pale", pattern="plain")
-    for i, (dx, r) in enumerate([(-0.45, 4), (0.42, -6)]):
-        nx.box(f"bed_pillow{i}", (0.72, 0.42, 0.17), (cx + dx, y1 - 0.32, m), rot=(0, 0, r), collide=False,
-               a="white" if i == 0 else "pink_pale", b="mist", pattern="plain")
-    nx.box("bed_cushion", (0.36, 0.14, 0.32), (cx + 0.05, y1 - 0.55, m + 0.02), rot=(-18, 0, 10), collide=False,
-           a="pink", b="rose", pattern="stripes")
-    blanket = dict(a="pink", b="pink_pale", pattern="stripes")
-    nx.box("bed_throw", (W + 0.1, 0.55, 0.05), (cx, y0 + 0.4, m + 0.1), collide=False, **blanket)
-    nx.box("bed_throw_drop", (W + 0.1, 0.05, 0.28), (cx, y0 + 0.1, m - 0.2), collide=False, **blanket)
+    nx.portal(f"portal_{name}", (x - 0.35, yc, F + 1.0), to, at=here, mode="walk", radius=1.05)
+    nx.arrive(to, (x + 1.4, yc - 0.2, F), facing_deg=-90)  # 比床、衣柜离窗更近
 
 
 def ceiling_lamp(name, x, y):
@@ -241,17 +177,17 @@ def build(extent=EXTENT):
 
     # ── 卧室（西北）：床、床头柜、衣柜、落地窗 ──
     nx.into("bedroom")
-    bed(-5.6, 8.55)  # 床头板要让开北墙和窗台（窗台伸进屋里约 0.23m）
-    nx.portal("portal_bed", (-5.6, 8.4, F + 0.8), "descent", mode="key", title="睡", radius=1.3)
-    nx.arrive("door_descent", (-4.0, 6.9, F), facing_deg=-120)
+    fu.bed("bed", (-5.6, 8.55, F))  # 床头板要让开北墙和窗台（窗台伸进屋里约 0.23m）
+    nx.portal("portal_bed", (-5.6, 8.4, F + 0.8), "descent", at="home", mode="key", title="睡", radius=1.3)
+    nx.arrive("descent", (-4.0, 6.9, F), facing_deg=-120)
     for i, x in enumerate([-7.4, -3.8]):
         nx.box(f"nightstand{i}", (0.55, 0.45, 0.55), (x, 9.45, F), **WOOD)
         nx.box(f"nightstand{i}_drawer", (0.45, 0.02, 0.16), (x, 9.21, F + 0.3), collide=False, a="rose_deep", b="rose", pattern="plain")
     fu.alarm_clock("alarm_clock", (-3.8, 9.4, F + 0.55), 200)
     fu.table_lamp("bed_lamp", (-7.4, 9.45, F + 0.55), height=0.45)
     nx.box("rug_bed", (3.4, 2.4, 0.03), (-5.6, 6.6, F), collide=False, a="blue_pale", b="white", pattern="stripes")
-    wardrobe("wardrobe", -7.4, 4.67, 0, "room", "door_room")
-    french_window("french", -9.0, 6.6, 8.6, "isles", "window")
+    pf.wardrobe("wardrobe", (-7.4, 4.67, F), 0, "room", "home")
+    french_window("french", -9.0, 6.6, 8.6, "isles", "home")
     picture("pic_bed1", (-1.14, 9.0, F + 2.0), 90, 0.7, 0.9, dict(a="blue_pale", b="pink_pale", pattern="bands"))
     picture("pic_bed2", (-1.14, 5.8, F + 1.9), 90, 0.5, 0.5, dict(a="pink_pale", b="gold", pattern="grain"))
     fu.plant("bed_plant", (-1.6, 9.4, F), 1.1, seed=1)
@@ -268,8 +204,8 @@ def build(extent=EXTENT):
     for s in (-1, 1):
         nx.box(f"book_page{s}", (0.17, 0.48, 0.03), (-8.4 + s * 0.085, 2.25, top + 0.02), rot=(0, s * -6, 8), collide=False,
                a="white", b="mist", pattern="bands")
-    nx.portal("portal_book", (-8.4, 2.25, top + 0.3), "procession", mode="key", title="翻开", radius=0.9)
-    nx.arrive("door_procession", (-6.4, 2.2, F), facing_deg=90)
+    nx.portal("portal_book", (-8.4, 2.25, top + 0.3), "procession", at="home", mode="key", title="翻开", radius=0.9)
+    nx.arrive("procession", (-6.4, 2.2, F), facing_deg=90)
     fu.desk_lamp("desk_lamp", (-8.6, 1.6, top), -13)
     fu.notebook("notebook", (-8.35, 2.85, top), -20)
     fu.chair("desk_chair", (-7.6, 2.2, F), 90, "dining", fabric="lilac")
@@ -287,8 +223,8 @@ def build(extent=EXTENT):
     nx.cylinder("glass", 0.075, 0.085, 0.2, (4.2, 5.15, F + 0.76), segments=14, collide=False, shadow=False,
                 a="blue_pale", b="white", pattern="plain")
     nx.cylinder("plate", 0.18, 0.18, 0.02, (3.75, 5.5, F + 0.76), segments=20, collide=False, a="white", b="mist", pattern="plain")
-    nx.portal("portal_cup", (4.2, 5.15, F + 0.9), "shoal", mode="key", title="一杯水", radius=0.9)
-    nx.arrive("cup", (4.0, 3.3, F), facing_deg=0)
+    nx.portal("portal_cup", (4.2, 5.15, F + 0.9), "shoal", at="home", mode="key", title="一杯水", radius=0.9)
+    nx.arrive("shoal", (4.0, 3.3, F), facing_deg=0)
     for i, ang in enumerate([200, 320, 80]):
         a = math.radians(ang)
         fu.chair(f"dining_chair{i}", (4.0 + math.cos(a) * 1.25, 5.3 + math.sin(a) * 1.25, F), ang + 90, "dining", fabric="blue")
@@ -302,8 +238,8 @@ def build(extent=EXTENT):
     # 边几上的花瓶：凑近去闻 → 花房
     nx.box("side_table", (0.55, 0.55, 0.65), (8.45, 9.4, F), **WOOD)
     fu.vase("vase", (8.45, 9.4, F + 0.65), 0.42, "round", flowers=6, seed=3)
-    nx.portal("portal_vase", (8.45, 9.4, F + 1.05), "glasshouse", mode="key", title="凑近", radius=0.9)
-    nx.arrive("door_glasshouse", (7.2, 7.2, F), facing_deg=225)
+    nx.portal("portal_vase", (8.45, 9.4, F + 1.05), "glasshouse", at="home", mode="key", title="凑近", radius=0.9)
+    nx.arrive("glasshouse", (7.2, 7.2, F), facing_deg=225)
     # 进门处：长凳、衣帽架、落地钟、盆栽
     fu.bench("bench", (1.6, 0.5, F), 0)
     nx.cylinder("coat_pole", 0.04, 0.05, 1.8, (6.0, 0.5, F), segments=8, **WOOD_DARK)

@@ -455,6 +455,9 @@ updateHud();
     dissolve,
     portals: level.portals.map((p) => ({ to: p.to, at: p.at, mode: p.mode, title: p.title, pos: p.pos.toArray() })),
     arrivals: [...level.arrivals.keys()],
+    /** 到达点：名字 → [x, y, z, 朝向°] */
+    arrivalAt: Object.fromEntries([...level.arrivals].map(([k, v]) => [k, [...v.pos.toArray(), v.yaw / deg]])),
+    entrances: level.entrances.map((e) => e.url).filter(Boolean),
     visited: visited(),
   }),
   keys: (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code })),

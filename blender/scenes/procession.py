@@ -1,9 +1,10 @@
 """新主题 · 回廊：一条笔直的堤，从低处一路穿过二十多道框。
 框一道比一道大、一道比一道斜、颜色一道比一道浅；走着走着，像是被一层层「显影」出来。
 - 堤两侧是浅水，纸的路灯一对一对站在堤边。
-- 半路一方小院：四面拱框朝里，头顶一组慢慢转的环，晶体在院心。
-- 堤的尽头是一扇花形的门：梯子走上去，穿过花心就是晶体。
-- 堤外一处侧园：立着的残环下，第三枚晶体。
+- 半路一方小院：四面拱框朝里，头顶一组慢慢转的环；院里立着一扇落地窗（走出去 → 云阶）。
+- 堤的尽头是一扇花形的门：梯子走上去，穿过花心就是晶体（→ 博客）。
+- 堤外一处侧园：立着的残环，环边一朵莲。
+- 出生点背后一盏路灯（E「关灯」→ 家）。出入口三个：灯、窗、晶体；从哪儿去的，回来就落在哪儿。
 运行：node scripts/blender.cjs build procession
 """
 import math
@@ -25,9 +26,8 @@ def build(extent=EXTENT):
 
     nx.into("env")
     nx.sun((-0.5, -0.45, 0.45))
-    nx.spawn((0, -24, F), facing_deg=0)
     nx.atmosphere("halo")
-    pf.return_door("procession", (0, -27, F), 0)
+    pf.gate_home("procession", (0, -26.6, F), 0)  # 出生点在灯前
     nx.box("ground", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="lilac_pale", b="lilac", pattern="grain")
 
     # ── 堤与两侧的水 ──
@@ -64,7 +64,7 @@ def build(extent=EXTENT):
         pf.monolith(f"cloister_corner{k}", (Q[0] + dx, Q[1] + dy, F), 45, w=1.0, d=1.0, h=3.2,
                     a="lilac_pale", b="lilac", pattern="bands")
     pf.orrery("cloister_rings", (Q[0], Q[1], 11), radii=(3.5, 5.5, 7.5), seed=3)
-    nx.portal("portal_cloister", (Q[0], Q[1], F + 1.2), "isles", at="top", mode="key", title="仰望", radius=1.2)
+    pf.gate_window("procession", (Q[0] + 4.5, Q[1], F), 180)  # 院里一扇落地窗，朝着来路，头顶转着环 → 云阶
     for i in range(4):
         a = math.radians(45 + 90 * i)
         nx.sprite(f"cloister_lily{i}", f"flower.cup:{i + 1}", (Q[0] + math.cos(a) * 4.2, Q[1] + math.sin(a) * 4.2, F), face=True)
@@ -82,8 +82,6 @@ def build(extent=EXTENT):
     S = (-20, 44)
     pf.pad("side_pad", (S[0], S[1], 0), 7, h=F, notch=0, seed=6, a="mist", b="pink_pale")
     pf.arch_ring("side_ring", (S[0], S[1], F), 70, 5.5, thick=0.7, depth=1.0)
-    nx.portal("portal_side", (S[0], S[1], F + 1.0), "glasshouse", at="gate", radius=1.0)
-    nx.arrive("side", (S[0] + 3.6, S[1], F), facing_deg=-90)
     pf.steps_between("side_steps", (-2.5, 44, F), (S[0] + 6.8, S[1], F), seed=7)
     pf.bloom("side_lotus", (S[0] - 4, S[1] + 4.5, F), kind="lotus", size=2.2, seed=8)
 

@@ -1,8 +1,9 @@
 """新主题 · 花房：一座只剩骨架的温室。九道拱一字排开，拱顶由三根长梁串起；没有玻璃。
 里面不种花，种的是「花之装置」：两侧的低台上，开的、未开的、落下的，各种形态都有一点。
-- 中轴是一条长长的浅水，水心一片圆台，晶体在上面。
-- 中殿尽头一扇花形的门。
-- 侧门外横着一只水杯，晶体在杯里。
+- 中轴是一条长长的浅水，水心一片圆台，花瓣浮在上面。
+- 中殿尽头一扇花形的门（只是看的）。
+- 东侧外面横着一只水杯，走进杯里（E「一杯水」→ 浅滩）。
+- 出生点背后一盏路灯（E「关灯」→ 家）。出入口两个：灯和杯，从哪儿去的，回来就落在哪儿。
 - 纸片：拱顶挂下来的纸吊灯、剪纸百合、香蒲、蒲公英。
 运行：node scripts/blender.cjs build glasshouse
 """
@@ -27,9 +28,8 @@ def build(extent=EXTENT):
 
     nx.into("env")
     nx.sun((0.35, -0.5, 0.55))
-    nx.spawn((0, -16, 0), facing_deg=0)
     nx.atmosphere("night")
-    pf.return_door("glasshouse", (0, -19.5, 0), 0)
+    pf.gate_home("glasshouse", (0, -18, 0), 0)  # 出生点在灯前
     nx.box("ground", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="mist", b="green", pattern="grain")
     nx.box("floor", (W + 4, Y1 - Y0 + 6, F), (0, (Y0 + Y1) / 2, 0), a="white", b="mist", pattern="tiles")
     # 门前的三级台阶：两级 + 地面（地面高 F=0.3）；台阶排在地面南沿外面，不和地面叠在一起
@@ -78,17 +78,12 @@ def build(extent=EXTENT):
 
     # ── 尽头：花形的门 ──
     nx.into("gate")
-    ent = pf.halo_gate("gate", (0, Y1 + 9, F), 0, size=4.2, seed=2)
+    pf.halo_gate("gate", (0, Y1 + 9, F), 0, size=4.2, seed=2)
     nx.box("gate_floor", (10, 10, F), (0, Y1 + 8, 0), a="white", b="mist", pattern="tiles")
-    nx.portal("portal_gate", (ent[0], ent[1], ent[2] - 0.6), "procession", at="side", radius=0.9)
-    nx.arrive("gate", (3.5, Y1 - 8, F), facing_deg=0)
 
-    # ── 侧门外的水杯 ──
+    # ── 东侧外面横着的水杯 ──
     nx.into("vessel")
-    pf.frame("side_door", (W / 2 + 1.1, 21, F), 90, w=2.2, h=3.4, kind="door", a="violet", b="violet_deep", pattern="stripes")
-    _, inside = pf.vessel("side_cup", (W / 2 + 9, 21, 0), yaw=90, R=2.5, length=5.5)
-    nx.portal("portal_cup", (inside[0], inside[1], inside[2] + 1.0), "shoal", at="glass", mode="key", title="杯中", radius=1.0)
-    nx.arrive("cup", (W / 2 + 5.5, 21, 0), facing_deg=90)
+    pf.gate_vessel("glasshouse", (W / 2 + 9, 21, 0), 90)
 
     # ── 温室外：草、蒲公英、几棵纸树 ──
     nx.into("paper")

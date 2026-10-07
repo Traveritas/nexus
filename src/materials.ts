@@ -35,6 +35,8 @@ export const shared = {
   uTexel: { value: TEXEL },
   /** 没写三色明暗的哑光按主色自动配一组（palette.ts 的 AUTO_RAMP），与「主色乘光照」按这个比例混：0 关 · 1 全用三色 */
   uAutoRamp: { value: 0.3 },
+  /** 秒；会动的材质（传送物的膜）用 */
+  uTime: { value: 0 },
 };
 
 const COMMON = /* glsl */ `
@@ -282,6 +284,54 @@ void main() {
   // 纸不吃明暗，只在背光时轻一点
   col *= 0.9 + 0.1 * step(0.0, dot(n, uSun));
   if (uUseFog > 0.5) col = mix(col, uFogCol, smoothstep(uFogNear, uFogFar, vDepth));
+  oColor = vec4(col, 1.0);
+  oData = vec4(octEncode(n), vDepth, uId);
+}
+`,
+  });
+}
+
+/** 膜：门洞、窗洞、衣柜里的一层，颜色是要去的那个世界的。远处没有；走近时从洞口中心长出来，参差的边一路铺满洞口，
+    里面是慢慢往上流的两色纹和往上飘的亮点。不吃光、不投影、不挡人。
+    边是实的（不抖开）：只在边上描一道线，洞口里的颜色变化不勾线 */
+export function veil(opts: { a: number; b: number; size: [number, number]; id?: number }) {
+  return new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    side: THREE.DoubleSide,
+    uniforms: {
+      ...shared,
+      uA: { value: pal(opts.a) },
+      uB: { value: pal(opts.b) },
+      uSize: { value: new THREE.Vector2(...opts.size) },
+      uId: { value: opts.id ?? newId() },
+    },
+    vertexShader: VERT,
+    fragmentShader: /* glsl */ `
+precision highp float;
+${OUTS}
+uniform vec3 uA, uB, uFogCol;
+uniform vec2 uSize;
+uniform float uTime, uId, uFogNear, uFogFar, uTexel;
+in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
+${COMMON}
+void main() {
+  // 离得越近铺得越满：8m 外没有，2m 内满
+  float cover = 1.0 - smoothstep(2.0, 8.0, distance(cameraPosition, vWorld));
+  if (cover <= 0.0) discard;
+  // 按纹素格取样：边和纹都落在每米 TEXEL 格上
+  vec2 q = (floor(vUv * uSize * uTexel) + 0.5) / uTexel;
+  vec2 e = abs(q / uSize - 0.5) * 2.0;
+  float r = pow(pow(e.x, 4.0) + pow(e.y, 4.0), 0.25);
+  vec2 c = q - uSize * 0.5;
+  float wob = vnoise(vec2(atan(c.y, c.x) * 2.5, uTime * 0.9), 7.0) - 0.5;
+  if (r + wob * 0.5 * (1.0 - cover * 0.8) > cover * 1.3) discard;
+  // 往上流的两色纹，越往中心越偏主色
+  float f = vnoise(vec2(q.x * 1.3, q.y * 0.7 - uTime * 0.45), 1.0) * 0.65 + vnoise(q * 3.1 + vec2(0.0, -uTime * 1.1), 2.0) * 0.35;
+  vec3 col = mix(uB, uA, step(0.48 - (1.0 - r) * 0.12, f));
+  vec2 sp = floor(vec2(q.x, q.y - uTime * 0.6) * uTexel * 0.5);
+  if (hash13(vec3(sp, 5.0)) > 0.985) col = vec3(1.0);
+  col = mix(col, uFogCol, smoothstep(uFogNear, uFogFar, vDepth) * 0.6);
+  vec3 n = normalize(vNormal) * (gl_FrontFacing ? 1.0 : -1.0);
   oColor = vec4(col, 1.0);
   oData = vec4(octEncode(n), vDepth, uId);
 }

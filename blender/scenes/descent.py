@@ -3,8 +3,10 @@
 路灯与椅子是纸片：有一把椅子背过身去，看过去只是一张空白的纸。
 - 四层平台，每层四级 0.3m 的台阶，层与层之间颜色加深一档。
 - 第一层：一圈路灯。第二层：一排朝向井心的椅子，其中一把背过身去。
-- 井底一汪水，水上悬着晶体，水里立着一扇门。
-- 井口外一圈高低不一、中间断开的塔；一道螺旋梯从井口升进天里，顶上是另一枚晶体。
+- 井底一汪水，水里立着一扇门，门里什么也没有。
+- 井口外一圈高低不一、中间断开的塔；一道螺旋梯从井口升进天里，顶上是晶体（→ GitHub）。
+- 出生点背后一盏路灯（E「关灯」→ 家）。
+  出入口两个：灯和晶体。
 运行：node scripts/blender.cjs build descent
 """
 import math
@@ -30,9 +32,8 @@ def build(extent=EXTENT):
 
     nx.into("env")
     nx.sun((-0.35, -0.5, 0.33))
-    nx.spawn((0, -36, 0), facing_deg=0)
     nx.atmosphere("lattice")
-    pf.return_door("descent", (0, -39.5, 0), 0)
+    pf.gate_home("descent", (0, -38, 0), 0)  # 出生点在灯前
     sh.tube("ground", extent / 2, RIM, 1.0, (0, 0, -1.0), segments=96, a="mist", b="lilac_pale", pattern="tiles")
 
     # ── 环台 ──
@@ -56,11 +57,9 @@ def build(extent=EXTENT):
     POOL_R = r - 1.6
     nx.cylinder("pool", POOL_R, POOL_R, 0.1, (0, 0, FLOOR - 0.04), segments=96, a="blue", b="blue_pale", pattern="bands")
 
-    # 井底水里的一扇门（门洞朝向晶体，像是晶体的门廊）
+    # 井底水里立着一扇门，门里什么也没有
     nx.into("pool_door")
     pf.frame("pool_door", (0, -2.6, FLOOR), 0, w=1.7, h=3.0, kind="door", a="mist", b="lilac_pale", pattern="stripes")
-    nx.portal("portal_pool_door", (0, -2.6, FLOOR + 1.0), "shoal", radius=0.6)
-    nx.arrive("bottom", (0, -5.6, FLOOR), facing_deg=0)
 
     # ── 第一层：一圈纸的路灯，正面朝井心 ──
     nx.into("lamps")

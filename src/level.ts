@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH } from 'three-mesh-bvh';
-import { asset, matte, paper, shared, shadowVariant, newId, TEXEL } from './materials';
+import { asset, matte, paper, veil, shared, shadowVariant, newId, TEXEL } from './materials';
 import { makeSky, type SkyBox } from './skybox';
 import { makeCrystal } from './crystal';
 import { loadSprite, spriteSize } from './sprites';
@@ -206,7 +206,7 @@ export async function loadLevel(url: string): Promise<Level> {
     const kind = (u.nx_mat as string | undefined) ?? 'matte';
     const geo = mesh.geometry;
     const b = behaviorOf(mesh, u, false);
-    const collide = bool(u.nx_collide, kind !== 'none') && !b;
+    const collide = bool(u.nx_collide, kind !== 'none' && kind !== 'veil') && !b;
     if (collide) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', geo.getAttribute('position').clone());
@@ -218,6 +218,16 @@ export async function loadLevel(url: string): Promise<Level> {
 
     const [a, bb] = palPair(u.nx_pal, [5, 4]);
     let mat: THREE.ShaderMaterial;
+    if (kind === 'veil') {
+      // 传送物的膜：nx_size 是洞口的宽、高（米）；不投影
+      const [w, h] = String(u.nx_size ?? '').split(/[,\s]+/).map(Number);
+      const m = new THREE.Mesh(geo, veil({ a, b: bb, size: [w || 2, h || 2.5] }));
+      m.position.copy(wpos);
+      m.quaternion.copy(wquat);
+      m.scale.copy(wscale);
+      scene.add(m);
+      continue;
+    }
     if (kind === 'asset') {
       // 现成的模型：用它自己的底色贴图与颜色
       const src = mesh.material as THREE.MeshStandardMaterial;
@@ -269,6 +279,7 @@ export async function loadLevel(url: string): Promise<Level> {
 
   function update(_dt: number, t: number, camera: THREE.Camera, frozen: boolean) {
     sky.update(frozen ? 0 : t, camera);
+    shared.uTime.value = frozen ? 0 : t;
     for (const s of skySprites) {
       s.obj.position.copy(camera.position).addScaledVector(s.dir, s.dist);
       s.obj.lookAt(camera.position);

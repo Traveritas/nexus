@@ -2,8 +2,9 @@
 不再模仿真的花：花瓣是平的、尖头的板，围成圈、叠成层、浮在半空。
 - 中央的花台：一根柱、一面圆台，螺旋梯绕柱而上；一圈花瓣板浮在台外，被一只细环托着。
 - 一片花瓣板落在水上，成了一座桥。
-- 横躺的水杯：杯口朝人，入口在杯里。
-- 浮叶上的第三枚晶体，四周一圈未开的「刃」。
+- 横躺的水杯（浅滩自己的样子），洒出来的水边一瓶花（E「凑近」→ 花房）。
+- 浮叶上一圈未开的「刃」。水里立着一扇斜着的门，门里什么也没有。
+- 出生的圆叶上一盏路灯（E「关灯」→ 家）。出入口两个：灯和花瓶，从哪儿去的，回来就落在哪儿。
 - 远处：立在水里的花形门（halo）、比塔还高的刃、断开的塔。
 - 纸片：剪纸百合、香蒲、蒲公英、落在水上的云。
 运行：node scripts/blender.cjs build shoal
@@ -28,10 +29,10 @@ def build(extent=EXTENT):
     # ── 环境：水面就是地面 ──
     nx.into("env")
     nx.sun((0.55, -0.6, 0.42))
-    nx.spawn((0, -16, 0.2), facing_deg=0)
     nx.atmosphere("silk", seed=4)
     nx.box("water", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="blue_pale", b="mist", pattern="bands")
     pf.pad("pad_spawn", (0, -16, 0), 3.2, notch=40, start=110, seed=1)
+    pf.gate_home("shoal", (0, -18, 0.2), 0)  # 出生点在灯前
 
     # ── 中央的花台 ──
     nx.into("bloom_tower")
@@ -52,7 +53,6 @@ def build(extent=EXTENT):
     pf.bloom("tower_bloom", (C[0], C[1], TOP - 1.3), kind="rosette", size=7.5, seed=3, yaw=0, petals=9, gap=5.2,
              open_deg=38, axis=False)
     pf.halo("tower_ring", (C[0], C[1], TOP - 0.2), 5.2, minor=0.22)
-    nx.portal("portal_tower", (C[0], C[1], TOP + 1.0), "isles", at="top", mode="key", title="花心", radius=1.2)
     pf.bloom("tower_drift", (C[0], C[1], 1.0), kind="drift", size=4.5, seed=4, petals=7)
 
     # 落在水上的一片，当桥
@@ -61,11 +61,10 @@ def build(extent=EXTENT):
 
     # ── 横躺的水杯，入口在杯里 ──
     nx.into("glass")
-    _, inside = pf.vessel("glass", (12, 1, 0), yaw=148)
+    pf.vessel("glass", (12, 1, 0), yaw=148)
     sh.tube("glass_spill", 4.5, 0, 0.08, (9.5, -2.5, 0), segments=40, a="blue", b="blue_pale", pattern="plain")
-    nx.portal("portal_glass", (inside[0], inside[1], inside[2] + 1.0), "glasshouse", at="cup", radius=0.9)
-    a = math.radians(148)
-    nx.arrive("glass", (12 - math.sin(a) * 3.2, 1 + math.cos(a) * 3.2, 0), facing_deg=148)
+    # 杯子是浅滩自己的；洒出来的水边一瓶花 → 花房
+    pf.gate_vase("shoal", (8.6, -4.6, 0.08), 145)
 
     # ── 浮叶上的晶体，四周一圈未开的刃 ──
     nx.into("bud_ring")
@@ -76,7 +75,6 @@ def build(extent=EXTENT):
         pf.bloom(f"bud{i}", (B[0] + math.cos(a) * 3.9, B[1] + math.sin(a) * 3.9, 0.3), kind="blade",
                  size=rnd.uniform(1.8, 3.0), seed=40 + i, petals=rnd.choice([3, 4, 5]),
                  styles=[dict(a="pink_pale", b="pink"), dict(a="pink", b="rose"), dict(a="white", b="pink_pale")])
-    nx.portal("portal_bud", (B[0], B[1], 0.3 + 1.0), "room", mode="key", title="一朵未开的", radius=1.0)
 
     # ── 踏石 ──
     nx.into("stones")
@@ -95,12 +93,9 @@ def build(extent=EXTENT):
     stones((-2, -13), (-8, -6), 4, seed=3)
     stones((-11, 1), (B[0] + 2, B[1] - 4.5), 4, seed=4)
 
-    # ── 门框：立在水里，一扇正，一扇斜 ──
+    # ── 水里一扇斜着的门，门里什么也没有 ──
     nx.into("doors")
-    pf.frame("door_a", (-4.5, -7.5, 0), 12, kind="door", a="pink_pale", b="rose", pattern="stripes")
-    nx.portal("portal_door_a", (-4.5, -7.5, 1.0), "home", at="cup", title="回家", radius=0.5)
     pf.frame("door_b", (6.5, -9, 0), -24, kind="door", roll=9, a="violet", b="violet_deep", pattern="stripes")
-    nx.portal("portal_door_b", (6.5 + math.sin(math.radians(9)) * 0.9, -9, 1.0), "descent", at="bottom", radius=0.5)
 
     # ── 远处 ──
     nx.into("horizon")
@@ -119,7 +114,7 @@ def build(extent=EXTENT):
 
     def near_things(x, y):
         return (math.hypot(x - C[0], y - C[1]) < 7.5 or math.hypot(x - 12, y - 1) < 7
-                or math.hypot(x - B[0], y - B[1]) < 6 or math.hypot(x, y + 16) < 4)
+                or math.hypot(x - B[0], y - B[1]) < 6 or math.hypot(x, y + 16) < 4.5)
 
     pf.paper_scatter("reed", ["grass.reed:{}"], (0, 0), 12, 30, 10, seed=90, avoid=near_things)
     pf.paper_scatter("lily", ["flower:{}"], (0, 0), 6, 22, 9, seed=91, avoid=near_things, shadow=True)

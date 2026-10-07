@@ -310,6 +310,21 @@ def portal(name, loc, to, at="", mode="walk", title="", radius=0.9):
     return obj
 
 
+def veil(name, w, h, loc, yaw=0.0, a="blue_pale", b="white", parent=None):
+    """膜：立在门洞 / 窗洞里的一片（loc 是底边中点，洞口宽 w、高 h），颜色取要去的那个世界的。
+    网页里远处看不见，走近时从洞口中心长出来铺满（src/materials.ts 的 veil）；不挡人、不投影"""
+    obj = _new_mesh_obj(name, bpy.ops.mesh.primitive_plane_add, size=1)
+    obj.data.transform(Matrix.Diagonal((w, h, 1, 1)))
+    obj.data.transform(Matrix.Translation((0, h / 2, 0)))
+    _place(obj, loc, (90, 0, yaw), parent)
+    obj["nx_mat"] = "veil"
+    obj["nx_pal"] = f"{_pal(a)},{_pal(b)}"
+    obj["nx_size"] = f"{w:.3f},{h:.3f}"
+    obj["nx_collide"] = 0
+    obj["nx_shadow"] = 0
+    return obj
+
+
 def arrive(name, loc, facing_deg=0):
     """到达点：别的世界传送过来时落在这里。loc 是脚底，facing_deg 同 spawn。别放在传送物的 radius 里"""
     obj = _empty(f"arrive_{name}", loc, (0, 0, facing_deg), "SINGLE_ARROW", 0.8)

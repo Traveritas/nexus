@@ -2,10 +2,11 @@
 建筑的部分（地板、门框、窗框、几块天花板、一角墙、楼梯）是立体的；家具一律是纸片——
 像舞台上的布景板，从侧面看只是一张纸。世界负责陌生，现实物负责熟悉。
 纸片有两种并存：剪纸画的（灯、电话、杯）和真实贴图渲出来的（木椅、扶手椅、落地钟、盆栽、窗外的树，见 scripts/cutout.cjs）。
-- 一扇自己站着的门，半开；晶体在门洞里。
-- 一摞错开的板是楼梯，走上半空的一块楼板：纸的椅子、落地灯、电话，头顶天花板上挂着纸的吊灯，晶体在灯下。
-- 一面落地的方框，像一面没有镜子的镜子，晶体在框里。
+- 一扇自己站着的门，半开，门里什么也没有（只是看的）。
+- 一摞错开的板是楼梯，走上半空的一块楼板：纸的椅子、落地灯、电话，头顶天花板上挂着纸的吊灯（E「关灯」→ 家；也是出生点）。
+- 一面落地的方框，像一面没有镜子的镜子，旁边一把扶手椅。
 - 一排没有墙的窗；窗外是纸的树。墙上贴着一扇纸的门，打不开。
+  死胡同：只有家里的衣柜通到这里，只有那盏灯回去。
 运行：node scripts/blender.cjs build room
 """
 import math
@@ -27,9 +28,7 @@ def build(extent=EXTENT):
 
     nx.into("env")
     nx.sun((0.45, -0.55, 0.5))
-    nx.spawn((0, -22, 0), facing_deg=0)
     nx.atmosphere("dye", seed=7)
-    pf.return_door("room", (0, -25.5, 0), 0)
     nx.box("ground", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="mist", b="lilac_pale", pattern="grain")
     nx.box("floor", (42, 36, F), (0, 6.5, 0), a="pink_pale", b="pink", pattern="bands")
     nx.box("rug", (12, 8, 0.1), (-1, 0, F), a="blue_pale", b="blue", pattern="stripes")
@@ -41,7 +40,6 @@ def build(extent=EXTENT):
     leaf = nx.group("door_hinge", (1.1, 0.25 + 17, F), (0, 0, -68))
     nx.box("door_leaf", (2.2, 0.18, 3.95), (-1.1, 0.09, 0), parent=leaf, a="mist", b="lilac_pale", pattern="tiles")
     nx.box("door_knob", (0.22, 0.4, 0.22), (-1.9, 0.09, 1.9), parent=leaf, a="gold", b="white", pattern="plain")
-    nx.portal("portal_door", (-0.5, 17, F + 1.0), "glasshouse", radius=0.6)
 
     # ── 半空的楼板：板摞成的梯子走上去 ──
     nx.into("loft")
@@ -55,7 +53,10 @@ def build(extent=EXTENT):
                pattern="bands")
     nx.box("ceiling_loft", (8, 6, 0.4), (LX, LY, F + LZ + 4.2), rot=(1.5, 0, 4), a="white", b="mist", pattern="tiles")
     nx.sprite("loft_pendant", "pendant", (LX, LY, F + LZ + 4.2 - 2.75), face=False, rot_deg=(0, 0, 10), shadow=True)
-    nx.portal("portal_loft", (LX, LY, F + LZ + 1.7), "home", at="wake", mode="key", title="关灯", radius=1.0)
+    # 灯下 E「关灯」→ 家；从家里来也落在这里（也是出生点），面朝楼梯
+    nx.portal("portal_loft", (LX, LY, F + LZ + 1.7), "home", at="room", mode="key", title="关灯", radius=1.0)
+    nx.arrive("home", (LX + 2.0, LY - 0.6, F + LZ), facing_deg=-90)
+    nx.spawn((LX + 2.0, LY - 0.6, F + LZ), facing_deg=-90)
     # 楼板上的纸家具
     top = F + LZ
     nx.sprite("loft_chair", "chair_wood@64", (LX - 2.6, LY + 1.8, top), rot_deg=(0, 0, 20), face=False, back="pink_pale")
@@ -63,10 +64,9 @@ def build(extent=EXTENT):
     nx.sprite("loft_phone", "phone", (LX - 3.2, LY - 2.2, top), face=True)
     nx.sprite("loft_cup", "cup", (LX + 2.8, LY - 2.0, top), face=True)
 
-    # ── 落地的方框：晶体在框里 ──
+    # ── 落地的方框，像一面没有镜子的镜子 ──
     nx.into("mirror")
     pf.frame("mirror", (10, 6, F), -25, w=2.6, h=3.6, depth=0.4, t=0.4, kind="square", a="white", b="mist", pattern="plain")
-    nx.portal("portal_mirror", (10, 6, F + 0.4 + 1.0), "descent", at="bottom", radius=0.7)
     nx.sprite("mirror_chair", "armchair_real@64", (12.5, 3.2, F), rot_deg=(0, 0, -58), face=False, back="pink_pale")
 
     # ── 没有墙的窗；窗外是纸的树 ──

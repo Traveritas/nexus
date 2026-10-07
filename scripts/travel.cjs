@@ -1,5 +1,5 @@
 /* node scripts/travel.cjs —— 先 npm run build。走一遍所有传送物：每个世界的每个传送物，站到跟前走进去 / 按 E，看是不是到了该去的世界。
-   另测：默认进家、Q 醒来、浏览器后退、转场中途截图。 */
+   另查：家以外每个世界出入口不超过四个；每个传送物的落脚处跟前就是回去的那个。另测：默认进家、Q 醒来、浏览器后退、转场中途截图。 */
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -67,7 +67,11 @@ srv.listen(0, '127.0.0.1', async () => {
   // 2. 每个世界的每个传送物
   for (const w of WORLDS) {
     if (!(await goWorld(w))) { log(false, `去不了 ${w}`); continue; }
-    const portals = (await st()).portals;
+    const s0 = await st();
+    const portals = s0.portals;
+    // 出入口（传送物 + 通往站点的晶体）：家以外的世界最多四个
+    const gates = portals.length + s0.entrances.length;
+    if (w !== 'home') log(gates <= 4, `${w} 出入口 ${gates} 个（传送物 ${portals.length} · 晶体 ${s0.entrances.length}）`);
     for (let i = 0; i < portals.length; i++) {
       if (!(await goWorld(w))) { log(false, `回不到 ${w}`); break; }
       await sleep(300);
@@ -104,6 +108,10 @@ srv.listen(0, '127.0.0.1', async () => {
       if (ok && p.at) {
         const s2 = await st();
         log(s2.arrivals.includes(p.at), `  到达点 ${p.at} 在 ${p.to} 里`);
+        // 来回成对：落脚处最近的传送物就是回 w 的那个，而且就在跟前
+        const f = s2.feet;
+        const near = s2.portals.map((q) => ({ q, d: Math.hypot(q.pos[0] - f[0], q.pos[2] - f[2]) })).sort((a, b) => a.d - b.d)[0];
+        log(!!near && near.q.to === w && near.d < 4, `  回程：落脚处最近的是 → ${near?.q.to}（${near?.d.toFixed(1)}m）`);
       }
     }
   }
