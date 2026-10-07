@@ -40,7 +40,7 @@ nx.box("chair_seat", (S + 0.3, S + 0.3, 0.45), (0, 0, H), parent=chair, **style)
 for i, sx in enumerate([-1, 1]):
     nx.box(f"chair_post{i}", (T, T, 5.2), (sx * c, c, H + 0.45), parent=chair, **style)
 for i in range(3):
-    nx.box(f"chair_slat{i}", (S, 0.36, 0.42), (0, c, H + 1.6 + i * 1.35 - 0.21), parent=chair, **style)
+    nx.box(f"chair_slat{i}", (S - 0.02, 0.36, 0.42), (0, c, H + 1.6 + i * 1.35 - 0.21), parent=chair, **style)
 
 # ── 通向半空的台阶：每级 0.5m（要跳），最后两级悬着 ──
 nx.into("stairs")

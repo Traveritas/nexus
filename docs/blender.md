@@ -10,6 +10,7 @@
 | 用脚本从零搭一个场景 | `node scripts/blender.cjs build <名字>` → 运行 `blender/scenes/<名字>.py`，存 `blender/<名字>.blend` 并导出 `public/scenes/<名字>.glb` |
 | 手动改过 .blend 后导出 | `node scripts/blender.cjs export <名字>` |
 | 查穿模 | `node scripts/blender.cjs clip <名字> [前缀 …]`：家具和墙、窗、别的家具有没有相交；场景里直接搭的东西用前缀算成一件（如 `bed_ wardrobe`） |
+| 查共面（闪） | `node scripts/blender.cjs zfight <名字>`：不同物体的两个面贴在同一平面、朝向相同又有重叠，网页里材质和轮廓会来回闪；埋在别的物体里看不见的不算 |
 | 在网页里看 | `npm run dev`，地址加 `?world=<名字>`（默认 `home`；`?scene=` 是旧写法，同义） |
 | 截图 / 走一遍 | `npm run build` 后 `node scripts/shot.cjs`、`node scripts/walk.cjs`；`node scripts/travel.cjs` 把所有世界的所有传送物各走一遍 |
 
@@ -210,5 +211,6 @@ NEXUS 是一组世界，像《梦日记》：**家**（`home`）是起点，醒�
 - [ ] 楼梯每级 ≤ 0.3m；需要跳的高差 ≤ 0.9m
 - [ ] 门洞、通道不窄于 0.8m
 - [ ] 没有细于约 0.1m 的长物件（远处会闪）；细节交给纸片
+- [ ] 跑一遍 `node scripts/blender.cjs zfight <名字>`，没有共面。常见的坑：门套 / 窗套和洞口一样宽（`home.py` 的 `trim` 每边让 1cm）、两块地板或楼板叠着、墙角两面墙都砌满、踢脚和墙一样长、踏步或平台的顶面和地面同高又压在上面。改法是让一边退开或伸出 ≥ 1cm，或者接上而不叠
 - [ ] 跑一遍 `node scripts/blender.cjs clip <名字>`，家具不穿墙、不穿窗台（窗台会伸进屋里约 0.23m）
 - [ ] 跑一遍 `node scripts/walk.cjs`（换场景时要改脚本里的坐标）和 `node scripts/travel.cjs`，再截几张图看

@@ -100,7 +100,8 @@ for script, label, az, dist, extent in ZONES:
     d = Vector((goal.x - start.x, goal.y - start.y, 0))
     mid = start + d / 2
     nx.into(script)
-    nx.box(f"bridge_{script}", (3.0, d.length, 0.3), (mid.x, mid.y, DECK - 0.3),
+    # 桥面比台面低 1cm：桥头压在圆台里，同高的顶面会闪
+    nx.box(f"bridge_{script}", (3.0, d.length, 0.3), (mid.x, mid.y, DECK - 0.31),
            rot=(0, 0, math.degrees(math.atan2(-d.x, d.y))), a="lilac_pale", b="mist", pattern="tiles")
 
     # 圆台上的小晶体：走进去就跳到这个岛的出生点

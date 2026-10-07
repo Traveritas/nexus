@@ -32,9 +32,9 @@ def build(extent=EXTENT):
     pf.return_door("glasshouse", (0, -19.5, 0), 0)
     nx.box("ground", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="mist", b="green", pattern="grain")
     nx.box("floor", (W + 4, Y1 - Y0 + 6, F), (0, (Y0 + Y1) / 2, 0), a="white", b="mist", pattern="tiles")
-    # 门前的三级台阶
-    for k in range(3):
-        nx.box(f"front_step{k}", (8, 0.8, 0.1 * (k + 1)), (0, Y0 - 3.4 + k * 0.8, 0), a="white", b="mist", pattern="plain")
+    # 门前的三级台阶：两级 + 地面（地面高 F=0.3）；台阶排在地面南沿外面，不和地面叠在一起
+    for k in range(2):
+        nx.box(f"front_step{k}", (8, 0.8, 0.1 * (k + 1)), (0, Y0 - 3.4 - (1 - k) * 0.8, 0), a="white", b="mist", pattern="plain")
 
     # ── 骨架：九道拱 + 三根长梁 ──
     nx.into("skeleton")

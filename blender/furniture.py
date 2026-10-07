@@ -296,7 +296,7 @@ def bookshelf(name, loc, yaw=0.0, w=0.95, h=1.95, d=0.34, shelves=4, seed=0, woo
     for k in range(shelves):
         z = 0.1 + k * gap
         if k:
-            p["wood"].box((w - 2 * t, d - 0.03, 0.035), (0, 0.0, z - 0.035))
+            p["wood"].box((w - 2 * t + 0.02, d - 0.03, 0.035), (0, 0.0, z - 0.035))  # 两头插进侧板，端面不和背板共面
         books_row(p, -w / 2 + t + 0.01, w / 2 - t - 0.01, 0.0, z, gap - 0.08, seed * 31 + k)
     styles = {"wood": wood, "back": dict(a="violet_deep", b="violet", pattern="plain")}
     styles.update({f"book{i}": c for i, c in enumerate(BOOK_COLORS)})
@@ -390,7 +390,7 @@ def wall_clock(name, loc, yaw=0.0, r=0.2, parent=None):
     """挂钟：loc 是钟心，钟背贴墙，正面 +Y"""
     p = Piece(name, loc, yaw, parent)
     p["rim"].lathe([(r + 0.04, 0), (r + 0.04, 0.05), (r, 0.06), (r, 0.0)], rot=(-90, 0, 0), seg=12)
-    _dial(p, r, (0, 0.0, 0), (0, 0, 0), hour=100, minute=-20)
+    _dial(p, r, (0, 0.005, 0), (0, 0, 0), hour=100, minute=-20)  # 钟面离开钟背 5mm，不和边框的底共面
     return p.done({"rim": WOOD, "ink": INK, "brass": BRASS, "face": WHITE}, collide=False)
 
 

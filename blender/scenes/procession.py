@@ -54,7 +54,7 @@ def build(extent=EXTENT):
     # ── 半路的小院 ──
     nx.into("cloister")
     Q = (0, 27)
-    nx.box("cloister_floor", (16, 16, F), (Q[0], Q[1], 0), a="white", b="pink_pale", pattern="tiles")
+    nx.box("cloister_floor", (16, 16, F + 0.01), (Q[0], Q[1], 0), a="white", b="pink_pale", pattern="tiles")
     for k in range(4):
         yaw = 90 * k
         a = math.radians(yaw + 90)
@@ -73,7 +73,7 @@ def build(extent=EXTENT):
     nx.into("gate")
     ent = pf.halo_gate("gate", (0, 82, F), 0, size=5.2, seed=4,
                        styles=[dict(a="white", b="pink_pale"), dict(a="pink_pale", b="pink"), dict(a="mist", b="white")])
-    nx.box("gate_floor", (12, 12, F), (0, 80, 0), a="white", b="mist", pattern="tiles")
+    nx.box("gate_floor", (12, 12, F + 0.01), (0, 80, 0), a="white", b="mist", pattern="tiles")
     nx.entrance("entrance_gate", ent, "https://traveritas.github.io/", "随笔 · 醒梦")
     pf.bloom("gate_drift", (0, 80, 2), kind="drift", size=4, seed=5, petals=8)
 

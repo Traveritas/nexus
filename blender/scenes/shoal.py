@@ -87,7 +87,7 @@ def build(extent=EXTENT):
             t = i / n
             x = a[0] + (b[0] - a[0]) * t + rr.uniform(-0.6, 0.6)
             y = a[1] + (b[1] - a[1]) * t + rr.uniform(-0.6, 0.6)
-            nx.cylinder(f"stone_{seed}_{i}", rr.uniform(*r), rr.uniform(*r), 0.18, (x, y, 0), segments=18,
+            nx.cylinder(f"stone_{seed}_{i}", rr.uniform(*r), rr.uniform(*r), 0.18 + 0.02 * (i % 2), (x, y, 0), segments=18,
                         a="mist", b="lilac_pale", pattern="plain")
 
     stones((0, -13), (C[0], C[1] - 6.6), 7, seed=1)

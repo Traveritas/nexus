@@ -155,14 +155,16 @@ def frame(name, loc, yaw=0.0, w=2.2, h=3.4, depth=0.35, t=0.3, kind="door", roll
     if parent is not None:
         g.parent = parent
     if kind in ("door", "window", "square"):
-        nx.box(f"{name}_l", (t, depth, h), (-w / 2 - t / 2, 0, 0), parent=g, **style)
-        nx.box(f"{name}_r", (t, depth, h), (w / 2 + t / 2, 0, 0), parent=g, **style)
+        # 有底时两边立在底上（不和底并排落地），免得端面、底面叠在一起闪
+        z0 = t if kind in ("window", "square") else 0
+        nx.box(f"{name}_l", (t, depth, h - z0), (-w / 2 - t / 2, 0, z0), parent=g, **style)
+        nx.box(f"{name}_r", (t, depth, h - z0), (w / 2 + t / 2, 0, z0), parent=g, **style)
         nx.box(f"{name}_top", (w + 2 * t, depth, t), (0, 0, h), parent=g, **style)
-        if kind in ("window", "square"):
+        if z0:
             nx.box(f"{name}_bot", (w + 2 * t, depth * 1.4, t), (0, 0, 0), parent=g, **style)
         if kind == "window":
             nx.box(f"{name}_mv", (0.14, 0.14, h - t), (0, 0, t), parent=g, **style)
-            nx.box(f"{name}_mh", (w, 0.14, 0.14), (0, 0, h * 0.55), parent=g, **style)
+            nx.box(f"{name}_mh", (w, 0.12, 0.14), (0, 0, h * 0.55), parent=g, **style)  # 比竖棂薄，交叉处不共面
     elif kind == "arch":
         R = w / 2 + t
         post = max(0.1, h - w / 2)
@@ -236,7 +238,8 @@ def steps_between(name, p0, p1, rise_max=0.3, gap=0.25, size=1.2, seed=0, **styl
         x = p0[0] + (p1[0] - p0[0]) * t
         y = p0[1] + (p1[1] - p0[1]) * t
         z = p0[2] + dz * t
-        nx.box(f"{name}{i}", (size, size, 0.3), (x, y, z - 0.3), rot=(0, 0, r.uniform(-10, 10)), **style)
+        # 顶面低 1cm：两头的踏步常压在岛面上，同高会闪
+        nx.box(f"{name}{i}", (size, size, 0.3), (x, y, z - 0.31), rot=(0, 0, r.uniform(-10, 10)), **style)
     return n
 
 
@@ -339,7 +342,7 @@ def vessel(name, loc, yaw=0.0, R=2.7, length=6.0, lying=True, **style):
         p = g.matrix_world @ Vector((0, -length * 0.45, -R + 0.28))
         return g, tuple(p)
     g = nx.group(name, loc, (0, 0, yaw))
-    sh.tube(f"{name}_wall", R, R - 0.25, length, (0, 0, 0), segments=48, parent=g, **style)
+    sh.tube(f"{name}_wall", R, R - 0.25, length - 0.25, (0, 0, 0.25), segments=48, parent=g, **style)  # 立在杯底上，不和杯底并排
     nx.cylinder(f"{name}_base", R, R, 0.25, (0, 0, 0), segments=48, parent=g, a="blue_pale", b="mist", pattern="plain")
     return g, (x, y, z + 0.25)
 
@@ -393,7 +396,8 @@ def halo_gate(name, loc, yaw, size=5.0, seed=0, styles=None, stair_style=None):
     start = Vector(loc) - fwd * (steps * run + 1.6)
     stair_straight(f"{name}_stair", tuple(start), yaw, steps, run=run, width=2.4, **stair_style)
     plat = Vector(loc) - fwd * 1.6
-    nx.box(f"{name}_deck", (2.6, 4.2, 0.4), (plat.x + fwd.x * 1.5, plat.y + fwd.y * 1.5, top - 0.4), rot=(0, 0, yaw),
+    # 平台接在最上一级后面（不压在上面，否则同高的顶面会闪）
+    nx.box(f"{name}_deck", (2.6, 3.6, 0.4), (plat.x + fwd.x * 1.8, plat.y + fwd.y * 1.8, top - 0.4), rot=(0, 0, yaw),
            **stair_style)
     return (loc[0], loc[1], top + 1.6)
 

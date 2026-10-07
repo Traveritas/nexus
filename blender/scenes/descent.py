@@ -43,15 +43,16 @@ def build(extent=EXTENT):
     for s, (a, b) in enumerate(STAGES):
         for k in range(4):
             top -= DROP
-            sh.tube(f"t{s}_step{k}", r + 0.05, r - STEP_W, top - BASE, (0, 0, BASE), segments=128,
+            sh.tube(f"t{s}_step{k}", r, r - STEP_W, top - BASE, (0, 0, BASE), segments=128,
                     a=a, b=b, pattern="bands")
             r -= STEP_W
-        sh.tube(f"t{s}_landing", r + 0.05, r - LAND_W, top - BASE, (0, 0, BASE), segments=128,
+        sh.tube(f"t{s}_landing", r, r - LAND_W, top - BASE, (0, 0, BASE), segments=128,
                 a=a, b=b, pattern="tiles")
         landings.append((r, r - LAND_W, top))
         r -= LAND_W
     FLOOR = top - DROP
-    nx.cylinder("floor", r + 0.05, r + 0.05, FLOOR - BASE, (0, 0, BASE), segments=96, a="white", b="mist", pattern="tiles")
+    # 环与环正好接上、不重叠（重叠的顶面同高会闪）；井底圆盘边数不同，还是伸进去一点，底面就往下错开 1cm
+    nx.cylinder("floor", r + 0.05, r + 0.05, FLOOR - BASE + 0.01, (0, 0, BASE - 0.01), segments=96, a="white", b="mist", pattern="tiles")
     POOL_R = r - 1.6
     nx.cylinder("pool", POOL_R, POOL_R, 0.1, (0, 0, FLOOR - 0.04), segments=96, a="blue", b="blue_pale", pattern="bands")
 

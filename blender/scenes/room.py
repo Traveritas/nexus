@@ -50,7 +50,7 @@ def build(extent=EXTENT):
     for i, (x, y) in enumerate([(-13.8, 5.9), (-6.2, 5.9), (-13.8, 12.1), (-6.2, 12.1)]):
         nx.box(f"loft_post{i}", (0.4, 0.4, LZ - 0.4), (x, y, F), rot=(0, 0, -6), a="lilac_pale", b="lilac", pattern="plain")
     for k in range(9):  # 每块 0.3m，错开着往上
-        nx.box(f"loft_step{k}", (2.4, 1.6, 0.3), (-4.2 - k * 0.15 + rnd.uniform(-0.15, 0.15), 0.6 + k * 0.95, F + k * 0.3),
+        nx.box(f"loft_step{k}", (2.4, 1.6, 0.3 - 0.01 * (k == 8)), (-4.2 - k * 0.15 + rnd.uniform(-0.15, 0.15), 0.6 + k * 0.95, F + k * 0.3),
                rot=(0, 0, rnd.uniform(-10, 10)), a=["white", "mist", "pink_pale", "lilac_pale"][k % 4], b="lilac_pale",
                pattern="bands")
     nx.box("ceiling_loft", (8, 6, 0.4), (LX, LY, F + LZ + 4.2), rot=(1.5, 0, 4), a="white", b="mist", pattern="tiles")
@@ -91,8 +91,9 @@ def build(extent=EXTENT):
     # ── 一角墙，墙上贴着一扇纸的门 ──
     nx.into("walls")
     nx.box("wall_a", (10, 0.6, 7.5), (-15, -7, F), a="lilac_pale", b="lilac", pattern="bands")
-    nx.box("wall_b", (0.6, 7, 7.5), (-19.7, -3.8, F), a="lilac_pale", b="lilac", pattern="bands")
-    nx.box("skirting", (10, 0.75, 0.5), (-15, -6.7, F), a="lilac", b="lilac_dark", pattern="plain")
+    # wall_b 接在 wall_a 后面、踢脚夹在两墙之间且不到 wall_a 的端头：面都不叠在一起（叠了会闪）
+    nx.box("wall_b", (0.6, 6.4, 7.5), (-19.7, -3.5, F), a="lilac_pale", b="lilac", pattern="bands")
+    nx.box("skirting", (9.39, 0.75, 0.5), (-14.705, -6.7, F), a="lilac", b="lilac_dark", pattern="plain")
     nx.sprite("wall_door", "door", (-14, -6.62, F), face=False, rot_deg=(0, 0, 180), back="lilac_pale")
     nx.sprite("wall_clock", "clock_real@64", (-18.2, -6.2, F), face=False, rot_deg=(0, 0, 180))
     nx.box("ceiling_far", (12, 8, 0.4), (-8, 6, 13.5), rot=(2, 0, -12), a="white", b="mist", pattern="tiles")

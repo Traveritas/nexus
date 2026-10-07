@@ -35,36 +35,53 @@ WHITE = dict(a="white", b="mist", pattern="plain")
 
 # ── 墙 ───────────────────────────────────────────
 
-def _wall(name, s0, s1, gaps, put):
-    """沿一条线砌墙；gaps：[(中心, 宽, 洞底高, 洞顶高)]，洞下砌窗台、洞上砌楣"""
-    cur = s0
+SK = 0.025  # 踢脚比墙面凸出
+
+
+def _wall(name, s0, s1, gaps, put, skirt, ends):
+    """沿一条线砌墙；gaps：[(中心, 宽, 洞底高, 洞顶高)]，洞下砌窗台、洞上砌楣。
+    踢脚一段段连着铺，落地的洞把它截断（在洞边缩进 1cm）；ends 是线两头踢脚伸出（+）或缩进（−）多少。
+    面和面不能叠在同一平面上（会闪），所以：外墙（沿 x）跑满全长、两头踢脚缩进 1cm；
+    顶到别的墙上的墙只砌到那面墙的墙面，踢脚只铺到那面墙的踢脚面（ends=−SK），和它背靠背"""
+    cur, run = s0, s0 - ends
     for c, w, z0, z1 in sorted(gaps):
         a, b = c - w / 2, c + w / 2
         if a > cur:
-            put(cur, a, F, H, True)
+            put(cur, a, F, H)
         if z0 > F + 0.01:
-            put(a, b, F, z0, True)
+            put(a, b, F, z0)
+        else:
+            skirt(run, a - 0.01)
+            run = b + 0.01
         if z1 < H:
-            put(a, b, z1, H, False)
+            put(a, b, z1, H)
         cur = b
     if cur < s1:
-        put(cur, s1, F, H, True)
+        put(cur, s1, F, H)
+    skirt(run, s1 + ends)
 
 
-def wall_x(name, y, x0, x1, gaps=()):
-    def put(a, b, z0, z1, floor):
+def wall_x(name, y, x0, x1, gaps=(), ends=-0.01):
+    def put(a, b, z0, z1):
         nx.box(f"{name}_{a:.2f}_{z0:.2f}", (b - a, T, z1 - z0), ((a + b) / 2, y, z0), **WALL_IN)
-        if floor:
-            nx.box(f"{name}_sk_{a:.2f}", (b - a, T + 0.05, 0.14), ((a + b) / 2, y, F), collide=False, **SKIRT)
-    _wall(name, x0, x1, gaps, put)
+
+    def skirt(a, b):
+        nx.box(f"{name}_sk_{a:.2f}", (b - a, T + 2 * SK, 0.14), ((a + b) / 2, y, F), collide=False, **SKIRT)
+    _wall(name, x0, x1, gaps, put, skirt, ends)
 
 
-def wall_y(name, x, y0, y1, gaps=()):
-    def put(a, b, z0, z1, floor):
+def wall_y(name, x, y0, y1, gaps=(), ends=-SK):
+    def put(a, b, z0, z1):
         nx.box(f"{name}_{a:.2f}_{z0:.2f}", (T, b - a, z1 - z0), (x, (a + b) / 2, z0), **WALL_IN)
-        if floor:
-            nx.box(f"{name}_sk_{a:.2f}", (T + 0.05, b - a, 0.14), (x, (a + b) / 2, F), collide=False, **SKIRT)
-    _wall(name, y0, y1, gaps, put)
+
+    def skirt(a, b):
+        nx.box(f"{name}_sk_{a:.2f}", (T + 2 * SK, b - a, 0.14), (x, (a + b) / 2, F), collide=False, **SKIRT)
+    _wall(name, y0, y1, gaps, put, skirt, ends)
+
+
+def trim(name, loc, yaw, w, h, **kw):
+    """洞口的门套 / 窗套：每边比洞口窄 1cm、顶低 1cm，免得内侧面和墙的端面叠在一起"""
+    pf.frame(name, loc, yaw, w=w - 0.02, h=h - 0.01, **kw)
 
 
 # ── 细部 ─────────────────────────────────────────
@@ -82,7 +99,7 @@ def curtains(name, x, y, yaw, width, height):
     g = nx.group(name, (x, y, F), (0, 0, yaw))
     for side in (-1, 1):
         for k in range(4):
-            nx.box(f"{name}_{side}_{k}", (0.22, 0.12, height), (side * (width / 2 + 0.15 + k * 0.17), 0.12 + 0.06 * (k % 2), 0),
+            nx.box(f"{name}_{side}_{k}", (0.22, 0.12, height - 0.03 * (k % 2)), (side * (width / 2 + 0.15 + k * 0.17), 0.12 + 0.06 * (k % 2), 0),
                    parent=g, collide=False, a="pink_pale" if k % 2 else "pink", b="rose", pattern="stripes")
     nx.box(f"{name}_rod", (width + 1.8, 0.08, 0.08), (0, 0.15, height + 0.05), parent=g, collide=False, **WOOD_DARK)
 
@@ -94,9 +111,10 @@ def wardrobe(name, cx, cy, yaw, to, at_name):
     W, D, Ht = 1.8, 0.9, 2.35
     g = nx.group(name, (cx, cy, F), (0, 0, yaw))
     st = dict(a="lilac_pale", b="lilac", pattern="tiles")
-    nx.box(f"{name}_back", (W, 0.06, Ht), (0, 0.03, 0), parent=g, **st)
+    # 背板、侧板、顶板各接各的，不叠出共面
+    nx.box(f"{name}_back", (W, 0.06, Ht - 0.08), (0, 0.03, 0), parent=g, **st)
     for s in (-1, 1):
-        nx.box(f"{name}_side{s}", (0.06, D, Ht), (s * (W / 2 - 0.03), D / 2, 0), parent=g, **st)
+        nx.box(f"{name}_side{s}", (0.06, D - 0.06, Ht - 0.08), (s * (W / 2 - 0.03), (D + 0.06) / 2, 0), parent=g, **st)
     nx.box(f"{name}_top", (W, D, 0.08), (0, D / 2, Ht - 0.08), parent=g, **st)
     nx.box(f"{name}_crown", (W + 0.12, D + 0.08, 0.1), (0, D / 2, Ht), parent=g, **WOOD)
     nx.box(f"{name}_inside", (W - 0.12, 0.02, Ht - 0.2), (0, 0.07, 0.05), parent=g, collide=False,
@@ -127,9 +145,10 @@ def french_window(name, x, y0, y1, to, at_name):
     yc = (y0 + y1) / 2
     hgt = 2.55
     st = dict(a="white", b="mist", pattern="plain")
-    nx.box(f"{name}_head", (T + 0.08, w + 0.2, 0.12), (x, yc, F + hgt), **st)
+    # 窗套比洞口窄 1cm、低 1cm（同 trim）
+    nx.box(f"{name}_head", (T + 0.08, w + 0.2, 0.12), (x, yc, F + hgt - 0.01), **st)
     for s in (-1, 1):
-        nx.box(f"{name}_jamb{s}", (T + 0.08, 0.1, hgt), (x, yc + s * (w / 2 + 0.05), F), **st)
+        nx.box(f"{name}_jamb{s}", (T + 0.08, 0.1, hgt - 0.01), (x, yc + s * (w / 2 + 0.04), F), **st)
         hinge = nx.group(f"{name}_hinge{s}", (x + T / 2, yc + s * w / 2, F), (0, 0, -90 + s * 75))
         leaf = dict(a="mist", b="blue_pale", pattern="tiles")
         nx.box(f"{name}_leaf{s}", (w / 2 - 0.04, 0.06, hgt - 0.05), (-s * (w / 4), 0, 0.02), parent=hinge, collide=False, **leaf)
@@ -158,7 +177,7 @@ def bed(cx, cy):
     qc = y0 + 0.08 + ql / 2
     nx.box("bed_quilt", (W + 0.06, ql, 0.1), (cx, qc, m), **quilt)
     for sx in (-1, 1):
-        nx.box(f"bed_quilt_side{sx}", (0.06, ql, 0.42), (cx + sx * (W / 2 + 0.03), qc, m - 0.32), collide=False, **quilt)
+        nx.box(f"bed_quilt_side{sx}", (0.06, ql - 0.02, 0.41), (cx + sx * (W / 2 + 0.03), qc, m - 0.32), collide=False, **quilt)
     nx.box("bed_quilt_fold", (W + 0.06, 0.26, 0.15), (cx, qc + ql / 2 - 0.05, m), collide=False, a="white", b="blue_pale", pattern="plain")
     for i, (dx, r) in enumerate([(-0.45, 4), (0.42, -6)]):
         nx.box(f"bed_pillow{i}", (0.72, 0.42, 0.17), (cx + dx, y1 - 0.32, m), rot=(0, 0, r), collide=False,
@@ -167,7 +186,7 @@ def bed(cx, cy):
            a="pink", b="rose", pattern="stripes")
     blanket = dict(a="pink", b="pink_pale", pattern="stripes")
     nx.box("bed_throw", (W + 0.1, 0.55, 0.05), (cx, y0 + 0.4, m + 0.1), collide=False, **blanket)
-    nx.box("bed_throw_drop", (W + 0.1, 0.05, 0.3), (cx, y0 + 0.1, m - 0.2), collide=False, **blanket)
+    nx.box("bed_throw_drop", (W + 0.1, 0.05, 0.28), (cx, y0 + 0.1, m - 0.2), collide=False, **blanket)
 
 
 def ceiling_lamp(name, x, y):
@@ -184,35 +203,36 @@ def build(extent=EXTENT):
     nx.spawn((-3.4, 6.3, F), facing_deg=70)
     nx.arrive("wake", (-3.4, 6.3, F), facing_deg=70)
     nx.box("ground", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="mist", b="green", pattern="grain")
-    nx.box("floor_west", (8.25, 10.25, F), (-5.0, 5.0, 0), a="rose", b="pink", pattern="bands")
-    nx.box("floor_east", (10.1, 10.25, F), (4.0, 5.0, 0), a="pink", b="rose", pattern="tiles")
+    # 两块地板在中墙下接缝、不重叠；外沿盖住踢脚
+    nx.box("floor_west", (8.275, 10.3, F), (-5.0125, 5.0, 0), a="rose", b="pink", pattern="bands")
+    nx.box("floor_east", (10.025, 10.3, F), (4.1375, 5.0, 0), a="pink", b="rose", pattern="tiles")
 
-    # ── 墙 ──
+    # ── 墙 ──（沿 x 的外墙跑满全长；沿 y 的墙和书房北墙只砌到别的墙的墙面）
     nx.into("walls")
     wall_x("wall_s", 0.0, -9.125, 9.125, gaps=[(-5.5, 1.4, F + 0.9, F + 2.2), (4.0, 1.3, F, F + 2.3),
                                               (1.5, 1.6, F + 0.9, F + 2.2), (7.0, 1.6, F + 0.9, F + 2.2)])
     wall_x("wall_n", 10.0, -9.125, 9.125, gaps=[(-4.0, 1.4, F + 1.0, F + 2.2), (4.0, 2.4, F + 0.9, F + 2.3)])
-    wall_y("wall_e", 9.0, 0, 10.0, gaps=[(5.0, 2.6, F + 0.8, F + 2.4)])
-    wall_y("wall_w", -9.0, 0, 10.0, gaps=[(2.2, 1.4, F + 0.9, F + 2.2), (7.6, 2.0, F, F + 2.55)])
-    wall_y("wall_mid", -1.0, 0, 10.0, gaps=[(2.2, 1.3, F, F + 2.3), (7.6, 1.3, F, F + 2.3)])
-    wall_x("wall_bs", 4.5, -9.0, -1.0, gaps=[(-2.6, 1.2, F, F + 2.3)])
+    wall_y("wall_e", 9.0, T / 2, 10.0 - T / 2, gaps=[(5.0, 2.6, F + 0.8, F + 2.4)])
+    wall_y("wall_w", -9.0, T / 2, 10.0 - T / 2, gaps=[(2.2, 1.4, F + 0.9, F + 2.2), (7.6, 2.0, F, F + 2.55)])
+    wall_y("wall_mid", -1.0, T / 2, 10.0 - T / 2, gaps=[(2.2, 1.3, F, F + 2.3), (7.6, 1.3, F, F + 2.3)])
+    wall_x("wall_bs", 4.5, -9.0 + T / 2, -1.0 - T / 2, gaps=[(-2.6, 1.2, F, F + 2.3)], ends=-SK)
     # 室内门洞的门套
     for name, loc, yaw in [("jamb_bed", (-1.0, 7.6, F), 90), ("jamb_study", (-1.0, 2.2, F), 90), ("jamb_bs", (-2.6, 4.5, F), 0)]:
-        pf.frame(name, loc, yaw, w=1.3 if name != "jamb_bs" else 1.2, h=2.3, depth=T + 0.06, t=0.08, kind="door", **WHITE)
+        trim(name, loc, yaw, w=1.3 if name != "jamb_bs" else 1.2, h=2.3, depth=T + 0.06, t=0.08, kind="door", **WHITE)
     # 装饰窗（不能走）
     for name, loc, yaw, w, hh in [("win_study", (-9.0, 2.2, F + 0.9), 90, 1.4, 1.3), ("win_bed_n", (-4.0, 10.0, F + 1.0), 0, 1.4, 1.2),
                                   ("win_liv_n", (4.0, 10.0, F + 0.9), 0, 2.4, 1.4), ("win_liv_e", (9.0, 5.0, F + 0.8), 90, 2.6, 1.6),
                                   ("win_s1", (-5.5, 0.0, F + 0.9), 0, 1.4, 1.3), ("win_s2", (1.5, 0.0, F + 0.9), 0, 1.6, 1.3),
                                   ("win_s3", (7.0, 0.0, F + 0.9), 0, 1.6, 1.3)]:
-        pf.frame(name, loc, yaw, w=w, h=hh, depth=T + 0.08, t=0.07, kind="window", **WHITE)
+        trim(name, loc, yaw, w=w, h=hh, depth=T + 0.08, t=0.07, kind="window", **WHITE)
 
     # ── 天花板：客厅中间开天窗；客厅下有几根梁 ──
     nx.into("ceiling")
     C = dict(a="white", b="mist", pattern="tiles")
     nx.box("ceil_west", (8.25, 10.25, 0.22), (-5.0, 5.0, H), **C)
-    nx.box("ceil_e_s", (10.1, 3.6, 0.22), (4.0, 1.8, H), **C)
-    nx.box("ceil_e_n", (10.1, 3.0, 0.22), (4.0, 8.5, H), **C)
-    nx.box("ceil_e_w", (3.0, 3.4, 0.22), (0.5, 5.3, H), **C)
+    nx.box("ceil_e_s", (9.925, 3.6, 0.22), (4.0875, 1.8, H), **C)  # 从中墙西面（−0.875）起，不叠在 ceil_west 上
+    nx.box("ceil_e_n", (9.925, 3.0, 0.22), (4.0875, 8.5, H), **C)
+    nx.box("ceil_e_w", (2.875, 3.4, 0.22), (0.5625, 5.3, H), **C)
     nx.box("ceil_e_e", (3.1, 3.4, 0.22), (7.45, 5.3, H), **C)
     for i, x in enumerate([0.3, 2.3, 5.7, 7.7]):
         nx.box(f"beam{i}", (0.22, 10.0, 0.26), (x, 5.0, H - 0.26), collide=False, **WOOD)
@@ -232,8 +252,8 @@ def build(extent=EXTENT):
     nx.box("rug_bed", (3.4, 2.4, 0.03), (-5.6, 6.6, F), collide=False, a="blue_pale", b="white", pattern="stripes")
     wardrobe("wardrobe", -7.4, 4.67, 0, "room", "door_room")
     french_window("french", -9.0, 6.6, 8.6, "isles", "window")
-    picture("pic_bed1", (-1.14, 9.0, F + 2.0), -90, 0.7, 0.9, dict(a="blue_pale", b="pink_pale", pattern="bands"))
-    picture("pic_bed2", (-1.14, 5.8, F + 1.9), -90, 0.5, 0.5, dict(a="pink_pale", b="gold", pattern="grain"))
+    picture("pic_bed1", (-1.14, 9.0, F + 2.0), 90, 0.7, 0.9, dict(a="blue_pale", b="pink_pale", pattern="bands"))
+    picture("pic_bed2", (-1.14, 5.8, F + 1.9), 90, 0.5, 0.5, dict(a="pink_pale", b="gold", pattern="grain"))
     fu.plant("bed_plant", (-1.6, 9.4, F), 1.1, seed=1)
     ceiling_lamp("lamp_bed", -5.6, 6.8)
 
@@ -298,8 +318,8 @@ def build(extent=EXTENT):
     fu.plant("plant", (8.4, 0.6, F), 1.3, "tall", seed=2)
     fu.plant("plant2", (-0.45, 0.5, F), 1.0, seed=3)
     picture("pic_liv1", (2.0, 9.86, F + 1.9), 180, 1.2, 0.8, dict(a="pink_pale", b="blue_pale", pattern="bands"))
-    picture("pic_liv2", (-0.86, 5.0, F + 1.8), 90, 0.6, 0.8, dict(a="gold", b="white", pattern="grain"))
-    picture("pic_liv3", (-0.86, 4.0, F + 2.0), 90, 0.4, 0.4, dict(a="blue", b="blue_pale", pattern="plain"))
+    picture("pic_liv2", (-0.86, 5.0, F + 1.8), -90, 0.6, 0.8, dict(a="gold", b="white", pattern="grain"))
+    picture("pic_liv3", (-0.86, 4.0, F + 2.0), -90, 0.4, 0.4, dict(a="blue", b="blue_pale", pattern="plain"))
     ceiling_lamp("lamp_liv1", 6.6, 8.0)
     ceiling_lamp("lamp_liv2", 4.0, 1.6)
     # 天窗下浮着几颗小星
@@ -313,8 +333,8 @@ def build(extent=EXTENT):
     hinge = nx.group("front_hinge", (4.65, 0.0 - T / 2, F), (0, 0, -70))
     nx.box("front_door", (1.3, 0.07, 2.28), (-0.65, -0.035, 0), parent=hinge, a="blue_pale", b="mist", pattern="tiles")
     nx.box("front_knob", (0.06, 0.12, 0.06), (-1.15, -0.1, 1.0), parent=hinge, collide=False, a="gold", b="white", pattern="plain")
-    pf.frame("front_frame", (4.0, 0.0, F), 0, w=1.3, h=2.3, depth=T + 0.1, t=0.1, kind="door", **WHITE)
-    nx.box("porch", (3.6, 2.4, F), (4.0, -1.2, 0), a="white", b="mist", pattern="tiles")
+    trim("front_frame", (4.0, 0.0, F), 0, w=1.3, h=2.3, depth=T + 0.1, t=0.1, kind="door", **WHITE)
+    nx.box("porch", (3.6, 2.25, F), (4.0, -1.275, 0), a="white", b="mist", pattern="tiles")  # 接到地板南沿，不重叠
     nx.box("porch_step", (2.0, 0.5, 0.08), (4.0, -2.65, 0), a="mist", b="white", pattern="plain")
     nx.box("doormat", (1.0, 0.6, 0.03), (4.0, -0.7, F), collide=False, a="rose", b="rose_deep", pattern="stripes")
     for i in range(7):
@@ -322,15 +342,17 @@ def build(extent=EXTENT):
                     a="mist", b="lilac_pale", pattern="plain")
     # 篱笆：低低一圈，院门开在小径尽头
     fence = dict(a="white", b="mist", pattern="plain")
-    for (x0, y0, x1, y1) in [(-13, -12, 3.0, -12), (5.0, -12, 13, -12), (13, -12, 13, 15), (13, 15, -13, 15), (-13, 15, -13, -12)]:
+    runs = [(-13, -12, 3.0, -12), (5.0, -12, 13, -12), (13, -12, 13, 15), (13, 15, -13, 15), (-13, 15, -13, -12)]
+    starts = {(x0, y0) for x0, y0, _, _ in runs}
+    for (x0, y0, x1, y1) in runs:
         L = math.hypot(x1 - x0, y1 - y0)
         yaw = math.degrees(math.atan2(y1 - y0, x1 - x0))
         n = int(L / 1.2)
-        for k in range(n + 1):
+        for k in range(n if (x1, y1) in starts else n + 1):  # 转角的柱子由下一段立
             t = k / max(1, n)
             nx.box(f"fence_post_{x0}_{y0}_{k}", (0.12, 0.12, 0.9), (x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 0), rot=(0, 0, yaw), **fence)
         for z in (0.35, 0.72):
-            nx.box(f"fence_rail_{x0}_{y0}_{z}", (L, 0.07, 0.1), ((x0 + x1) / 2, (y0 + y1) / 2, z), rot=(0, 0, yaw), **fence)
+            nx.box(f"fence_rail_{x0}_{y0}_{z}", (L - 0.07, 0.07, 0.1), ((x0 + x1) / 2, (y0 + y1) / 2, z), rot=(0, 0, yaw), **fence)
     nx.box("mailbox_post", (0.1, 0.1, 1.05), (2.4, -11.6, 0), **WOOD_DARK)
     nx.box("mailbox", (0.32, 0.5, 0.26), (2.4, -11.6, 1.05), a="blue", b="blue_pale", pattern="plain")
     fu.street_lamp("street_lamp", (5.6, -11.5, 0), 0, 3.4)
