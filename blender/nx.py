@@ -78,11 +78,17 @@ def _pal(v):
     return P[v] if isinstance(v, str) else int(v)
 
 
-def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=True):
-    """像素哑光：主色 a、副色 b（色板名或编号），纹样见 PATTERN"""
+def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=True, top=None, ramp=None):
+    """像素哑光：主色 a、副色 b（色板名或编号），纹样见 PATTERN；
+    top：顶面色，朝上的面整片换成它，并沿侧面上沿垂下参差的几格（草皮、积雪、桌布之类）；
+    ramp：(暗, 中, 亮) 三色明暗，受光档直接取这三色，可以跨色相（暗偏冷紫、亮偏暖粉/淡金）；给了就不用 a、b"""
+    if ramp is not None:
+        obj["nx_ramp"] = ",".join(str(_pal(c)) for c in ramp)
     obj["nx_mat"] = "matte"
     obj["nx_pal"] = f"{_pal(a)},{_pal(b)}"
     obj["nx_pattern"] = PATTERN[pattern] if isinstance(pattern, str) else int(pattern)
+    if top is not None:
+        obj["nx_top"] = _pal(top)
     obj["nx_collide"] = 1 if collide else 0
     obj["nx_shadow"] = 1 if shadow else 0
     return obj

@@ -10,8 +10,31 @@ export const PALETTE = [
   '#86b5a5',
 ];
 
+/** 按主色自动配的三色明暗（暗, 中＝主色, 亮）：暗一档往冷紫/雾蓝偏，亮一档往粉/淡金/白偏。
+    没写 nx_ramp 的哑光在「自动三色」开着时用它 */
+export const AUTO_RAMP: [number, number, number][] = [
+  [0, 0, 1], //  0 ink
+  [0, 1, 8], //  1 violet_deep → rose_deep
+  [1, 2, 9], //  2 violet → rose
+  [2, 3, 9], //  3 lilac_dark → rose
+  [3, 4, 10], //  4 lilac → pink
+  [4, 5, 11], //  5 lilac_pale → pink_pale
+  [5, 6, 7], //  6 mist → white
+  [13, 7, 7], //  7 white：暗处落雾蓝
+  [1, 8, 9], //  8 rose_deep
+  [3, 9, 10], //  9 rose
+  [4, 10, 11], // 10 pink
+  [10, 11, 7], // 11 pink_pale
+  [3, 12, 13], // 12 blue
+  [12, 13, 7], // 13 blue_pale
+  [9, 14, 7], // 14 gold
+  [12, 15, 14], // 15 green → 亮处淡金
+];
+
 /** 描边色：不用最深那枚，线要软一点 */
 export const INK = '#3a3350';
+/** 凸棱亮边色：最亮那枚，半透地压上去 */
+export const HI = '#fbf9f7';
 
 function lin(c: number) {
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -41,3 +64,4 @@ export const paletteLab = PALETTE.map((h) => {
   return oklab(r, g, b);
 });
 export const inkRgb = new THREE.Vector3(...rgb(INK));
+export const hiRgb = new THREE.Vector3(...rgb(HI));

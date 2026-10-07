@@ -9,11 +9,12 @@ import { shared } from './materials';
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 home——家）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
-   查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?sky=主题（覆盖世界里的，见 docs/sky.md）
-   键：E 互动 · Q 醒来（回家）· 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · G 飞行 · H 提示 · K 换天
+   查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
+   键：E 互动 · Q 醒来（回家）· 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
 
 const q = new URLSearchParams(location.search);
+if (q.has('ramp')) shared.uAutoRamp.value = THREE.MathUtils.clamp(Number(q.get('ramp')) || 0, 0, 1);
 const canvas = document.getElementById('stage') as HTMLCanvasElement;
 const hud = document.getElementById('hud')!;
 const label = document.getElementById('label')!;
@@ -234,6 +235,8 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Digit3') f.palette = !f.palette;
   if (e.code === 'Digit4') f.outline = !f.outline;
   if (e.code === 'Digit5') f.lock = f.lock >= 2 ? -1 : f.lock + 1;
+  // 三色强度：默认 → 一半 → 全 → 关 → 默认
+  if (e.code === 'Digit6') { const r = [0.3, 0.5, 1, 0]; shared.uAutoRamp.value = r[(r.indexOf(shared.uAutoRamp.value) + 1) % r.length]; }
   if (e.code === 'KeyH') hud.classList.toggle('off');
   if (e.code === 'KeyK') level.sky.set(SKY_NAMES[(SKY_NAMES.indexOf(level.sky.name) + 1) % SKY_NAMES.length]);
   if (e.code === 'KeyR' && e.shiftKey) respawn();
@@ -406,7 +409,7 @@ function updateHud() {
     `NEXUS · ${world}   ${fps.toFixed(0)} fps   ${pipe.size.w}×${pipe.size.h}   ` +
     `脚底 ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}  朝向 ${((player.yaw / deg) % 360).toFixed(0)}°${player.fly ? '  飞行' : ''}\n` +
     `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 醒来 · Esc 释放 · Shift+R 回到到达处\n` +
-    `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${on(f.outline)} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
+    `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${on(f.outline)} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · 6 三色 ${shared.uAutoRamp.value} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
 }
 
 let acc = 0;

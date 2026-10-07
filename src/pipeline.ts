@@ -7,7 +7,7 @@
    3. 合成：把像素化结果铺到屏幕，同时按每格的视深写回深度。
    4. 晶体以全分辨率画在最上面，深度与像素世界互相遮挡，折射取的是像素化之后的画面。 */
 import * as THREE from 'three';
-import { paletteLab, paletteRgb, inkRgb } from './palette';
+import { paletteLab, paletteRgb, inkRgb, hiRgb } from './palette';
 
 export const MAX_FIELD = 8;
 
@@ -58,7 +58,8 @@ uniform int uCrystalCount;
 uniform float uProx, uResolve;
 uniform vec3 uPal[16];
 uniform vec3 uPalRgb[16];
-uniform vec3 uInk;
+uniform vec3 uInk, uHi;
+uniform mat3 uView;
 uniform float uRaw, uPaletteOn, uOutlineOn, uFieldView, uLock, uDissolve;
 out vec4 fragColor;
 
@@ -156,7 +157,8 @@ void main() {
 
   if (uOutlineOn > 0.5) {
     vec3 n = octDecode(dat.xy);
-    float edge = 0.0, crease = 0.0;
+    float edge = 0.0, crease = 0.0, ridge = 0.0;
+    vec3 nv = uView * n;
     ivec2 offs[4] = ivec2[4](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1));
     vec4 nb[4];
     for (int k = 0; k < 4; k++) nb[k] = texelFetch(tData, clamp(cpx + offs[k] * s, ivec2(0), hi), 0);
@@ -171,10 +173,16 @@ void main() {
         vec4 nd2 = nb[k + 1];
         float lap = 1.0 / nd.z + 1.0 / nd2.z - 2.0 * inv0;
         if (abs(lap) > 0.08 * inv0 && max(nd.z, nd2.z) > depth * 1.02) edge = 1.0;
-        else if (dot(octDecode(nd.xy), n) < 0.6) crease = 1.0;
+        else if (dot(octDecode(nd.xy), n) < 0.6) {
+          // 折痕分凸凹：往右（上）走法线也往右（上）转＝凸棱，描一道亮边；凹角照旧压墨
+          vec3 dn = uView * octDecode(nd.xy) - nv;
+          if ((k == 0 ? dn.x : dn.y) > 0.0) ridge = 1.0;
+          else crease = 1.0;
+        }
       }
     }
     outc = mix(outc, uInk, max(edge * 0.88, crease * 0.4));
+    if (edge < 0.5) outc = mix(outc, uHi, ridge * 0.5);
   }
 
   if (uFieldView > 0.5) {
@@ -230,6 +238,8 @@ export class Pipeline {
         uPal: { value: paletteLab },
         uPalRgb: { value: paletteRgb },
         uInk: { value: inkRgb },
+        uHi: { value: hiRgb },
+        uView: { value: new THREE.Matrix3() },
         uRaw: { value: 0 },
         uPaletteOn: { value: 1 },
         uOutlineOn: { value: 1 },
@@ -334,6 +344,8 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     r.setRenderTarget(this.rtWorld);
     r.clear(true, true, true);
     r.render(world, camera);
+    // 世界画完后 matrixWorldInverse 才是这一帧的；描边判断凸凹要视空间法线
+    u.uView.value.setFromMatrix4(camera.matrixWorldInverse);
 
     this.quad.material = this.pixMat;
     r.setRenderTarget(this.rtPix);

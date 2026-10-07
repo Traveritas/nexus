@@ -68,6 +68,13 @@ function palPair(v: unknown, d: [number, number]): [number, number] {
   return [parts[0] ?? d[0], parts[1] ?? d[1]];
 }
 
+/** "暗,中,亮" 三个色板编号；不是三个就当没给 */
+function rampOf(v: unknown): [number, number, number] | undefined {
+  if (typeof v !== 'string') return undefined;
+  const parts = v.split(/[,\s]+/).filter(Boolean).map(Number);
+  return parts.length === 3 && parts.every(Number.isFinite) ? [parts[0], parts[1], parts[2]] : undefined;
+}
+
 export async function loadLevel(url: string): Promise<Level> {
   const gltf = await new GLTFLoader().loadAsync(url);
   const root = gltf.scene;
@@ -188,7 +195,9 @@ export async function loadLevel(url: string): Promise<Level> {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) continue;
     // 多材质的物体导出后拆成几块子网格，属性留在父节点上：子网格继承父节点的 nx_*，共用一个描边编号
+    let whole: THREE.Object3D = mesh;
     if (u.nx_mat === undefined && o.parent && !(o.parent as THREE.Mesh).isMesh && o.parent.userData.nx_mat !== undefined) {
+      whole = o.parent;
       Object.assign(u, { ...o.parent.userData, ...u });
       o.parent.userData.nx_id ??= newId();
       u.nx_id = o.parent.userData.nx_id;
@@ -223,7 +232,17 @@ export async function loadLevel(url: string): Promise<Level> {
         id: u.nx_id as number | undefined,
       });
     } else {
-      mat = matte({ a, b: bb, pattern: num(u.nx_pattern, 0), id: u.nx_id as number | undefined });
+      // 高度范围按整个物体算（拆开的子网格也一样），渐变与顶面垂边才连得上
+      const box = new THREE.Box3().setFromObject(whole);
+      mat = matte({
+        a,
+        b: bb,
+        pattern: num(u.nx_pattern, 0),
+        top: u.nx_top === undefined ? undefined : num(u.nx_top, 0),
+        yRange: [box.min.y, box.max.y],
+        ramp: rampOf(u.nx_ramp),
+        id: u.nx_id as number | undefined,
+      });
     }
     const m = new THREE.Mesh(geo, mat);
     m.position.copy(wpos);
