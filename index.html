@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
+<title>NEXUS · 切片</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #ecdde6; }
+  body { display: grid; place-items: center; }
+  #stage { display: block; image-rendering: pixelated; cursor: crosshair; }
+  #hud {
+    position: fixed; left: 16px; top: 14px; pointer-events: none;
+    font: 11px/1.8 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+    color: #3a3350; letter-spacing: 0.06em; white-space: pre;
+    text-shadow: 0 0 6px #ecdde6;
+  }
+  #hud.off { display: none; }
+  #label {
+    position: fixed; left: 50%; bottom: 12vh; transform: translateX(-50%);
+    pointer-events: none; opacity: 0; transition: opacity 0.4s;
+    font: 13px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+    letter-spacing: 0.3em; color: #3a3350; text-shadow: 0 0 8px #fbf9f7;
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="hud"></div>
+<div id="label"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
