@@ -396,3 +396,13 @@ def halo_gate(name, loc, yaw, size=5.0, seed=0, styles=None, stair_style=None):
     nx.box(f"{name}_deck", (2.6, 4.2, 0.4), (plat.x + fwd.x * 1.5, plat.y + fwd.y * 1.5, top - 0.4), rot=(0, 0, yaw),
            **stair_style)
     return (loc[0], loc[1], top + 1.6)
+
+
+# ── 世界之间 ─────────────────────────────────────
+
+def return_door(world, loc, yaw=0.0, title="回家"):
+    """回家的门：一扇自己站着的门框，走过去就回到家里这个世界那扇门的门前（到达点 door_<world>）"""
+    frame(f"home_door_{world}", loc, yaw, w=1.4, h=2.45, depth=0.35, t=0.16, kind="door",
+          a="pink_pale", b="rose", pattern="plain")
+    nx.portal(f"portal_home_{world}", (loc[0], loc[1], loc[2] + 1.0), "home", at=f"door_{world}", mode="walk",
+              title=title, radius=0.5)

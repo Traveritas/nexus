@@ -3,7 +3,7 @@
 - 出生的岛最大；第二座岛上一朵「莲」；一座岛上一摞错开的板和一棵纸的树。
 - 三枚晶体：半腰的小岛、莲的花心、最高的岛。
 掉下去会回到出生点。
-运行：node scripts/blender.cjs build idea_isles
+运行：node scripts/blender.cjs build isles
 """
 import math
 import os
@@ -36,6 +36,7 @@ def build(extent=EXTENT):
     nx.into("env")
     nx.sun((0.3, -0.6, 0.5))
     nx.spawn((0, -5, 0), facing_deg=10)
+    nx.atmosphere("plumb", seed=5)
 
     nx.into("isles")
     for i, (n, x, y, z, r, top, side) in enumerate(ISLES):
@@ -57,14 +58,13 @@ def build(extent=EXTENT):
     nx.into("things")
     x, y, z, r = isles["lotus"]
     pf.bloom("lotus", (x, y, z), kind="lotus", size=3.2, seed=5, collide=False)  # 走得进花心
-    nx.entrance("entrance_lotus", (x, y, z + 1.6), "https://traveritas.github.io/", "随笔 · 醒梦")
+    nx.portal("portal_lotus", (x, y, z + 1.0), "glasshouse", mode="key", title="花心", radius=1.2)
 
     x, y, z, r = isles["stack"]
     pf.plate_stack("stack", (x - 2, y + 1, z), n=7, seed=6)
     nx.sprite("stack_lamp", "lamp_street", (x + 2.5, y - 2, z), face=True)
 
     x, y, z, r = isles["small"]
-    nx.entrance("entrance_small", (x, y, z + 1.6), "", "未命名")
     pf.bloom("small_blades", (x + 2.2, y + 1.5, z), kind="blade", size=2.4, seed=7, petals=4)
 
     x, y, z, r = isles["tree"]
@@ -75,11 +75,13 @@ def build(extent=EXTENT):
     x, y, z, r = isles["top"]
     pf.halo("top_ring", (x, y, z + 3.2), r + 1.2, minor=0.3, tilt=8, spin=1.5, a="pink_pale", b="white")
     pf.orrery("top_orrery", (x, y, z + 10), radii=(4, 6.5, 9), seed=8)
-    nx.entrance("entrance_top", (x, y, z + 1.6), "https://github.com/Traveritas", "GITHUB")
+    nx.portal("portal_top", (x, y, z + 1.0), "descent", at="bottom", radius=1.0)
+    nx.arrive("top", (x, y - 4.2, z), facing_deg=0)
     pf.bloom("top_drift", (x, y, z), kind="drift", size=3.5, seed=9, petals=6)
 
     x, y, z, r = isles["home"]
     pf.frame("home_window", (x - 4, y + 3, z), -20, kind="window", w=2.4, h=3.0, a="white", b="mist", pattern="plain")
+    nx.portal("portal_home_window", (x - 4, y + 3, z + 1.0), "home", at="window", title="回家", radius=0.6)
     nx.sprite("home_chair", "chair", (x + 3.5, y + 2, z), rot_deg=(0, 0, 200), face=False, back="pink_pale")
     pf.paper_scatter("home_grass", ["grass:{}", "grass:{}", "flower:{}", "bush:{}"], (x, y), 2.5, r - 1, 12, seed=10, z=z,
                      avoid=lambda px, py: math.hypot(px, py + 5) < 2)
@@ -103,5 +105,5 @@ def build(extent=EXTENT):
 if __name__ == "__main__":
     nx.reset()
     build()
-    nx.save_blend("idea_isles")
-    nx.export("idea_isles")
+    nx.save_blend("isles")
+    nx.export("isles")

@@ -6,7 +6,7 @@
 - 一摞错开的板是楼梯，走上半空的一块楼板：纸的椅子、落地灯、电话，头顶天花板上挂着纸的吊灯，晶体在灯下。
 - 一面落地的方框，像一面没有镜子的镜子，晶体在框里。
 - 一排没有墙的窗；窗外是纸的树。墙上贴着一扇纸的门，打不开。
-运行：node scripts/blender.cjs build idea_room
+运行：node scripts/blender.cjs build room
 """
 import math
 import os
@@ -28,6 +28,8 @@ def build(extent=EXTENT):
     nx.into("env")
     nx.sun((0.45, -0.55, 0.5))
     nx.spawn((0, -22, 0), facing_deg=0)
+    nx.atmosphere("dye", seed=7)
+    pf.return_door("room", (0, -25.5, 0), 0)
     nx.box("ground", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="mist", b="lilac_pale", pattern="grain")
     nx.box("floor", (42, 36, F), (0, 6.5, 0), a="pink_pale", b="pink", pattern="bands")
     nx.box("rug", (12, 8, 0.1), (-1, 0, F), a="blue_pale", b="blue", pattern="stripes")
@@ -39,7 +41,7 @@ def build(extent=EXTENT):
     leaf = nx.group("door_hinge", (1.1, 0.25 + 17, F), (0, 0, -68))
     nx.box("door_leaf", (2.2, 0.18, 3.95), (-1.1, 0.09, 0), parent=leaf, a="mist", b="lilac_pale", pattern="tiles")
     nx.box("door_knob", (0.22, 0.4, 0.22), (-1.9, 0.09, 1.9), parent=leaf, a="gold", b="white", pattern="plain")
-    nx.entrance("entrance_door", (-0.5, 17, F + 1.6), "https://traveritas.github.io/", "随笔 · 醒梦")
+    nx.portal("portal_door", (-0.5, 17, F + 1.0), "glasshouse", radius=0.6)
 
     # ── 半空的楼板：板摞成的梯子走上去 ──
     nx.into("loft")
@@ -53,7 +55,7 @@ def build(extent=EXTENT):
                pattern="bands")
     nx.box("ceiling_loft", (8, 6, 0.4), (LX, LY, F + LZ + 4.2), rot=(1.5, 0, 4), a="white", b="mist", pattern="tiles")
     nx.sprite("loft_pendant", "pendant", (LX, LY, F + LZ + 4.2 - 2.75), face=False, rot_deg=(0, 0, 10), shadow=True)
-    nx.entrance("entrance_loft", (LX + 0.5, LY - 0.5, F + LZ + 1.6), "", "未命名")
+    nx.portal("portal_loft", (LX, LY, F + LZ + 1.7), "home", at="wake", mode="key", title="关灯", radius=1.0)
     # 楼板上的纸家具
     top = F + LZ
     nx.sprite("loft_chair", "chair_wood@64", (LX - 2.6, LY + 1.8, top), rot_deg=(0, 0, 20), face=False, back="pink_pale")
@@ -64,7 +66,7 @@ def build(extent=EXTENT):
     # ── 落地的方框：晶体在框里 ──
     nx.into("mirror")
     pf.frame("mirror", (10, 6, F), -25, w=2.6, h=3.6, depth=0.4, t=0.4, kind="square", a="white", b="mist", pattern="plain")
-    nx.entrance("entrance_mirror", (10, 6, F + 0.4 + 1.6), "https://github.com/Traveritas", "GITHUB")
+    nx.portal("portal_mirror", (10, 6, F + 0.4 + 1.0), "descent", at="bottom", radius=0.7)
     nx.sprite("mirror_chair", "armchair_real@64", (12.5, 3.2, F), rot_deg=(0, 0, -58), face=False, back="pink_pale")
 
     # ── 没有墙的窗；窗外是纸的树 ──
@@ -116,5 +118,5 @@ def build(extent=EXTENT):
 if __name__ == "__main__":
     nx.reset()
     build()
-    nx.save_blend("idea_room")
-    nx.export("idea_room")
+    nx.save_blend("room")
+    nx.export("room")

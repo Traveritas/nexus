@@ -48,6 +48,8 @@ def _simplify(mat, res):
         if max(img.size) > res:
             k = res / max(img.size)
             img.scale(max(1, int(img.size[0] * k)), max(1, int(img.size[1] * k)))
+            # 缩过的图要重新打包，否则导出时用的还是磁盘上 / 包里的原图
+            img.pack()
         t = nodes.new("ShaderNodeTexImage")
         t.image = img
         links.new(t.outputs["Color"], p.inputs["Base Color"])
@@ -61,16 +63,22 @@ def _simplify(mat, res):
         p.inputs["Base Color"].default_value = color
 
 
-_cache = {}  # asset_id → (网格数据, 原始高度)
+_cache = {}  # (asset_id, part, 面数上限) → (网格数据, 原始高度)
+MAX_FACES = 3000        # 家具：导入时减到的面数上限（None ＝ 不减；渲剪纸时用 None 保留细节）
+MAX_FACES_SMALL = 1200  # 小摆件（高度不到 0.6m）
 
 
 def asset(name, asset_id, loc, rot=(0, 0, 0), height=None, scale=1.0, tint=0.0, a="mist", b="lilac", smooth=False,
-          collide=True, shadow=True, parent=None, res=512):
+          collide=True, shadow=True, parent=None, res=512, part=None, max_faces=None):
     """放一个 Poly Haven 模型，原点在底面中心。同一个模型只导入一次，之后的都共用网格与贴图（GLB 里也只存一份）。
-    height：把整体缩放到这个高度（米），否则用 scale；tint 0..1 把贴图明暗映射到色板 a（亮）/ b（暗）。"""
-    if asset_id not in _cache or _cache[asset_id][0].name not in bpy.data.meshes:
-        _cache[asset_id] = _import(asset_id, res)
-    data, h0 = _cache[asset_id]
+    height：把整体缩放到这个高度（米），否则用 scale；tint 0..1 把贴图明暗映射到色板 a（亮）/ b（暗）。
+    res：贴图缩到的边长（小摆件用 256 省体积）；part：一排并排的变体里只取第几个（见 _keep_part）。"""
+    if max_faces is None:
+        max_faces = MAX_FACES_SMALL if height is not None and height < 0.6 else MAX_FACES
+    key = (asset_id, part, max_faces)
+    if key not in _cache or _cache[key][0].name not in bpy.data.meshes:
+        _cache[key] = _import(asset_id, res, part, max_faces)
+    data, h0 = _cache[key]
     obj = bpy.data.objects.new(name, data)
     bpy.context.scene.collection.objects.link(obj)
     k = height / max(1e-6, h0) if height else scale
@@ -105,7 +113,7 @@ def _keep_part(obj, part, gap=0.1, bin_=0.02):
     print(f"[nx] {obj.name}: {len(groups)} 组，留第 {min(part, len(groups) - 1)} 组")
 
 
-def _import(asset_id, res, part=None):
+def _import(asset_id, res, part=None, max_faces=MAX_FACES):
     """导入、合成一块网格、原点放到底面中心；返回 (网格数据, 高度)，导入用的临时物体删掉。
     part：只留并排变体里的第几个（见 _keep_part）"""
     files = glob.glob(os.path.join(ASSETS, asset_id, "*.gltf"))
@@ -134,6 +142,13 @@ def _import(asset_id, res, part=None):
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     if part is not None:
         _keep_part(obj, part)
+    # 减面：像素化之后看不出几万个面的细节，场景文件却会大很多
+    faces = len(obj.data.polygons)
+    if max_faces and faces > max_faces:
+        mod = obj.modifiers.new("decimate", "DECIMATE")
+        mod.ratio = max_faces / faces
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+        print(f"[nx] {asset_id}: {faces} → {len(obj.data.polygons)} 面")
     data = obj.data
     data.name = f"asset_{asset_id}"
 

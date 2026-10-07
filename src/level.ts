@@ -31,13 +31,29 @@ interface Behavior {
   phase: number;
 }
 
+/** 传送物：从一个世界去另一个世界。walk ＝ 走进去就走；key ＝ 走近后按 E */
+export interface Portal {
+  to: string;
+  /** 到达点的名字（目标世界里的 arrive）；空 ＝ 目标世界的出生点 */
+  at: string;
+  mode: 'walk' | 'key';
+  title: string;
+  radius: number;
+  pos: THREE.Vector3;
+}
+
 export interface Level {
   scene: THREE.Scene;
   crystalScene: THREE.Scene;
   collider: MeshBVH | null;
   entrances: Entrance[];
   spawn: { pos: THREE.Vector3; yaw: number };
+  portals: Portal[];
+  /** 到达点：名字 → 脚底位置与朝向 */
+  arrivals: Map<string, { pos: THREE.Vector3; yaw: number }>;
   sky: SkyBox;
+  /** 把这个世界的太阳、天色、雾重新套到共享的 uniform 上（几个世界同时在内存里时，后加载的会改掉它们） */
+  apply(): void;
   update(dt: number, t: number, camera: THREE.Camera, frozen: boolean): void;
 }
 
@@ -64,6 +80,8 @@ export async function loadLevel(url: string): Promise<Level> {
   const skySprites: { obj: THREE.Object3D; dir: THREE.Vector3; dist: number }[] = [];
   const colliderGeos: THREE.BufferGeometry[] = [];
   const spawn = { pos: new THREE.Vector3(0, 0, 0), yaw: 0 };
+  const portals: Portal[] = [];
+  const arrivals = new Map<string, { pos: THREE.Vector3; yaw: number }>();
   const pending: Promise<void>[] = [];
 
   // 天
@@ -98,6 +116,23 @@ export async function loadLevel(url: string): Promise<Level> {
     if (type === 'spawn') {
       spawn.pos.copy(wpos);
       spawn.yaw = Math.atan2(-fwd.x, -fwd.z);
+      continue;
+    }
+
+    if (type === 'arrive') {
+      arrivals.set(String(u.nx_name ?? o.name), { pos: wpos.clone(), yaw: Math.atan2(-fwd.x, -fwd.z) });
+      continue;
+    }
+
+    if (type === 'portal') {
+      portals.push({
+        to: String(u.nx_to ?? ''),
+        at: String(u.nx_at ?? ''),
+        mode: u.nx_mode === 'key' ? 'key' : 'walk',
+        title: String(u.nx_title ?? ''),
+        radius: num(u.nx_radius, 0.9),
+        pos: wpos.clone(),
+      });
       continue;
     }
 
@@ -246,7 +281,12 @@ export async function loadLevel(url: string): Promise<Level> {
     }
   }
 
-  return { scene, crystalScene, collider, entrances, spawn, sky, update };
+  const sunDir = shared.uSun.value.clone();
+  const apply = () => {
+    shared.uSun.value.copy(sunDir);
+    sky.set(sky.spec);
+  };
+  return { scene, crystalScene, collider, entrances, spawn, portals, arrivals, sky, apply, update };
 }
 
 function behaviorOf(obj: THREE.Object3D, u: Record<string, unknown>, faceDefault: boolean): Behavior | null {

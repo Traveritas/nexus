@@ -259,7 +259,9 @@ def export(name):
         export_cameras=False,
         # 只有现成模型（nx_mat=asset，见 blender/assets.py）带材质；搭出来的白模没有材质，导出时也就没有
         export_materials="EXPORT",
-        export_image_format="AUTO",
+        # 贴图一律存成 WebP：保留透明度（叶子），体积比打包后的 PNG 小得多；three 的 GLTFLoader 直接认
+        export_image_format="WEBP",
+        export_image_quality=82,
         use_selection=False,
     )
     try:
@@ -283,4 +285,28 @@ def atmosphere(sky="blank", seed=None):
     obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
     obj["nx_type"] = "atmosphere"
     obj["nx_sky"] = sky if seed is None else f"{sky}:{int(seed)}"
+    return obj
+
+
+# ── 世界之间 ───────────────────────────────────────────
+
+def portal(name, loc, to, at="", mode="walk", title="", radius=0.9):
+    """传送物：去另一个世界。loc 放在物件的「门洞」中心（大约齐腰高）。
+    mode="walk" 走进 radius 米内就走（门、框、窗）；mode="key" 走近按 E（杯、床、灯……），title 是提示文字。
+    to 是目标世界（public/scenes/<to>.glb），at 是那边的到达点名字（空 ＝ 那边的出生点）"""
+    obj = _empty(name, loc, (0, 0, 0), "SPHERE", radius)
+    obj["nx_type"] = "portal"
+    obj["nx_to"] = to
+    obj["nx_at"] = at
+    obj["nx_mode"] = mode
+    obj["nx_title"] = title
+    obj["nx_radius"] = float(radius)
+    return obj
+
+
+def arrive(name, loc, facing_deg=0):
+    """到达点：别的世界传送过来时落在这里。loc 是脚底，facing_deg 同 spawn。别放在传送物的 radius 里"""
+    obj = _empty(f"arrive_{name}", loc, (0, 0, facing_deg), "SINGLE_ARROW", 0.8)
+    obj["nx_type"] = "arrive"
+    obj["nx_name"] = name
     return obj

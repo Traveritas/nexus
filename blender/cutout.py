@@ -23,7 +23,7 @@ tilt = float(argv[5]) if len(argv) > 5 else 0.0
 part = int(argv[6]) if len(argv) > 6 and argv[6] != "-" else None
 
 nx.reset()
-data, h0 = assets._import(asset_id, 2048, part)
+data, h0 = assets._import(asset_id, 2048, part, max_faces=None)
 obj = bpy.data.objects.new(name, data)
 bpy.context.scene.collection.objects.link(obj)
 k = height / max(1e-6, h0)

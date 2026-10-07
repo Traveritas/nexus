@@ -482,6 +482,8 @@ void main() {
 export interface SkyBox {
   mesh: THREE.Mesh;
   name: string;
+  /** 最近一次 set 的完整写法（带种子），用来重新套用 */
+  spec: string;
   /** "名字" 或 "名字:种子" */
   set(spec: string): void;
   update(t: number, camera: THREE.Camera): void;
@@ -493,7 +495,9 @@ export function makeSky(): SkyBox {
   const box: SkyBox = {
     mesh,
     name: 'blank',
+    spec: 'blank',
     set(spec) {
+      box.spec = spec;
       const [name, seed] = spec.split(':');
       const theme = THEMES[name] ?? THEMES.blank;
       box.name = THEMES[name] ? name : 'blank';

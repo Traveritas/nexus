@@ -26,6 +26,10 @@ export interface Field {
   prox: number;
   /** 正在进入一个入口：0..1，1 时整屏解析到底并化为白 */
   resolve: number;
+  /** 世界之间的转场：0..1，格子一路变粗（至 32px），末段蒙上 veilCol；与 resolve 方向相反 */
+  dissolve?: number;
+  /** 转场蒙上的颜色（sRGB 0..1），通常是新旧世界的雾色 */
+  veilCol?: THREE.Color;
 }
 
 export interface Flags {
@@ -55,7 +59,7 @@ uniform float uProx, uResolve;
 uniform vec3 uPal[16];
 uniform vec3 uPalRgb[16];
 uniform vec3 uInk;
-uniform float uRaw, uPaletteOn, uOutlineOn, uFieldView, uLock;
+uniform float uRaw, uPaletteOn, uOutlineOn, uFieldView, uLock, uDissolve;
 out vec4 fragColor;
 
 float bayer4(ivec2 p) {
@@ -116,6 +120,11 @@ void main() {
   }
 
   int L = levelAt(px);
+  // 转场：整屏一路粗到 32px 一格，按块抖开，不是齐刷刷地跳
+  if (uDissolve > 0.0) {
+    float ld = uDissolve * 5.0 + (bayer4(px / 8) - 0.5) * 0.9;
+    L = max(L, int(clamp(floor(ld + 0.5), 0.0, 5.0)));
+  }
   int s = 1 << L;
   ivec2 cell = px >> L;
   ivec2 cpx = min(cell * s + s / 2, hi);
@@ -226,6 +235,7 @@ export class Pipeline {
         uOutlineOn: { value: 1 },
         uFieldView: { value: 0 },
         uLock: { value: -1 },
+        uDissolve: { value: 0 },
       },
       vertexShader: QUAD_VERT,
       fragmentShader: PIX_FRAG,
@@ -305,8 +315,15 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     u.uCrystalCount.value = n;
     u.uProx.value = field.prox;
     u.uResolve.value = field.resolve;
-    // 最后一段化成白：晶体本身也被盖住
-    this.compMat.uniforms.uVeil.value = THREE.MathUtils.smoothstep(field.resolve, 0.55, 1);
+    // 最后一段化成白：晶体本身也被盖住；世界转场则蒙上雾色
+    const dissolve = field.dissolve ?? 0;
+    u.uDissolve.value = dissolve;
+    const veilWhite = THREE.MathUtils.smoothstep(field.resolve, 0.55, 1);
+    const veilDream = THREE.MathUtils.smoothstep(dissolve, 0.6, 1);
+    this.compMat.uniforms.uVeil.value = Math.max(veilWhite, veilDream);
+    const vc = this.compMat.uniforms.uVeilCol.value as THREE.Vector3;
+    if (veilDream > veilWhite && field.veilCol) vc.set(field.veilCol.r, field.veilCol.g, field.veilCol.b);
+    else vc.set(0.984, 0.976, 0.969);
     u.uRaw.value = f.raw ? 1 : 0;
     u.uPaletteOn.value = f.palette ? 1 : 0;
     u.uOutlineOn.value = f.outline ? 1 : 0;

@@ -6,7 +6,7 @@
 - 浮叶上的第三枚晶体，四周一圈未开的「刃」。
 - 远处：立在水里的花形门（halo）、比塔还高的刃、断开的塔。
 - 纸片：剪纸百合、香蒲、蒲公英、落在水上的云。
-运行：node scripts/blender.cjs build idea_shoal
+运行：node scripts/blender.cjs build shoal
 """
 import math
 import os
@@ -29,6 +29,7 @@ def build(extent=EXTENT):
     nx.into("env")
     nx.sun((0.55, -0.6, 0.42))
     nx.spawn((0, -16, 0.2), facing_deg=0)
+    nx.atmosphere("silk", seed=4)
     nx.box("water", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="blue_pale", b="mist", pattern="bands")
     pf.pad("pad_spawn", (0, -16, 0), 3.2, notch=40, start=110, seed=1)
 
@@ -51,7 +52,7 @@ def build(extent=EXTENT):
     pf.bloom("tower_bloom", (C[0], C[1], TOP - 1.3), kind="rosette", size=7.5, seed=3, yaw=0, petals=9, gap=5.2,
              open_deg=38, axis=False)
     pf.halo("tower_ring", (C[0], C[1], TOP - 0.2), 5.2, minor=0.22)
-    nx.entrance("entrance_tower", (C[0], C[1], TOP + 1.6), "https://traveritas.github.io/", "随笔 · 醒梦")
+    nx.portal("portal_tower", (C[0], C[1], TOP + 1.0), "isles", at="top", mode="key", title="花心", radius=1.2)
     pf.bloom("tower_drift", (C[0], C[1], 1.0), kind="drift", size=4.5, seed=4, petals=7)
 
     # 落在水上的一片，当桥
@@ -62,7 +63,9 @@ def build(extent=EXTENT):
     nx.into("glass")
     _, inside = pf.vessel("glass", (12, 1, 0), yaw=148)
     sh.tube("glass_spill", 4.5, 0, 0.08, (9.5, -2.5, 0), segments=40, a="blue", b="blue_pale", pattern="plain")
-    nx.entrance("entrance_glass", (inside[0], inside[1], inside[2] + 1.6), "https://github.com/Traveritas", "GITHUB")
+    nx.portal("portal_glass", (inside[0], inside[1], inside[2] + 1.0), "glasshouse", at="cup", radius=0.9)
+    a = math.radians(148)
+    nx.arrive("glass", (12 - math.sin(a) * 3.2, 1 + math.cos(a) * 3.2, 0), facing_deg=148)
 
     # ── 浮叶上的晶体，四周一圈未开的刃 ──
     nx.into("bud_ring")
@@ -73,7 +76,7 @@ def build(extent=EXTENT):
         pf.bloom(f"bud{i}", (B[0] + math.cos(a) * 3.9, B[1] + math.sin(a) * 3.9, 0.3), kind="blade",
                  size=rnd.uniform(1.8, 3.0), seed=40 + i, petals=rnd.choice([3, 4, 5]),
                  styles=[dict(a="pink_pale", b="pink"), dict(a="pink", b="rose"), dict(a="white", b="pink_pale")])
-    nx.entrance("entrance_bud", (B[0], B[1], 0.3 + 1.6), "", "未命名")
+    nx.portal("portal_bud", (B[0], B[1], 0.3 + 1.0), "room", mode="key", title="一朵未开的", radius=1.0)
 
     # ── 踏石 ──
     nx.into("stones")
@@ -94,8 +97,10 @@ def build(extent=EXTENT):
 
     # ── 门框：立在水里，一扇正，一扇斜 ──
     nx.into("doors")
-    pf.frame("door_a", (-4.5, -7.5, 0), 12, kind="door", a="violet", b="violet_deep", pattern="stripes")
+    pf.frame("door_a", (-4.5, -7.5, 0), 12, kind="door", a="pink_pale", b="rose", pattern="stripes")
+    nx.portal("portal_door_a", (-4.5, -7.5, 1.0), "home", at="cup", title="回家", radius=0.5)
     pf.frame("door_b", (6.5, -9, 0), -24, kind="door", roll=9, a="violet", b="violet_deep", pattern="stripes")
+    nx.portal("portal_door_b", (6.5 + math.sin(math.radians(9)) * 0.9, -9, 1.0), "descent", at="bottom", radius=0.5)
 
     # ── 远处 ──
     nx.into("horizon")
@@ -131,5 +136,5 @@ def build(extent=EXTENT):
 if __name__ == "__main__":
     nx.reset()
     build()
-    nx.save_blend("idea_shoal")
-    nx.export("idea_shoal")
+    nx.save_blend("shoal")
+    nx.export("shoal")

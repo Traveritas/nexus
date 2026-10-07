@@ -4,7 +4,7 @@
 - 中殿尽头一扇花形的门。
 - 侧门外横着一只水杯，晶体在杯里。
 - 纸片：拱顶挂下来的纸吊灯、剪纸百合、香蒲、蒲公英。
-运行：node scripts/blender.cjs build idea_glasshouse
+运行：node scripts/blender.cjs build glasshouse
 """
 import math
 import os
@@ -28,6 +28,8 @@ def build(extent=EXTENT):
     nx.into("env")
     nx.sun((0.35, -0.5, 0.55))
     nx.spawn((0, -16, 0), facing_deg=0)
+    nx.atmosphere("night")
+    pf.return_door("glasshouse", (0, -19.5, 0), 0)
     nx.box("ground", (extent, extent, 1.0), (CENTER[0], CENTER[1], -1.0), a="mist", b="green", pattern="grain")
     nx.box("floor", (W + 4, Y1 - Y0 + 6, F), (0, (Y0 + Y1) / 2, 0), a="white", b="mist", pattern="tiles")
     # 门前的三级台阶
@@ -58,7 +60,6 @@ def build(extent=EXTENT):
     nx.box("pool", (4.5, Y1 - Y0 - 4, 0.06), (0, (Y0 + Y1) / 2, F), a="blue_pale", b="blue", pattern="bands")
     M = (0, 18)
     pf.pad("pool_pad", (M[0], M[1], F), 3.4, h=0.3, notch=0, a="pink_pale", b="mist")
-    nx.entrance("entrance_pool", (M[0], M[1], F + 0.3 + 1.6), "https://traveritas.github.io/", "随笔 · 醒梦")
     pf.bloom("pool_drift", (M[0], M[1], F + 2), kind="drift", size=3, seed=1, petals=6)
 
     # ── 两侧的低台与花之装置 ──
@@ -79,13 +80,15 @@ def build(extent=EXTENT):
     nx.into("gate")
     ent = pf.halo_gate("gate", (0, Y1 + 9, F), 0, size=4.2, seed=2)
     nx.box("gate_floor", (10, 10, F), (0, Y1 + 8, 0), a="white", b="mist", pattern="tiles")
-    nx.entrance("entrance_gate", ent, "", "未命名")
+    nx.portal("portal_gate", (ent[0], ent[1], ent[2] - 0.6), "procession", at="side", radius=0.9)
+    nx.arrive("gate", (3.5, Y1 - 8, F), facing_deg=0)
 
     # ── 侧门外的水杯 ──
     nx.into("vessel")
     pf.frame("side_door", (W / 2 + 1.1, 21, F), 90, w=2.2, h=3.4, kind="door", a="violet", b="violet_deep", pattern="stripes")
     _, inside = pf.vessel("side_cup", (W / 2 + 9, 21, 0), yaw=90, R=2.5, length=5.5)
-    nx.entrance("entrance_cup", (inside[0], inside[1], inside[2] + 1.6), "https://github.com/Traveritas", "GITHUB")
+    nx.portal("portal_cup", (inside[0], inside[1], inside[2] + 1.0), "shoal", at="glass", mode="key", title="杯中", radius=1.0)
+    nx.arrive("cup", (W / 2 + 5.5, 21, 0), facing_deg=90)
 
     # ── 温室外：草、蒲公英、几棵纸树 ──
     nx.into("paper")
@@ -97,5 +100,5 @@ def build(extent=EXTENT):
 if __name__ == "__main__":
     nx.reset()
     build()
-    nx.save_blend("idea_glasshouse")
-    nx.export("idea_glasshouse")
+    nx.save_blend("glasshouse")
+    nx.export("glasshouse")
