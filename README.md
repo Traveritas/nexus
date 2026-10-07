@@ -41,4 +41,5 @@ node scripts/travel.cjs                # 打包后把所有世界的所有传送
 | `src/palette.ts` | 16 色色板 |
 | `blender/nx.py` | Blender 侧的搭建、标注、导出函数 |
 | `blender/prefabs.py` | 预制件族（花之装置、框、阶、环、塔、台、器、纸片撒布） |
-| `blender/assets.py` | 现成模型（Poly Haven）的导入与标注；取模型用 `scripts/fetch-asset.cjs` |
+| `blender/furniture.py` | 家具与器物：自己的低面数构件（椅、架、灯、钟、瓶、草木），正式世界里的现实物都用它 |
+| `blender/assets.py` | 现成模型（Poly Haven）的导入与标注，只做参考与陈列；取模型用 `scripts/fetch-asset.cjs` |

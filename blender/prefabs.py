@@ -1,5 +1,5 @@
 """预制件：可以在各个主题之间反复使用、拼接的构件族。每个族有几种变体，都带随机种子。
-只管轮廓与标注（nx.matte）；现实物不在这里建模，交给纸片（src/paper.ts）。
+只管轮廓与标注（nx.matte）；家具、器物这类现实物在 furniture.py。
 
 族一览（详见各函数）：
 - 花之装置  bloom(kind=rosette|lotus|blade|halo|drift)：以花为隐喻的装置，花瓣是平的、尖头的板

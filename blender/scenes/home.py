@@ -16,7 +16,7 @@ import random
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import assets as at  # noqa: E402
+import furniture as fu  # noqa: E402
 import nx  # noqa: E402
 import prefabs as pf  # noqa: E402
 
@@ -31,7 +31,6 @@ SKIRT = dict(a="rose", b="rose_deep", pattern="plain")
 WOOD = dict(a="rose", b="rose_deep", pattern="bands")
 WOOD_DARK = dict(a="rose_deep", b="violet", pattern="bands")
 WHITE = dict(a="white", b="mist", pattern="plain")
-COZY = dict(tint=0.45, a="pink_pale", b="rose")  # 真实家具偏黑的，拉向暖色
 
 
 # ── 墙 ───────────────────────────────────────────
@@ -172,7 +171,7 @@ def bed(cx, cy):
 
 
 def ceiling_lamp(name, x, y):
-    at.asset(name, "modern_ceiling_lamp_01", (x, y, H - 0.45), height=0.45, collide=False, shadow=False, res=256)
+    fu.pendant(name, (x, y, H), drop=0.4)
 
 
 # ── 世界 ─────────────────────────────────────────
@@ -222,20 +221,20 @@ def build(extent=EXTENT):
 
     # ── 卧室（西北）：床、床头柜、衣柜、落地窗 ──
     nx.into("bedroom")
-    bed(-5.6, 8.75)
+    bed(-5.6, 8.55)  # 床头板要让开北墙和窗台（窗台伸进屋里约 0.23m）
     nx.portal("portal_bed", (-5.6, 8.4, F + 0.8), "descent", mode="key", title="睡", radius=1.3)
     nx.arrive("door_descent", (-4.0, 6.9, F), facing_deg=-120)
     for i, x in enumerate([-7.4, -3.8]):
         nx.box(f"nightstand{i}", (0.55, 0.45, 0.55), (x, 9.45, F), **WOOD)
         nx.box(f"nightstand{i}_drawer", (0.45, 0.02, 0.16), (x, 9.21, F + 0.3), collide=False, a="rose_deep", b="rose", pattern="plain")
-    at.asset("alarm_clock", "alarm_clock_01", (-3.8, 9.45, F + 0.55), rot=(0, 0, 200), height=0.13, collide=False, res=256)
-    at.asset("oil_lamp", "vintage_oil_lamp", (-7.4, 9.45, F + 0.55), height=0.38, collide=False, res=256)
+    fu.alarm_clock("alarm_clock", (-3.8, 9.4, F + 0.55), 200)
+    fu.table_lamp("bed_lamp", (-7.4, 9.45, F + 0.55), height=0.45)
     nx.box("rug_bed", (3.4, 2.4, 0.03), (-5.6, 6.6, F), collide=False, a="blue_pale", b="white", pattern="stripes")
-    wardrobe("wardrobe", -7.4, 4.63, 0, "room", "door_room")
+    wardrobe("wardrobe", -7.4, 4.67, 0, "room", "door_room")
     french_window("french", -9.0, 6.6, 8.6, "isles", "window")
     picture("pic_bed1", (-1.14, 9.0, F + 2.0), -90, 0.7, 0.9, dict(a="blue_pale", b="pink_pale", pattern="bands"))
     picture("pic_bed2", (-1.14, 5.8, F + 1.9), -90, 0.5, 0.5, dict(a="pink_pale", b="gold", pattern="grain"))
-    at.asset("bed_plant", "potted_plant_04", (-1.6, 9.4, F), height=1.1, res=256)
+    fu.plant("bed_plant", (-1.6, 9.4, F), 1.1, seed=1)
     ceiling_lamp("lamp_bed", -5.6, 6.8)
 
     # ── 书房（西南）：书桌上摊开的书、书架、摇椅 ──
@@ -251,14 +250,11 @@ def build(extent=EXTENT):
                a="white", b="mist", pattern="bands")
     nx.portal("portal_book", (-8.4, 2.25, top + 0.3), "procession", mode="key", title="翻开", radius=0.9)
     nx.arrive("door_procession", (-6.4, 2.2, F), facing_deg=90)
-    at.asset("desk_lamp", "desk_lamp_arm_01", (-8.55, 1.6, top), rot=(0, 0, 70), height=0.5, collide=False, res=256)
-    at.asset("notebook", "binder_notebook", (-8.35, 2.85, top), rot=(0, 0, -20), height=0.05, collide=False, res=256)
-    at.asset("desk_chair", "dining_chair_02", (-7.6, 2.2, F), rot=(0, 0, 90), height=0.9, res=256, **COZY)
-    at.asset("shelf", "wooden_bookshelf_worn", (-4.6, 0.38, F), rot=(0, 0, 0), height=1.9, res=512, **COZY)
-    for i, z in enumerate([0.42, 0.85, 1.3]):
-        at.asset(f"books{i}", "book_encyclopedia_set_01", (-4.6 + rnd.uniform(-0.25, 0.25), 0.4, F + z), height=0.27,
-                 collide=False, res=256)
-    at.asset("rocking", "Rockingchair_01", (-2.6, 1.5, F), rot=(0, 0, 150), height=1.0, res=256, **COZY)
+    fu.desk_lamp("desk_lamp", (-8.6, 1.6, top), -13)
+    fu.notebook("notebook", (-8.35, 2.85, top), -20)
+    fu.chair("desk_chair", (-7.6, 2.2, F), 90, "dining", fabric="lilac")
+    fu.bookshelf("shelf", (-3.8, 0.34, F), 0, seed=2)  # 让开南窗；背离踢脚 1cm
+    fu.chair("rocking", (-2.6, 1.5, F), 40, "rocking", fabric="pink")
     nx.box("rug_study", (2.2, 1.6, 0.03), (-3.2, 2.2, F), collide=False, a="lilac_pale", b="pink", pattern="tiles")
     picture("pic_study", (-5.3, 4.36, F + 1.8), 180, 1.0, 0.7, dict(a="green", b="blue_pale", pattern="grain"))
     ceiling_lamp("lamp_study", -5.0, 2.3)
@@ -275,22 +271,21 @@ def build(extent=EXTENT):
     nx.arrive("cup", (4.0, 3.3, F), facing_deg=0)
     for i, ang in enumerate([200, 320, 80]):
         a = math.radians(ang)
-        at.asset(f"dining_chair{i}", "dining_chair_02", (4.0 + math.cos(a) * 1.25, 5.3 + math.sin(a) * 1.25, F),
-                 rot=(0, 0, ang + 90), height=0.9, res=256, **COZY)
+        fu.chair(f"dining_chair{i}", (4.0 + math.cos(a) * 1.25, 5.3 + math.sin(a) * 1.25, F), ang + 90, "dining", fabric="blue")
     # 沙发角（东北）
     nx.box("rug_living", (3.8, 2.8, 0.03), (6.6, 8.0, F), collide=False, a="blue_pale", b="lilac_pale", pattern="stripes")
-    at.asset("lounge", "mid_century_lounge_chair", (5.4, 8.9, F), rot=(0, 0, 200), height=0.85, res=256)
-    at.asset("armchair", "modern_arm_chair_01", (8.1, 7.6, F), rot=(0, 0, 250), height=1.0, res=256, **COZY)
+    fu.chair("lounge", (5.4, 8.9, F), 228, "lounge", fabric="pink")
+    fu.chair("armchair", (8.1, 7.6, F), 82, "arm", fabric="lilac")
     nx.box("coffee_table", (1.1, 0.6, 0.38), (6.6, 7.8, F), **WOOD)
-    at.asset("coffee_vase", "ceramic_vase_03", (6.4, 7.8, F + 0.38), height=0.3, collide=False, res=256)
+    fu.vase("coffee_vase", (6.35, 7.75, F + 0.38), 0.26, "bottle", style=dict(a="pink", b="pink_pale", pattern="plain"))
+    fu.vase("coffee_bowl", (6.85, 7.85, F + 0.38), 0.1, "bowl", style=WHITE)
     # 边几上的花瓶：凑近去闻 → 花房
     nx.box("side_table", (0.55, 0.55, 0.65), (8.45, 9.4, F), **WOOD)
-    at.asset("vase", "antique_ceramic_vase_01", (8.45, 9.4, F + 0.65), height=0.42, collide=False, res=256)
-    at.asset("vase_flowers", "flower_heliophila", (8.45, 9.4, F + 0.9), height=0.55, collide=False, shadow=False, res=256, part=0)
+    fu.vase("vase", (8.45, 9.4, F + 0.65), 0.42, "round", flowers=6, seed=3)
     nx.portal("portal_vase", (8.45, 9.4, F + 1.05), "glasshouse", mode="key", title="凑近", radius=0.9)
     nx.arrive("door_glasshouse", (7.2, 7.2, F), facing_deg=225)
     # 进门处：长凳、衣帽架、落地钟、盆栽
-    at.asset("bench", "painted_wooden_bench", (1.6, 0.55, F), height=0.48, res=256)
+    fu.bench("bench", (1.6, 0.5, F), 0)
     nx.cylinder("coat_pole", 0.04, 0.05, 1.8, (6.0, 0.5, F), segments=8, **WOOD_DARK)
     nx.cylinder("coat_base", 0.25, 0.25, 0.05, (6.0, 0.5, F), segments=16, **WOOD_DARK)
     for i, a in enumerate([30, 150, 270]):
@@ -298,11 +293,10 @@ def build(extent=EXTENT):
         nx.box(f"coat_hook{i}", (0.18, 0.04, 0.04), (6.0 + math.cos(r) * 0.08, 0.5 + math.sin(r) * 0.08, F + 1.72), rot=(0, 0, a),
                collide=False, **WOOD_DARK)
     nx.box("coat", (0.12, 0.38, 0.8), (6.12, 0.5, F + 0.9), rot=(0, 0, 20), collide=False, a="blue", b="blue_pale", pattern="plain")
-    at.asset("clock", "vintage_grandfather_clock_01", (-0.6, 9.55, F), rot=(0, 0, 200), height=2.2, tint=0.4,
-             a="pink_pale", b="rose_deep", res=512)
-    at.asset("wall_clock", "wall_clock", (8.86, 2.5, F + 2.1), rot=(0, 0, -90), height=0.38, collide=False, res=256)
-    at.asset("plant", "potted_plant_02", (8.4, 0.6, F), height=1.3, res=256)
-    at.asset("plant2", "potted_plant_04", (-0.5, 0.5, F), height=1.0, res=256)
+    fu.grandfather_clock("clock", (-0.4, 9.65, F), 180)
+    fu.wall_clock("wall_clock", (8.865, 2.5, F + 2.1), 90)
+    fu.plant("plant", (8.4, 0.6, F), 1.3, "tall", seed=2)
+    fu.plant("plant2", (-0.45, 0.5, F), 1.0, seed=3)
     picture("pic_liv1", (2.0, 9.86, F + 1.9), 180, 1.2, 0.8, dict(a="pink_pale", b="blue_pale", pattern="bands"))
     picture("pic_liv2", (-0.86, 5.0, F + 1.8), 90, 0.6, 0.8, dict(a="gold", b="white", pattern="grain"))
     picture("pic_liv3", (-0.86, 4.0, F + 2.0), 90, 0.4, 0.4, dict(a="blue", b="blue_pale", pattern="plain"))
@@ -339,18 +333,18 @@ def build(extent=EXTENT):
             nx.box(f"fence_rail_{x0}_{y0}_{z}", (L, 0.07, 0.1), ((x0 + x1) / 2, (y0 + y1) / 2, z), rot=(0, 0, yaw), **fence)
     nx.box("mailbox_post", (0.1, 0.1, 1.05), (2.4, -11.6, 0), **WOOD_DARK)
     nx.box("mailbox", (0.32, 0.5, 0.26), (2.4, -11.6, 1.05), a="blue", b="blue_pale", pattern="plain")
-    at.asset("street_lamp", "street_lamp_01", (5.6, -11.5, 0), rot=(0, 0, 90), height=3.6, res=256)
-    at.asset("planter", "planter_box_01", (7.0, -0.55, 0), height=0.45, res=256)
-    at.asset("planter2", "planter_box_01", (-5.5, -0.55, 0), height=0.45, res=256)
+    fu.street_lamp("street_lamp", (5.6, -11.5, 0), 0, 3.4)
+    fu.planter("planter", (7.0, -0.55, 0), 0, seed=1)
+    fu.planter("planter2", (-5.5, -0.55, 0), 0, seed=2)
 
     # ── 院子里的树与花 ──
     nx.into("garden")
-    for i, (x, y, name) in enumerate([(-11, 3, "tree_island@32"), (-11.5, 11.5, "quiver@32"), (10.8, 12.5, "tree_island_b@32"),
-                                      (11, -6, "quiver_b@32"), (-9, -8.5, "tree_island@32"), (2, 13, "quiver@32")]):
+    for i, (x, y, name) in enumerate([(-11, 3, "tree.round:3"), (-11.5, 11.5, "tree.tall:2"), (10.8, 12.5, "tree.blossom:4"),
+                                      (11, -6, "tree.tall:5"), (-9, -8.5, "tree.round:7"), (2, 13, "tree.blossom:6")]):
         nx.sprite(f"tree{i}", name, (x, y, 0), face=True)
-    for i, (x, y, name) in enumerate([(-11.5, 6.5, "fern@32"), (-10.6, 0.4, "nettle@32"), (7.8, -3.5, "weed_b@32"),
-                                      (-3.0, -3.4, "periwinkle@32"), (11.5, 3, "fern@32"), (-6.5, 12.3, "weed@32"),
-                                      (0.5, -3.6, "nettle@32"), (11.0, 9.0, "periwinkle@32")]):
+    for i, (x, y, name) in enumerate([(-11.5, 6.5, "bush:1"), (-10.6, 0.4, "grass.flowered:2"), (7.8, -3.5, "grass.flowered:3"),
+                                      (-3.0, -3.4, "grass.flowered:4"), (11.5, 3, "bush:5"), (-6.5, 12.3, "grass.reed:6"),
+                                      (0.5, -3.6, "grass.flowered:7"), (11.0, 9.0, "bush:8")]):
         nx.sprite(f"flowerbed{i}", name, (x, y, 0), face=True)
     pf.paper_scatter("grass", ["grass.clump:{}", "grass.clump:{}", "flower:{}", "grass.flowered:{}"], CENTER, 6, 13, 40, seed=5,
                      avoid=lambda x, y: (-9.6 < x < 9.6 and -3.2 < y < 10.6) or (2.8 < x < 5.2 and y < -3))

@@ -9,6 +9,7 @@
 |---|---|
 | 用脚本从零搭一个场景 | `node scripts/blender.cjs build <名字>` → 运行 `blender/scenes/<名字>.py`，存 `blender/<名字>.blend` 并导出 `public/scenes/<名字>.glb` |
 | 手动改过 .blend 后导出 | `node scripts/blender.cjs export <名字>` |
+| 查穿模 | `node scripts/blender.cjs clip <名字> [前缀 …]`：家具和墙、窗、别的家具有没有相交；场景里直接搭的东西用前缀算成一件（如 `bed_ wardrobe`） |
 | 在网页里看 | `npm run dev`，地址加 `?world=<名字>`（默认 `home`；`?scene=` 是旧写法，同义） |
 | 截图 / 走一遍 | `npm run build` 后 `node scripts/shot.cjs`、`node scripts/walk.cjs`；`node scripts/travel.cjs` 把所有世界的所有传送物各走一遍 |
 
@@ -115,7 +116,7 @@ NEXUS 是一组世界，像《梦日记》：**家**（`home`）是起点，醒�
 ## 预制件（`blender/prefabs.py`）
 
 可以在各主题之间反复使用的构件族，每族几种变体、带随机种子；`?scene=prefab_gallery` 是全部预制件与纸片的陈列。
-**现实物（灯、椅、窗帘、电话、杯……）不建模，用纸片**；立体的只做建筑尺度的抽象形。
+建筑尺度的抽象形在这里；家具、器物这类现实物见下一节「家具与器物」。
 
 | 族 | 函数 | 变体 |
 |---|---|---|
@@ -130,6 +131,28 @@ NEXUS 是一组世界，像《梦日记》：**家**（`home`）是起点，醒�
 | 纸片撒布 | `paper_scatter`、`paper_ring` | 环带里随机撒（可避让）、沿圆固定朝向排开（朝里/朝外） |
 
 基本形 `plate`（两头尖的板）和 `shapes.py` 里的 `tube`（管/扇/缺口环）、`spiral_stair` 也可以直接用。
+
+## 家具与器物（`blender/furniture.py`）
+
+现实物用自己的低面数构件，**不用现成模型、不贴图**，颜色只走 `nx_pal` + `nx_pattern`，和白模世界同一套语言。
+
+- **造型语言**：倒角方块、8~10 边的车床回转体（留着棱）、两头尖的叶板；比例略粗壮，腿不细于 5~6cm；每件只留一个认得出的特征。
+- **面数预算**：普通家具 ≤ 200 三角形，传送物 ≤ 500；一个世界的全部家具加起来以千计，不以万计。
+- **分件**：同一件东西里同色的零件合成一个物体（不勾线），不同色的分开（有轮廓线）。写法见 `Kit` / `Piece`。
+- **朝向**：本地 +Y 是正面（坐下时脸朝的方向、钟面朝的方向），`loc` 是底面中心；`yaw` 同 `spawn`。
+- **颜色**：金色只做大面积受光的东西；小零件背光时会被量化成绿色，所以「金属」用浅粉（`BRASS`），灯的亮面用白（`GLOW`）。
+
+| 族 | 函数 | 变体 |
+|---|---|---|
+| 椅 | `chair(kind=…, fabric=…)` | `dining` 餐椅 · `arm` 扶手沙发椅 · `lounge` 低躺椅 · `rocking` 摇椅；`fabric` 取 `blue` `pink` `lilac` `rose` `white` |
+| 凳 | `bench` | 厚板 + 板腿 |
+| 架与书 | `bookshelf(seed=…)`、`books_row`、`notebook` | 书随种子排：偶尔斜靠、偶尔平放一摞，相邻不同色 |
+| 灯 | `pendant`、`desk_lamp`、`table_lamp`、`street_lamp` | 吊灯的 `loc` 是天花板挂点 |
+| 钟 | `grandfather_clock`、`wall_clock`、`alarm_clock` | 挂钟的 `loc` 是钟心，背贴墙 |
+| 器 | `vase(kind=…, flowers=n)` | `round` `tall` `bottle` `bowl`；`flowers` 插几枝杯形花 |
+| 草木 | `plant(kind=…)`、`planter` | `potted` 一蓬叶 · `tall` 直茎互生叶 · `tuft` 矮丛（槽里用） |
+
+床、衣柜、书桌、落地窗这些和场景绑得紧的，仍写在场景脚本里（见 `home.py`），用同样的规则。
 
 ## 色板（`nx_pal` 用编号；`nx.py` 里也可以用名字）
 
@@ -169,6 +192,8 @@ NEXUS 是一组世界，像《梦日记》：**家**（`home`）是起点，醒�
 
 ## 现成模型（`nx_mat=asset`）
 
+> **只做参考，不进正式世界。** 正式场景里的现实物一律用上一节的「家具与器物」。这条管线留着用来比对比例、看一件东西在管线下的效果，以及 `asset_gallery` 陈列。上面「真实贴图的剪纸」同理。
+
 不一定要纯像素白模：现成的模型保留自己的造型与贴图，受光、影子、雾、晶体光与像素哑光同一套，**像素化、落色板、描边由管线统一做**——等于套了一层风格化滤镜。
 
 1. 取模型（Poly Haven，CC0）：`node scripts/fetch-asset.cjs <id>`，存到 `assets/polyhaven/<id>/`（附 LICENSE.txt）；`--list 关键词` 查 id。
@@ -185,4 +210,5 @@ NEXUS 是一组世界，像《梦日记》：**家**（`home`）是起点，醒�
 - [ ] 楼梯每级 ≤ 0.3m；需要跳的高差 ≤ 0.9m
 - [ ] 门洞、通道不窄于 0.8m
 - [ ] 没有细于约 0.1m 的长物件（远处会闪）；细节交给纸片
+- [ ] 跑一遍 `node scripts/blender.cjs clip <名字>`，家具不穿墙、不穿窗台（窗台会伸进屋里约 0.23m）
 - [ ] 跑一遍 `node scripts/walk.cjs`（换场景时要改脚本里的坐标）和 `node scripts/travel.cjs`，再截几张图看
