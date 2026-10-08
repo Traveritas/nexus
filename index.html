@@ -8,7 +8,10 @@
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #ecdde6; }
   body { display: grid; place-items: center; }
-  #stage { display: block; image-rendering: pixelated; cursor: crosshair; }
+  #stage, #ui { grid-area: 1 / 1; display: block; image-rendering: pixelated; }
+  #stage { cursor: crosshair; }
+  /* UI 画布：一个 UI 像素 ＝ 2 个屏幕像素，见 src/ui.ts */
+  #ui { pointer-events: none; }
   #hud {
     position: fixed; left: 16px; top: 14px; pointer-events: none;
     font: 11px/1.8 'IBM Plex Mono', ui-monospace, Consolas, monospace;
@@ -26,6 +29,7 @@
 </head>
 <body>
 <canvas id="stage"></canvas>
+<canvas id="ui"></canvas>
 <div id="hud"></div>
 <div id="label"></div>
 <script type="module" src="/src/main.ts"></script>

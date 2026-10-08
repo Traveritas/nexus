@@ -5,12 +5,15 @@ import { loadLevel, type Entrance, type Level, type Portal } from './level';
 import { Player } from './player';
 import { SKY_NAMES, skyLabel } from './skybox';
 import { shared } from './materials';
+import { Ui, UI_SCALE, loadUiFont } from './ui';
+import { PromptTag } from './prompt';
+import { Diary } from './diary';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 home——家）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
-   键：E 互动 · Q 醒来（回家）· 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
+   键：E 互动 · Q 醒来（回家）· Tab 日记 · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
 
 const q = new URLSearchParams(location.search);
@@ -30,6 +33,11 @@ const camera = new THREE.PerspectiveCamera(68, 16 / 9, 0.1, 400);
 camera.rotation.order = 'YXZ';
 const pipe = new Pipeline(renderer);
 const shadow = new SunShadow();
+const ui = new Ui(document.getElementById('ui') as HTMLCanvasElement);
+const fontReady = loadUiFont();
+const tag = new PromptTag(ui);
+/** 日记本要等人和世界都有了才建（见「日记」一节）；resize 先于它跑 */
+let diary: Diary | undefined;
 
 function resize() {
   const w = Math.max(8, Math.floor(innerWidth / 8) * 8);
@@ -40,6 +48,8 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   pipe.setSize(w, h);
+  ui.setSize(w, h);
+  diary?.setSize(ui.w, ui.h);
 }
 resize();
 addEventListener('resize', resize);
@@ -48,6 +58,7 @@ addEventListener('resize', resize);
 const sceneUrl = (name: string) => `${import.meta.env.BASE_URL}scenes/${name}.glb`;
 let world = q.get('world') ?? q.get('scene') ?? HOME;
 let level: Level = await loadLevel(sceneUrl(world));
+await fontReady;
 const player = new Player(level.collider);
 if (q.get('sky')) level.sky.set(q.get('sky')!);
 
@@ -226,9 +237,30 @@ addEventListener('popstate', (e) => {
   if (s?.world && s.world !== world) go(s.world, s.at ?? '', false);
 });
 
+// ── 日记 ──
+const book = new Diary(ui, {
+  wake: () => go(HOME, 'wake'),
+  apply: (s) => {
+    player.sens = s.sens;
+    hud.classList.toggle('off', !s.hud || q.get('hud') === '0');
+  },
+  world: () => world,
+  visited,
+});
+diary = book;
+book.setSize(ui.w, ui.h);
+
 // ── 键 ──
 let interact = false;
 addEventListener('keydown', (e) => {
+  if (e.code === 'Tab') {
+    e.preventDefault();
+    if (!e.repeat && !travel && !entering) book.toggle();
+    return;
+  }
+  if (e.code === 'Escape' && book.active && document.pointerLockElement !== canvas) book.close();
+  // 日记摊开时，世界里的按键都不算
+  if (book.active) return;
   const f = pipe.flags;
   if (e.code === 'Digit1') f.raw = !f.raw;
   if (e.code === 'Digit2') f.field = !f.field;
@@ -247,15 +279,33 @@ addEventListener('keydown', (e) => {
 });
 
 let dragging = false;
+const lockPointer = () => {
+  // 刚按 Esc 放开后浏览器有一小段冷却，这时要不到锁，不要紧
+  (canvas.requestPointerLock?.() as Promise<void> | undefined)?.catch?.(() => {});
+};
 canvas.addEventListener('mousedown', () => {
+  if (book.active) {
+    book.click();
+    lockPointer();
+    return;
+  }
   dragging = true;
-  canvas.requestPointerLock?.();
+  lockPointer();
 });
 addEventListener('mouseup', () => (dragging = false));
 addEventListener('mousemove', (e) => {
-  if (document.pointerLockElement === canvas || dragging) player.look(e.movementX, e.movementY);
+  const locked = document.pointerLockElement === canvas;
+  if (book.active) {
+    if (locked) book.move(e.movementX, e.movementY);
+    else {
+      const r = canvas.getBoundingClientRect();
+      book.moveTo((e.clientX - r.left) / UI_SCALE, (e.clientY - r.top) / UI_SCALE);
+    }
+    return;
+  }
+  if (locked || dragging) player.look(e.movementX, e.movementY);
 });
-addEventListener('wheel', (e) => player.nudge(-e.deltaY * 0.012), { passive: true });
+addEventListener('wheel', (e) => !book.active && player.nudge(-e.deltaY * 0.012), { passive: true });
 
 // ── 入口（晶体 → 站点） ──
 let entering: Entrance | null = null;
@@ -323,6 +373,7 @@ function checkPortals(): Portal | null {
     }
   }
   if (prompt && interact) {
+    tag.press();
     go(prompt.to, prompt.at);
     prompt = null;
   }
@@ -366,13 +417,9 @@ function fieldOf(prompt: Portal | null): Field {
   }
   resolve = entering ? Math.min(1, resolve + 0.12) : target;
 
-  if (prompt) {
-    label.textContent = `E · ${prompt.title || '……'}`;
-    label.style.opacity = '1';
-  } else {
-    label.textContent = nearest?.title ?? '';
-    label.style.opacity = String(nearest ? (1 - THREE.MathUtils.smoothstep(nearestD, 4, 9)) * (1 - resolve) * (1 - dissolve) : 0);
-  }
+  // 晶体的名字连着真实的站点，不走像素 UI，保持全分辨率；有纸签时让开
+  label.textContent = nearest?.title ?? '';
+  label.style.opacity = String(nearest && !prompt ? (1 - THREE.MathUtils.smoothstep(nearestD, 4, 9)) * (1 - resolve) * (1 - dissolve) : 0);
 
   return { sources: sources.slice(0, MAX_FIELD), prox, resolve, dissolve, veilCol };
 }
@@ -385,7 +432,7 @@ let fps = 0;
 function frame(dt: number) {
   if (!frozen) t += dt;
   stepTravel(dt);
-  player.update(dt, !!entering || !!travel);
+  player.update(dt, !!entering || !!travel || book.active);
   if (player.feet.y < -40) respawn();
   player.eyePosition(eye);
   camera.position.copy(eye);
@@ -398,7 +445,14 @@ function frame(dt: number) {
   for (const e of level.entrances) e.crystal.update(camera, pipe.pixTexture);
   const field = fieldOf(prompt);
   shadow.render(renderer, level.scene, player.feet);
+  book.update(dt);
+  field.drowse = book.drowse;
   pipe.render(level.scene, level.crystalScene, camera, field);
+  book.render(renderer);
+  ui.clear();
+  tag.update(dt, travel || entering || book.active ? null : prompt, camera);
+  book.drawCursor();
+  canvas.style.cursor = book.active ? 'none' : '';
 }
 
 function updateHud() {
@@ -408,7 +462,7 @@ function updateHud() {
   hud.textContent =
     `NEXUS · ${world}   ${fps.toFixed(0)} fps   ${pipe.size.w}×${pipe.size.h}   ` +
     `脚底 ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}  朝向 ${((player.yaw / deg) % 360).toFixed(0)}°${player.fly ? '  飞行' : ''}\n` +
-    `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 醒来 · Esc 释放 · Shift+R 回到到达处\n` +
+    `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 醒来 · Tab 日记 · Esc 释放 · Shift+R 回到到达处\n` +
     `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${on(f.outline)} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · 6 三色 ${shared.uAutoRamp.value} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
 }
 
@@ -460,5 +514,7 @@ updateHud();
     entrances: level.entrances.map((e) => e.url).filter(Boolean),
     visited: visited(),
   }),
+  /** 日记本（测试用） */
+  diary: book,
   keys: (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code })),
 };

@@ -80,9 +80,13 @@ export class Player {
     this.vel.addScaledVector(this.forward(), amount);
   }
 
+  /** 视角灵敏度的倍数（日记的设置页里调） */
+  sens = 1;
+
   look(dx: number, dy: number) {
-    this.yaw -= dx * 0.0022;
-    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0022, -1.4, 1.4);
+    const k = 0.0022 * this.sens;
+    this.yaw -= dx * k;
+    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * k, -1.4, 1.4);
   }
 
   forward() {

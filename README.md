@@ -5,6 +5,7 @@
 - 审美方向：[docs/direction.md](docs/direction.md)
 - 用 Blender 搭场景（约定、属性表、尺度、色板、世界与传送物）：[docs/blender.md](docs/blender.md)
 - 天空主题：[docs/sky.md](docs/sky.md)
+- UI（纸签提示、日记本、物品的方向）：[docs/ui.md](docs/ui.md)
 
 ```
 npm install
@@ -15,11 +16,13 @@ node scripts/blender.cjs export slice  # 手改 .blend 后只导出
 node scripts/shot.cjs                  # 打包后截图到 .shots/
 node scripts/walk.cjs                  # 打包后用真实按键走一遍：台阶、跳、入口、后退
 node scripts/travel.cjs                # 打包后把所有世界的所有传送物各走一遍
+node scripts/ui-shot.cjs [世界…]        # 打包后截各个按键型传送物前的纸签提示
+node scripts/diary-shot.cjs            # 打包后截日记本：打开、悬停、翻页、合上
 ```
 
 截图与行走测试需要 `%TEMP%/node_modules/puppeteer-core` 与本机 Chrome。
 
-操作：点击画面锁定视角 · WASD / 滚轮行走 · Space 跳 · Shift 快走 · E 互动 · Q 醒来（回家）· Esc 释放 · Shift+R 回到到达处
+操作：点击画面锁定视角 · WASD / 滚轮行走 · Space 跳 · Shift 快走 · E 互动 · Q 醒来（回家）· Tab 日记 · Esc 释放 · Shift+R 回到到达处
 调试键：1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · G 穿墙飞行（Space 升 / C 降） · H 隐藏提示
 查询串：`?world=`（默认 `home`；`?scene=` 同义）· `?pos=x,y,z`（脚底）`&yaw=度&pitch=度` · `?freeze=1` · `?hud=0` · `?sky=`
 
@@ -39,6 +42,9 @@ node scripts/travel.cjs                # 打包后把所有世界的所有传送
 | `src/paper.ts` | 剪纸的现实物：灯、椅、窗、门、杯、电话 |
 | `src/skybox.ts` | 天空主题（见 docs/sky.md） |
 | `src/palette.ts` | 16 色色板 |
+| `src/ui.ts` | UI 地基：低分辨率 UI 画布、像素字、剪纸 |
+| `src/prompt.ts` | 交互提示：系在东西上的纸签 |
+| `src/diary.ts` | 日记本（Tab）：3D 的书、翻页、设置 |
 | `blender/nx.py` | Blender 侧的搭建、标注、导出函数 |
 | `blender/prefabs.py` | 预制件族（花之装置、框、阶、环、塔、台、器、纸片撒布） |
 | `blender/furniture.py` | 家具与器物：自己的低面数构件（椅、架、灯、钟、瓶、草木），正式世界里的现实物都用它 |

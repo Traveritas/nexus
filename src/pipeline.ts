@@ -7,7 +7,7 @@
    3. 合成：把像素化结果铺到屏幕，同时按每格的视深写回深度。
    4. 晶体以全分辨率画在最上面，深度与像素世界互相遮挡，折射取的是像素化之后的画面。 */
 import * as THREE from 'three';
-import { paletteLab, paletteRgb, inkRgb, hiRgb } from './palette';
+import { AUTO_RAMP, paletteLab, paletteRgb, inkRgb, hiRgb } from './palette';
 
 export const MAX_FIELD = 8;
 
@@ -30,6 +30,8 @@ export interface Field {
   dissolve?: number;
   /** 转场蒙上的颜色（sRGB 0..1），通常是新旧世界的雾色 */
   veilCol?: THREE.Color;
+  /** 犯困（翻开日记时）：0..1，格子退到最粗一级，颜色按三色明暗的暗档整体暗一级 */
+  drowse?: number;
 }
 
 export interface Flags {
@@ -59,8 +61,9 @@ uniform float uProx, uResolve;
 uniform vec3 uPal[16];
 uniform vec3 uPalRgb[16];
 uniform vec3 uInk, uHi;
+uniform float uDark[16];
 uniform mat3 uView;
-uniform float uRaw, uPaletteOn, uOutlineOn, uFieldView, uLock, uDissolve;
+uniform float uRaw, uPaletteOn, uOutlineOn, uFieldView, uLock, uDissolve, uDrowse;
 out vec4 fragColor;
 
 float bayer4(ivec2 p) {
@@ -126,6 +129,10 @@ void main() {
     float ld = uDissolve * 5.0 + (bayer4(px / 8) - 0.5) * 0.9;
     L = max(L, int(clamp(floor(ld + 0.5), 0.0, 5.0)));
   }
+  if (uDrowse > 0.0) {
+    float lz = uDrowse * 2.4 + (bayer4(px / 8) - 0.5) * 0.9;
+    L = max(L, int(clamp(floor(lz + 0.5), 0.0, 2.0)));
+  }
   int s = 1 << L;
   ivec2 cell = px >> L;
   ivec2 cpx = min(cell * s + s / 2, hi);
@@ -152,7 +159,10 @@ void main() {
     float t = clamp(dot(lab - a, b - a) / max(dot(b - a, b - a), 1e-6), 0.0, 1.0);
     // 靠近某一色时就是平涂，只在两色之间的那一段才抖
     t = clamp((t - 0.3) / 0.2, 0.0, 1.0) * 0.5;
-    outc = t > bayer4(cell) ? uPalRgb[i2] : uPalRgb[i1];
+    int ci = t > bayer4(cell) ? i2 : i1;
+    // 犯困：每一格按三色明暗的暗档往下走一级；过渡时按格子抖开，走完就是整片暗一档，没有网点
+    if (uDrowse > 0.0 && bayer4(cell + ivec2(2, 1)) < uDrowse) ci = int(uDark[ci]);
+    outc = uPalRgb[ci];
   }
 
   if (uOutlineOn > 0.5) {
@@ -189,6 +199,7 @@ void main() {
     vec3 tint[4] = vec3[4](vec3(1.0, 1.0, 1.0), vec3(0.6, 0.85, 1.0), vec3(1.0, 0.75, 0.85), vec3(0.75, 0.7, 0.95));
     outc *= tint[L];
   }
+
 
   fragColor = vec4(outc, depth);
 }
@@ -246,6 +257,8 @@ export class Pipeline {
         uFieldView: { value: 0 },
         uLock: { value: -1 },
         uDissolve: { value: 0 },
+        uDrowse: { value: 0 },
+        uDark: { value: AUTO_RAMP.map((r) => r[0]) },
       },
       vertexShader: QUAD_VERT,
       fragmentShader: PIX_FRAG,
@@ -328,6 +341,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     // 最后一段化成白：晶体本身也被盖住；世界转场则蒙上雾色
     const dissolve = field.dissolve ?? 0;
     u.uDissolve.value = dissolve;
+    u.uDrowse.value = field.drowse ?? 0;
     const veilWhite = THREE.MathUtils.smoothstep(field.resolve, 0.55, 1);
     const veilDream = THREE.MathUtils.smoothstep(dissolve, 0.6, 1);
     this.compMat.uniforms.uVeil.value = Math.max(veilWhite, veilDream);
