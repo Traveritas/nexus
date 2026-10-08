@@ -1,6 +1,6 @@
 # NEXUS - INDEV
 
-所有网站的枢纽：一片可以走动的第一人称空间，每个站点是一枚晶体，走进去就到了。
+枢纽
 
 - 审美方向：[docs/direction.md](docs/direction.md)
 - 用 Blender 搭场景（约定、属性表、尺度、色板）：[docs/blender.md](docs/blender.md)
