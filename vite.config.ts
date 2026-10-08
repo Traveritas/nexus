@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 
 // public/ 下的场景与纸片图一变，整页刷新（位置由 main.ts 在开发模式下存取）
 export default defineConfig({
+  // 绑定 IPv4 回环：localhost 可能只解析到 ::1，导致 127.0.0.1 打不开
+  server: {
+    host: '127.0.0.1',
+  },
   plugins: [
     {
       name: 'nexus-reload-assets',
