@@ -1,9 +1,13 @@
-/* 日记本（Tab）：一本真的书，在自己的小场景里用 3D 画，画进 UI 分辨率的离屏图，再按最近邻铺到屏幕上。
+/* 日记本（Tab）：一本真的书，画在自己的舞台上（见 stage.ts）。
    书摊平、停稳时，页面一个纹素正好对一个 UI 像素，所以页上的像素字是锐利的；翻开、翻页时是真的 3D，带着像素的颗粒。
    着色只分三档明暗，然后落回色板。打开时世界「犯困」（见 pipeline 的 drowse），晶体照旧清醒。
    指针锁着时用一支像素小箭头操作；没锁时跟着真鼠标。Tab 打开、Tab 合上。 */
 import * as THREE from 'three';
-import { AUTO_RAMP, PALETTE, paletteRgb } from './palette';
+import { PALETTE } from './palette';
+import { Stage, box, canvasTex, clamp01, ease, mat, plane, setMap, solid } from './stage';
+import { itemDef } from './items/item';
+import type { Owned } from './items/system';
+import { worldName } from './worlds';
 import { C, UI_SCALE, inkRows, paper, paperMask, scratch, text, type Ui } from './ui';
 
 /** 一页的尺寸（UI 像素 ＝ 书场景里的单位） */
@@ -26,8 +30,6 @@ const SETTINGS_KEY = 'nexus:settings';
 const NIGHTS_KEY = 'nexus:nights';
 
 const P = (i: number) => PALETTE[i];
-/** 世界的中文名；没写的显示原名 */
-const WORLD_NAMES: Record<string, string> = { home: '家' };
 
 export interface Settings {
   sens: number;
@@ -53,7 +55,7 @@ function saveSettings(s: Settings) {
 }
 
 /** 第几夜：每次新开一个标签页算一夜 */
-function night(): number {
+export function night(): number {
   try {
     let n = Number(localStorage.getItem(NIGHTS_KEY) ?? 0);
     if (!sessionStorage.getItem(NIGHTS_KEY)) {
@@ -66,114 +68,6 @@ function night(): number {
     return 1;
   }
 }
-
-// ── 书的材质：贴图或纯色，三档明暗，落回色板 ──
-const BOOK_VERT = /* glsl */ `
-uniform float uFlipU;
-out vec2 vUv;
-out vec3 vN;
-void main() {
-  vUv = vec2(uFlipU > 0.5 ? 1.0 - uv.x : uv.x, uv.y);
-  vN = normalize(normalMatrix * normal);
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
-
-const BOOK_FRAG = /* glsl */ `
-precision highp float;
-uniform sampler2D uMap;
-uniform float uHasMap;
-uniform vec3 uColor;
-uniform vec3 uPalRgb[16];
-uniform float uDark[16];
-in vec2 vUv;
-in vec3 vN;
-out vec4 fragColor;
-void main() {
-  vec4 c = uHasMap > 0.5 ? texture(uMap, vUv) : vec4(uColor, 1.0);
-  if (c.a < 0.5) discard;
-  vec3 n = normalize(vN) * (gl_FrontFacing ? 1.0 : -1.0);
-  float d = dot(n, normalize(vec3(0.25, 0.35, 0.9)));
-  // 先认出是色板里的哪一色，再按三色明暗的暗档往下走 0 / 1 / 2 级。
-  // 正对镜头的一面落在最亮那档：颜色原样不动
-  int bi = 0;
-  float bd = 1e9;
-  for (int i = 0; i < 16; i++) {
-    vec3 e = c.rgb - uPalRgb[i];
-    float dd = dot(e, e);
-    if (dd < bd) { bd = dd; bi = i; }
-  }
-  if (d <= 0.8) bi = int(uDark[bi]);
-  if (d <= 0.45) bi = int(uDark[bi]);
-  fragColor = vec4(uPalRgb[bi], 1.0);
-}`;
-
-const BLIT_FRAG = /* glsl */ `
-precision highp float;
-uniform sampler2D tBook;
-uniform float uScale;
-out vec4 fragColor;
-void main() {
-  vec4 c = texelFetch(tBook, ivec2(gl_FragCoord.xy / uScale), 0);
-  if (c.a < 0.5) discard;
-  fragColor = vec4(c.rgb, 1.0);
-}`;
-
-/** 每一色暗一档是哪一色（三色明暗的暗档） */
-const DARK = AUTO_RAMP.map((r) => r[0]);
-
-function mat(o:{ map?: THREE.Texture; color?: string; flipU?: boolean; side?: THREE.Side }) {
-  return new THREE.ShaderMaterial({
-    glslVersion: THREE.GLSL3,
-    side: o.side ?? THREE.FrontSide,
-    uniforms: {
-      uMap: { value: o.map ?? null },
-      uHasMap: { value: o.map ? 1 : 0 },
-      uColor: { value: new THREE.Color(o.color ?? '#ffffff') },
-      uFlipU: { value: o.flipU ? 1 : 0 },
-      uPalRgb: { value: paletteRgb },
-      uDark: { value: DARK },
-    },
-    vertexShader: BOOK_VERT,
-    fragmentShader: BOOK_FRAG,
-  });
-}
-
-/** 颜色不经过色彩管理：贴图里是什么字节，着色器里就是什么 */
-function rawColor(m: THREE.ShaderMaterial, hex: string) {
-  const n = parseInt(hex.slice(1), 16);
-  (m.uniforms.uColor.value as THREE.Color).setRGB((n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255, THREE.LinearSRGBColorSpace);
-}
-
-function solid(hex: string) {
-  const m = mat({});
-  rawColor(m, hex);
-  return m;
-}
-
-function canvasTex(c: HTMLCanvasElement) {
-  const t = new THREE.CanvasTexture(c);
-  t.magFilter = t.minFilter = THREE.NearestFilter;
-  t.generateMipmaps = false;
-  t.colorSpace = THREE.NoColorSpace;
-  return t;
-}
-
-/** 一块盒子：x0..x1、y 居中、z0..z1；六面分别给材质（+x −x +y −y +z −z） */
-function box(x0: number, x1: number, h: number, z0: number, z1: number, mats: THREE.Material[]) {
-  const g = new THREE.BoxGeometry(x1 - x0, h, z1 - z0);
-  g.translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
-  return new THREE.Mesh(g, mats);
-}
-
-function plane(w: number, h: number, m: THREE.Material, x: number, z: number) {
-  const g = new THREE.PlaneGeometry(w, h);
-  const mesh = new THREE.Mesh(g, m);
-  mesh.position.set(x, 0, z);
-  return mesh;
-}
-
-const ease = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
-const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 
 // ── 页面 ──
 interface Region {
@@ -190,6 +84,8 @@ interface PageCtx {
   world: string;
   visited: string[];
   night: number;
+  owned: Owned[];
+  held: string | null;
 }
 
 type Draw = (g: CanvasRenderingContext2D, c: PageCtx) => Region[];
@@ -276,11 +172,14 @@ function title(g: CanvasRenderingContext2D, s: string, x: number) {
   g.fillRect(x, ROW0 + 1, w, 1);
 }
 
-const worldName = (w: string) => WORLD_NAMES[w] ?? w;
-
 const indexLeft: Draw = (g, c) => {
   title(g, '目录', 30);
-  return [item(g, c, 'resume', '继续', 34, 2), item(g, c, 'wake', '醒来', 34, 3), item(g, c, 'settings', '设置', 34, 4)];
+  return [
+    item(g, c, 'resume', '继续', 34, 2),
+    item(g, c, 'items', '拾得', 34, 3),
+    item(g, c, 'settings', '设置', 34, 4),
+    item(g, c, 'wake', '醒来', 34, 5),
+  ];
 };
 
 const journalRight: Draw = (g, c) => {
@@ -319,14 +218,65 @@ const controlsRight: Draw = (g) => {
     ['Space', '跳'],
     ['Shift', '快走'],
     ['E', '互动'],
-    ['Q', '醒来'],
+
     ['Tab', '日记'],
+    ['Q', '捏住手里的'],
+    ['F', '看看身上的'],
     ['Esc', '放开鼠标'],
   ];
   rows.forEach(([k, v], i) => {
     write(g, k, 26, 2 + i, P(2));
     write(g, v, 76, 2 + i);
   });
+  return [];
+};
+
+/** 按字宽折行 */
+function wrap(s: string, maxW: number): string[] {
+  const lines: string[] = [];
+  let cur = '';
+  for (const ch of s) {
+    if (cur && text(cur + ch).width > maxW) {
+      lines.push(cur);
+      cur = '';
+    }
+    cur += ch;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+const itemsLeft: Draw = (g, c) => {
+  title(g, '拾得', 30);
+  const r: Region[] = [];
+  if (!c.owned.length) write(g, '（还没有）', 34, 2, P(3));
+  c.owned.slice(0, 6).forEach((o, i) => {
+    const def = itemDef(o.id);
+    if (!def) return;
+    r.push(item(g, c, `hold:${o.id}`, def.name, 34, 2 + i));
+    if (c.held === o.id) write(g, '手里', 108, 2 + i, P(9));
+  });
+  r.push(item(g, c, 'back', '← 目录', 30, 9));
+  return r;
+};
+
+const itemsRight: Draw = (g, c) => {
+  const hov = c.hover?.startsWith('hold:') ? c.hover.slice(5) : null;
+  const id = hov ?? c.held ?? c.owned[0]?.id;
+  const o = c.owned.find((x) => x.id === id);
+  const def = id ? itemDef(id) : undefined;
+  if (!o || !def) {
+    write(g, '捡到的东西会记在这里', 26, 3, P(3));
+    return [];
+  }
+  const ic = def.icon();
+  g.imageSmoothingEnabled = false;
+  g.drawImage(ic, Math.round((PW - ic.width * 3) / 2), 10, ic.width * 3, ic.height * 3);
+  write(g, def.name, 26, 4, P(8));
+  write(g, `第 ${o.night} 夜 · 在${worldName(o.world)}`, 26, 5, P(2));
+  wrap(def.desc, PW - 50).slice(0, 4).forEach((ln, i) => write(g, ln, 26, 6 + i));
+  const hint = text(c.held === id ? '点名字收起' : '点名字拿起', P(3));
+  g.drawImage(hint, PW - hint.width - 10, PH - 14);
   return [];
 };
 
@@ -387,8 +337,8 @@ function ribbon(): HTMLCanvasElement {
 // ── 指针：一支像素小箭头，1 墨色 2 纸色 ──
 const ARROW = ['1', '11', '121', '1221', '12221', '122221', '1222221', '12222221', '12211111', '1211', '11', '1'];
 
-type Spread = 'index' | 'settings';
-const ORDER: Spread[] = ['index', 'settings'];
+type Spread = 'index' | 'items' | 'settings';
+const ORDER: Spread[] = ['index', 'items', 'settings'];
 
 interface Turn {
   t: number;
@@ -402,6 +352,9 @@ export interface DiaryHost {
   apply(s: Settings): void;
   world(): string;
   visited(): string[];
+  items(): { owned: Owned[]; held: string | null };
+  /** 拿起一件（null ＝ 收起来） */
+  hold(id: string | null): void;
 }
 
 export class Diary {
@@ -418,12 +371,8 @@ export class Diary {
   private sheetBack: THREE.Mesh;
   private root = new THREE.Group();
   private hinge = new THREE.Group();
-  private scene = new THREE.Scene();
-  private camera = new THREE.PerspectiveCamera(30, 1, 1, 5000);
-  private rt = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
-  private blit: THREE.Mesh;
-  private blitScene = new THREE.Scene();
-  private blitCam = new THREE.Camera();
+  /** 书页顶面是与 UI 像素一一对应的那个平面 */
+  private stage = new Stage(STACK_T);
   private cursor = new THREE.Vector2();
   private hover: string | null = null;
   private night = night();
@@ -437,6 +386,7 @@ export class Diary {
     host.apply(this.settings);
     this.pages = {
       index: [new Page('L', indexLeft), new Page('R', journalRight)],
+      items: [new Page('L', itemsLeft), new Page('R', itemsRight)],
       settings: [new Page('L', settingsLeft), new Page('R', controlsRight)],
     };
 
@@ -448,7 +398,7 @@ export class Diary {
     const right = new THREE.Group();
     right.add(box(0, PW + OVER, H, -COVER_T, 0, [coverEdge, coverEdge, coverEdge, coverEdge, cover, cover]));
     right.add(box(0, PW, PH, 0, STACK_T, [edge, edge, edge, edge, edge, edge]));
-    this.rightPage = plane(PW, PH, mat({}), PW / 2, STACK_T + PAGE_LIFT);
+    this.rightPage = plane(PW, PH, mat(), PW / 2, STACK_T + PAGE_LIFT);
     right.add(this.rightPage);
     // 书签带夹在封底与纸叠之间：上端藏在纸叠里，只有垂出书页底边的那截看得见，永远在所有页后面
     const rb = plane(5, 34, mat({ map: canvasTex(ribbon()) }), 34.5, STACK_T / 2);
@@ -459,7 +409,7 @@ export class Diary {
     left.position.z = -STACK_T;
     left.add(box(-(PW + OVER), 0, H, -COVER_T, 0, [coverEdge, coverEdge, coverEdge, coverEdge, cover, cover]));
     left.add(box(-PW, 0, PH, 0, STACK_T, [edge, edge, edge, edge, edge, edge]));
-    this.leftPage = plane(PW, PH, mat({}), -PW / 2, STACK_T + PAGE_LIFT);
+    this.leftPage = plane(PW, PH, mat(), -PW / 2, STACK_T + PAGE_LIFT);
     left.add(this.leftPage);
     const art = plane(PW + OVER, H, mat({ map: canvasTex(coverArt()) }), -(PW + OVER) / 2, -COVER_T - 0.05);
     art.rotation.y = Math.PI;
@@ -470,28 +420,14 @@ export class Diary {
 
     // 正在翻的那一页：正面是旧的右页，背面是新的左页
     this.sheetGeo = new THREE.PlaneGeometry(PW, PH, 24, 1);
-    this.sheetFront = new THREE.Mesh(this.sheetGeo, mat({}));
+    this.sheetFront = new THREE.Mesh(this.sheetGeo, mat());
     this.sheetBack = new THREE.Mesh(this.sheetGeo, mat({ flipU: true, side: THREE.BackSide }));
     for (const m of [this.sheetFront, this.sheetBack]) {
       m.position.z = STACK_T + 0.3;
       m.visible = false;
       this.root.add(m);
     }
-    this.scene.add(this.root);
-
-    this.blit = new THREE.Mesh(
-      new THREE.PlaneGeometry(2, 2),
-      new THREE.ShaderMaterial({
-        glslVersion: THREE.GLSL3,
-        depthTest: false,
-        depthWrite: false,
-        uniforms: { tBook: { value: this.rt.texture }, uScale: { value: UI_SCALE } },
-        vertexShader: 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }',
-        fragmentShader: BLIT_FRAG,
-      }),
-    );
-    this.blit.frustumCulled = false;
-    this.blitScene.add(this.blit);
+    this.stage.scene.add(this.root);
     this.showSpread('index');
   }
 
@@ -525,16 +461,7 @@ export class Diary {
   }
 
   setSize(wUi: number, hUi: number) {
-    this.rt.setSize(wUi, hUi);
-    const d = hUi / 2 / Math.tan((15 * Math.PI) / 180);
-    this.camera.aspect = wUi / hUi;
-    // 远近裁剪面只框住书活动的范围：镜头离书几百单位，near 若取 1，深度精度只有约 0.03，
-    // 书页、书签、翻页之间零点几的间隔会互相闪
-    this.camera.near = Math.max(1, d - 300);
-    this.camera.far = d + 300;
-    this.camera.position.set(0, 0, STACK_T + d);
-    this.camera.lookAt(0, 0, STACK_T);
-    this.camera.updateProjectionMatrix();
+    this.stage.setSize(wUi, hUi);
   }
 
   /** 锁着指针时：按位移挪箭头 */
@@ -559,6 +486,9 @@ export class Diary {
         this.close();
         this.host.wake();
         break;
+      case 'items':
+        this.turnTo('items');
+        break;
       case 'settings':
         this.turnTo('settings');
         break;
@@ -575,6 +505,11 @@ export class Diary {
       case 'hud':
         s.hud = !s.hud;
         break;
+      default:
+        if (this.hover.startsWith('hold:')) {
+          const id = this.hover.slice(5);
+          this.host.hold(this.host.items().held === id ? null : id);
+        }
     }
     saveSettings(s);
     this.host.apply(s);
@@ -586,7 +521,7 @@ export class Diary {
   }
 
   private ctx(): PageCtx {
-    return { hover: this.hover, settings: this.settings, world: this.host.world(), visited: this.host.visited(), night: this.night };
+    return { hover: this.hover, settings: this.settings, world: this.host.world(), visited: this.host.visited(), night: this.night, ...this.host.items() };
   }
 
   private redraw(s: Spread) {
@@ -594,16 +529,10 @@ export class Diary {
     for (const p of this.pages[s]) p.redraw(c);
   }
 
-  private setMap(m: THREE.Mesh, tex: THREE.Texture) {
-    const u = (m.material as THREE.ShaderMaterial).uniforms;
-    u.uMap.value = tex;
-    u.uHasMap.value = 1;
-  }
-
   private showSpread(s: Spread) {
     this.redraw(s);
-    this.setMap(this.leftPage, this.pages[s][0].tex);
-    this.setMap(this.rightPage, this.pages[s][1].tex);
+    setMap(this.leftPage, this.pages[s][0].tex);
+    setMap(this.rightPage, this.pages[s][1].tex);
   }
 
   private turnTo(to: Spread) {
@@ -616,14 +545,14 @@ export class Diary {
     const [newL, newR] = this.pages[to];
     if (dir === 1) {
       // 往后翻：右页立起来翻到左边；底下先露出新的右页，左页等它落下来再换
-      this.setMap(this.sheetFront, oldR.tex);
-      this.setMap(this.sheetBack, newL.tex);
-      this.setMap(this.rightPage, newR.tex);
+      setMap(this.sheetFront, oldR.tex);
+      setMap(this.sheetBack, newL.tex);
+      setMap(this.rightPage, newR.tex);
     } else {
       // 往回翻：左页翻回右边；底下先露出新的左页
-      this.setMap(this.sheetFront, newR.tex);
-      this.setMap(this.sheetBack, oldL.tex);
-      this.setMap(this.leftPage, newL.tex);
+      setMap(this.sheetFront, newR.tex);
+      setMap(this.sheetBack, oldL.tex);
+      setMap(this.leftPage, newL.tex);
     }
     this.turn = { t: 0, dir, to };
     this.sheetFront.visible = this.sheetBack.visible = true;
@@ -677,8 +606,8 @@ export class Diary {
       this.bendSheet(tr.dir === 1 ? Math.PI * e : Math.PI * (1 - e), tr.dir);
       if (tr.t >= 1) {
         const [newL, newR] = this.pages[tr.to];
-        this.setMap(this.leftPage, newL.tex);
-        this.setMap(this.rightPage, newR.tex);
+        setMap(this.leftPage, newL.tex);
+        setMap(this.rightPage, newR.tex);
         this.sheetFront.visible = this.sheetBack.visible = false;
         this.spread = tr.to;
         this.turn = null;
@@ -703,16 +632,7 @@ export class Diary {
   }
 
   render(r: THREE.WebGLRenderer) {
-    if (!this.active) return;
-    const col = r.getClearColor(new THREE.Color());
-    const alpha = r.getClearAlpha();
-    r.setRenderTarget(this.rt);
-    r.setClearColor(0x000000, 0);
-    r.clear(true, true, true);
-    r.render(this.scene, this.camera);
-    r.setRenderTarget(null);
-    r.setClearColor(col, alpha);
-    r.render(this.blitScene, this.blitCam);
+    if (this.active) this.stage.render(r);
   }
 
   /** 箭头画在 UI 画布上（在纸签之上） */

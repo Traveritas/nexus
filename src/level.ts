@@ -42,6 +42,15 @@ export interface Portal {
   pos: THREE.Vector3;
 }
 
+/** 物品摆在哪、怎么得到（物品本身的定义在 src/items/） */
+export interface ItemPlace {
+  item: string;
+  /** pick 走近按 E 拾起 · reach 走进 radius 内就得到 · custom 由物品自己判断条件，这里只标位置 */
+  mode: 'pick' | 'reach' | 'custom';
+  radius: number;
+  pos: THREE.Vector3;
+}
+
 export interface Level {
   scene: THREE.Scene;
   crystalScene: THREE.Scene;
@@ -49,6 +58,7 @@ export interface Level {
   entrances: Entrance[];
   spawn: { pos: THREE.Vector3; yaw: number };
   portals: Portal[];
+  items: ItemPlace[];
   /** 到达点：名字 → 脚底位置与朝向 */
   arrivals: Map<string, { pos: THREE.Vector3; yaw: number }>;
   sky: SkyBox;
@@ -88,6 +98,7 @@ export async function loadLevel(url: string): Promise<Level> {
   const colliderGeos: THREE.BufferGeometry[] = [];
   const spawn = { pos: new THREE.Vector3(0, 0, 0), yaw: 0 };
   const portals: Portal[] = [];
+  const items: ItemPlace[] = [];
   const arrivals = new Map<string, { pos: THREE.Vector3; yaw: number }>();
   const pending: Promise<void>[] = [];
 
@@ -138,6 +149,17 @@ export async function loadLevel(url: string): Promise<Level> {
         mode: u.nx_mode === 'key' ? 'key' : 'walk',
         title: String(u.nx_title ?? ''),
         radius: num(u.nx_radius, 0.9),
+        pos: wpos.clone(),
+      });
+      continue;
+    }
+
+    if (type === 'item') {
+      const mode = String(u.nx_get ?? 'pick');
+      items.push({
+        item: String(u.nx_item ?? ''),
+        mode: mode === 'reach' || mode === 'custom' ? mode : 'pick',
+        radius: num(u.nx_radius, 1.2),
         pos: wpos.clone(),
       });
       continue;
@@ -316,7 +338,7 @@ export async function loadLevel(url: string): Promise<Level> {
     shared.uSun.value.copy(sunDir);
     sky.set(sky.spec);
   };
-  return { scene, crystalScene, collider, entrances, spawn, portals, arrivals, sky, apply, update };
+  return { scene, crystalScene, collider, entrances, spawn, portals, items, arrivals, sky, apply, update };
 }
 
 function behaviorOf(obj: THREE.Object3D, u: Record<string, unknown>, faceDefault: boolean): Behavior | null {

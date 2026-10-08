@@ -32,6 +32,8 @@ export interface Field {
   veilCol?: THREE.Color;
   /** 犯困（翻开日记时）：0..1，格子退到最粗一级，颜色按三色明暗的暗档整体暗一级 */
   drowse?: number;
+  /** 暗下来的一圈（罗盘的地图）：屏幕像素，原点在左下；圆里每一格暗两档，边缘按格子抖开。不变粗 */
+  dim?: { x: number; y: number; r: number };
 }
 
 export interface Flags {
@@ -62,6 +64,7 @@ uniform vec3 uPal[16];
 uniform vec3 uPalRgb[16];
 uniform vec3 uInk, uHi;
 uniform float uDark[16];
+uniform vec3 uDim;
 uniform mat3 uView;
 uniform float uRaw, uPaletteOn, uOutlineOn, uFieldView, uLock, uDissolve, uDrowse;
 out vec4 fragColor;
@@ -96,8 +99,8 @@ vec3 octDecode(vec2 e) {
   return normalize(n);
 }
 
-int levelAt(ivec2 px) {
-  if (uLock >= 0.0) return int(uLock);
+/** 只看源（晶体、物品的焦点）时这一块该是几级：越靠近源越细，0..2 */
+float srcLevel(ivec2 px) {
   ivec2 blk = px / 8;
   vec2 bc = vec2(blk * 8) + 4.0;
   float lc = 2.0;
@@ -107,6 +110,13 @@ int levelAt(ivec2 px) {
     float d = length(bc - c.xy) / max(c.z, 6.0);
     lc = min(lc, log2(1.0 + d) + 0.2);
   }
+  return lc;
+}
+
+int levelAt(ivec2 px) {
+  if (uLock >= 0.0) return int(uLock);
+  ivec2 blk = px / 8;
+  float lc = srcLevel(px);
   lc -= 1.7 * uProx + 3.0 * uResolve;
   lc = clamp(lc, 0.0, 2.0);
   // 级别交界处按块抖开一窄条：不画出一道圆，也不满屏碎块
@@ -129,8 +139,12 @@ void main() {
     float ld = uDissolve * 5.0 + (bayer4(px / 8) - 0.5) * 0.9;
     L = max(L, int(clamp(floor(ld + 0.5), 0.0, 5.0)));
   }
+  // 犯困：格子退粗、颜色暗一档；源（晶体、正看着的物品）附近照旧清醒
+  float awake = 0.0;
   if (uDrowse > 0.0) {
-    float lz = uDrowse * 2.4 + (bayer4(px / 8) - 0.5) * 0.9;
+    float ls = srcLevel(px);
+    awake = 1.0 - clamp(ls - 0.6, 0.0, 1.0);
+    float lz = min(uDrowse * 2.4 + (bayer4(px / 8) - 0.5) * 0.9, ls);
     L = max(L, int(clamp(floor(lz + 0.5), 0.0, 2.0)));
   }
   int s = 1 << L;
@@ -161,7 +175,12 @@ void main() {
     t = clamp((t - 0.3) / 0.2, 0.0, 1.0) * 0.5;
     int ci = t > bayer4(cell) ? i2 : i1;
     // 犯困：每一格按三色明暗的暗档往下走一级；过渡时按格子抖开，走完就是整片暗一档，没有网点
-    if (uDrowse > 0.0 && bayer4(cell + ivec2(2, 1)) < uDrowse) ci = int(uDark[ci]);
+    if (uDrowse > 0.0 && bayer4(cell + ivec2(2, 1)) < uDrowse * (1.0 - awake)) ci = int(uDark[ci]);
+    if (uDim.z > 0.0) {
+      float dd = length(vec2(cell * s + s / 2) - uDim.xy) - uDim.z;
+      // 入夜：暗两档
+      if (dd + (bayer4(cell + ivec2(3, 0)) - 0.5) * 24.0 < 0.0) ci = int(uDark[int(uDark[ci])]);
+    }
     outc = uPalRgb[ci];
   }
 
@@ -258,6 +277,7 @@ export class Pipeline {
         uLock: { value: -1 },
         uDissolve: { value: 0 },
         uDrowse: { value: 0 },
+        uDim: { value: new THREE.Vector3() },
         uDark: { value: AUTO_RAMP.map((r) => r[0]) },
       },
       vertexShader: QUAD_VERT,
@@ -324,7 +344,9 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     return this.rtPix.texture;
   }
 
-  render(world: THREE.Scene, crystal: THREE.Scene, camera: THREE.PerspectiveCamera, field: Field) {
+  /** overlay：手边的东西（拿在手里的、环绕展示的）。世界画完后清掉深度再画进同一张图，所以不会插进墙里；
+      之后和世界一起像素化、落色板、描边 */
+  render(world: THREE.Scene, crystal: THREE.Scene, camera: THREE.PerspectiveCamera, field: Field, overlay?: THREE.Scene) {
     const r = this.renderer;
     const f = this.flags;
     const u = this.pixMat.uniforms;
@@ -342,6 +364,8 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     const dissolve = field.dissolve ?? 0;
     u.uDissolve.value = dissolve;
     u.uDrowse.value = field.drowse ?? 0;
+    const dm = field.dim;
+    (u.uDim.value as THREE.Vector3).set(dm?.x ?? 0, dm?.y ?? 0, dm?.r ?? 0);
     const veilWhite = THREE.MathUtils.smoothstep(field.resolve, 0.55, 1);
     const veilDream = THREE.MathUtils.smoothstep(dissolve, 0.6, 1);
     this.compMat.uniforms.uVeil.value = Math.max(veilWhite, veilDream);
@@ -358,6 +382,10 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     r.setRenderTarget(this.rtWorld);
     r.clear(true, true, true);
     r.render(world, camera);
+    if (overlay && overlay.children.length) {
+      r.clearDepth();
+      r.render(overlay, camera);
+    }
     // 世界画完后 matrixWorldInverse 才是这一帧的；描边判断凸凹要视空间法线
     u.uView.value.setFromMatrix4(camera.matrixWorldInverse);
 

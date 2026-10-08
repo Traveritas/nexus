@@ -5,6 +5,7 @@
      颜色只能取色板编号；阴影按纹素中心取样，影子边缘也落在同一套纹素格上。
    · 纸片：平面手绘精灵，Nearest 采样，同样每米 TEXEL 像素；背面是空白的纸。
    · 天空：在 skybox.ts，按主题换。
+   · 器物（charm）：会动的小东西用，三档受光直接取三枚色板色，不铺世界纹素格（见下）。
    每种可投影的材质都带一个只写深度的影子版本（shadowVariant）。 */
 import * as THREE from 'three';
 import { PALETTE, AUTO_RAMP } from './palette';
@@ -285,6 +286,40 @@ void main() {
   col *= 0.9 + 0.1 * step(0.0, dot(n, uSun));
   if (uUseFog > 0.5) col = mix(col, uFogCol, smoothstep(uFogNear, uFogFar, vDepth));
   oColor = vec4(col, 1.0);
+  oData = vec4(octEncode(n), vDepth, uId);
+}
+`,
+  });
+}
+
+/** 器物：会动的小东西（物品的装置、拿在手里的、环绕展示的）。三档受光直接取 ramp 的暗、中、亮三色，
+    不铺世界空间的纹素格——跟着镜头走、自己转都不会让纹样游动。像素化、落色板、描边照样由管线做。
+    glow 0..1：整体往亮处挪（1 ＝ 全亮），捏到底时发光用 */
+export function charm(ramp: [number, number, number], id = newId()) {
+  return new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    side: THREE.DoubleSide,
+    uniforms: {
+      uSun: shared.uSun,
+      uRamp: { value: ramp.map(pal) },
+      uGlow: { value: 0 },
+      uId: { value: id },
+    },
+    vertexShader: VERT,
+    fragmentShader: /* glsl */ `
+precision highp float;
+${OUTS}
+uniform vec3 uSun;
+uniform vec3 uRamp[3];
+uniform float uGlow, uId;
+in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
+${COMMON}
+void main() {
+  vec3 n = normalize(vNormal) * (gl_FrontFacing ? 1.0 : -1.0);
+  float d = dot(n, uSun);
+  int k = d > 0.3 ? 2 : d > -0.25 ? 1 : 0;
+  k = min(2, k + int(uGlow * 2.0 + 0.5));
+  oColor = vec4(uRamp[k], 1.0);
   oData = vec4(octEncode(n), vDepth, uId);
 }
 `,

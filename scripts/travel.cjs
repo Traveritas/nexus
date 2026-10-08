@@ -1,5 +1,5 @@
 /* node scripts/travel.cjs —— 先 npm run build。走一遍所有传送物：每个世界的每个传送物，站到跟前走进去 / 按 E，看是不是到了该去的世界。
-   另查：家以外每个世界出入口不超过四个；每个传送物的落脚处跟前就是回去的那个。另测：默认进家、Q 醒来、浏览器后退、转场中途截图。 */
+   另查：家以外每个世界出入口不超过四个；每个传送物的落脚处跟前就是回去的那个。另测：默认进家、日记里醒来、浏览器后退、转场中途截图。 */
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -116,13 +116,23 @@ srv.listen(0, '127.0.0.1', async () => {
     }
   }
 
-  // 3. 转场中途截图、Q 醒来、后退
+  // 3. 转场中途截图、醒来（日记目录里的「醒来」）、后退
   await goWorld('procession');
   await sleep(500);
-  await press('KeyQ');
+  await press('Tab');
+  await sleep(1100);
+  await page.evaluate(() => {
+    // 目录左页第 5 行（醒来）：UI 像素 ＝ 屏幕 ÷ 2，书页 148×196 居中
+    const w = (Math.floor(innerWidth / 8) * 8) / 2;
+    const h = (Math.floor(innerHeight / 8) * 8) / 2;
+    window.__nexus.diary.moveTo(w / 2 - 148 + 40, h / 2 - 98 + 100);
+  });
+  // 悬停下一帧才更新，等一下再点
+  await sleep(120);
+  await page.evaluate(() => window.__nexus.diary.click());
   await sleep(450);
   await page.screenshot({ path: path.join(OUT, 't-02-dissolve-out.png') });
-  log(await waitWorld('home'), 'Q 醒来 → home');
+  log(await waitWorld('home'), '日记 · 醒来 → home');
   await sleep(150);
   await page.screenshot({ path: path.join(OUT, 't-03-after-wake.png') });
   await page.goBack();

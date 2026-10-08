@@ -7,13 +7,16 @@ import { SKY_NAMES, skyLabel } from './skybox';
 import { shared } from './materials';
 import { Ui, UI_SCALE, loadUiFont } from './ui';
 import { PromptTag } from './prompt';
-import { Diary } from './diary';
+import { Diary, night } from './diary';
+import { ItemSystem, type Promptable } from './items/system';
+import { MapView } from './mapview';
+import { edges, recordEdge, recordSite, sites } from './worlds';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 home——家）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
-   键：E 互动 · Q 醒来（回家）· Tab 日记 · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
+   键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
 
 const q = new URLSearchParams(location.search);
@@ -36,6 +39,12 @@ const shadow = new SunShadow();
 const ui = new Ui(document.getElementById('ui') as HTMLCanvasElement);
 const fontReady = loadUiFont();
 const tag = new PromptTag(ui);
+const items = new ItemSystem(ui, night);
+/** 罗盘的地图：捏到底开、再捏到底收 */
+const map = new MapView(ui, document.getElementById('maplabel')!);
+items.onBloom = (id) => {
+  if (id === 'compass') map.toggle(camera);
+};
 /** 日记本要等人和世界都有了才建（见「日记」一节）；resize 先于它跑 */
 let diary: Diary | undefined;
 
@@ -78,12 +87,18 @@ function markVisited(name: string) {
   }
 }
 markVisited(world);
+/** 这个世界有站点（晶体）就记下来：罗盘的星座图在它旁边点一颗金星 */
+function noteSites() {
+  if (level.entrances.some((e) => e.url)) recordSite(world);
+}
+noteSites();
 
 /** 预先取一下相邻世界的场景文件（只是暖一下浏览器缓存） */
 function prefetchNeighbours(l: Level) {
   for (const to of new Set(l.portals.map((p) => p.to))) fetch(sceneUrl(to)).catch(() => {});
 }
 prefetchNeighbours(level);
+items.attach(level, world);
 
 function disposeLevel(l: Level) {
   for (const s of [l.scene, l.crystalScene])
@@ -169,6 +184,9 @@ interface Travel {
   ready: Level | null | undefined;
   veilFrom: THREE.Color;
   veilTo: THREE.Color;
+  /** 从哪个世界来；是不是穿过传送物来的（是的话记一条走过的连接，罗盘的星座图用） */
+  from: string;
+  via: boolean;
 }
 let travel: Travel | null = null;
 let dissolve = 0;
@@ -177,13 +195,14 @@ const IN = 1.0;
 const veilCol = new THREE.Color();
 const fogSrgb = () => shared.uFogCol.value.clone().convertLinearToSRGB();
 
-function go(to: string, at = '', push = true) {
+function go(to: string, at = '', push = true, via = false) {
   if (travel || entering || !to) return;
   const next = loadLevel(sceneUrl(to)).catch((err) => {
     console.warn('[nexus] 去不了', to, err);
     return null;
   });
-  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb() };
+  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb(), from: world, via };
+  map.closeNow();
   travel = tr;
   player.vel.set(0, 0, 0);
   next.then((l) => {
@@ -215,6 +234,9 @@ function stepTravel(dt: number) {
     lastArrival = travel.at;
     arriveAt(travel.at);
     markVisited(world);
+    if (travel.via) recordEdge(travel.from, world);
+    noteSites();
+    items.attach(level, world);
     prefetchNeighbours(level);
     if (travel.push) history.pushState({ world, at: travel.at }, '', `?world=${encodeURIComponent(world)}`);
     travel.veilTo = fogSrgb();
@@ -246,6 +268,8 @@ const book = new Diary(ui, {
   },
   world: () => world,
   visited,
+  items: () => ({ owned: items.owned, held: items.held }),
+  hold: (id) => items.hold(id),
 });
 diary = book;
 book.setSize(ui.w, ui.h);
@@ -255,7 +279,10 @@ let interact = false;
 addEventListener('keydown', (e) => {
   if (e.code === 'Tab') {
     e.preventDefault();
-    if (!e.repeat && !travel && !entering) book.toggle();
+    if (!e.repeat && !travel && !entering && !items.busy && !items.ringActive) {
+      items.use(false);
+      book.toggle();
+    }
     return;
   }
   if (e.code === 'Escape' && book.active && document.pointerLockElement !== canvas) book.close();
@@ -273,9 +300,19 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyK') level.sky.set(SKY_NAMES[(SKY_NAMES.indexOf(level.sky.name) + 1) % SKY_NAMES.length]);
   if (e.code === 'KeyR' && e.shiftKey) respawn();
   if (e.code === 'KeyE' && !e.repeat) interact = true;
-  // 醒来：回家，落在床边
-  if (e.code === 'KeyQ' && !e.repeat) go(HOME, 'wake');
+  // 按住 Q：把手里的东西举到眼前、捏紧；松开放下（醒来在日记的目录里）
+  if (e.code === 'KeyQ' && !e.repeat) items.use(true);
+  // 按住 F：身上的东西排成一道弧围在眼前；松开拿起正看着的那件
+  if (e.code === 'KeyF' && !e.repeat) items.showRing(true, camera);
   if (e.code === 'Space' && document.pointerLockElement === canvas) e.preventDefault();
+});
+addEventListener('keyup', (e) => {
+  if (e.code === 'KeyQ') items.use(false);
+  if (e.code === 'KeyF') items.showRing(false, camera);
+});
+addEventListener('blur', () => {
+  items.use(false);
+  items.showRing(false, camera);
 });
 
 let dragging = false;
@@ -283,9 +320,9 @@ const lockPointer = () => {
   // 刚按 Esc 放开后浏览器有一小段冷却，这时要不到锁，不要紧
   (canvas.requestPointerLock?.() as Promise<void> | undefined)?.catch?.(() => {});
 };
-canvas.addEventListener('mousedown', () => {
+canvas.addEventListener('mousedown', (e) => {
   if (book.active) {
-    book.click();
+    if (e.button === 0) book.click();
     lockPointer();
     return;
   }
@@ -343,7 +380,7 @@ const body = new THREE.Vector3();
 const look = new THREE.Vector3();
 
 /** 走进型的直接走；按键型的返回眼前那一个（用来显示提示） */
-function checkPortals(): Portal | null {
+function checkPortals(limit = Infinity): Portal | null {
   if (travel || entering) return null;
   body.copy(player.feet);
   body.y += 0.9;
@@ -353,12 +390,13 @@ function checkPortals(): Portal | null {
   if (armedFrom && !level.portals.some((p) => p.mode === 'walk' && inside(p, 0.3))) armedFrom = null;
   camera.getWorldDirection(look);
   let prompt: Portal | null = null;
-  let best = Infinity;
+  // limit：眼前有一件更近的物品可以拾起时，比它远的传送物不出纸签
+  let best = limit;
   for (const p of level.portals) {
     if (p.mode === 'walk') {
       if (armedFrom) continue;
       if (inside(p)) {
-        go(p.to, p.at);
+        go(p.to, p.at, true, true);
         return null;
       }
     } else {
@@ -374,13 +412,13 @@ function checkPortals(): Portal | null {
   }
   if (prompt && interact) {
     tag.press();
-    go(prompt.to, prompt.at);
+    go(prompt.to, prompt.at, true, true);
     prompt = null;
   }
   return prompt;
 }
 
-function fieldOf(prompt: Portal | null): Field {
+function fieldOf(prompt: Promptable | null): Field {
   const { w, h } = pipe.size;
   const sources: (FieldSource & { d: number })[] = [];
   let prox = 0;
@@ -432,25 +470,41 @@ let fps = 0;
 function frame(dt: number) {
   if (!frozen) t += dt;
   stepTravel(dt);
-  player.update(dt, !!entering || !!travel || book.active);
+  player.update(dt, !!entering || !!travel || book.active || items.locked);
   if (player.feet.y < -40) respawn();
   player.eyePosition(eye);
   camera.position.copy(eye);
   camera.rotation.set(player.pitch, player.yaw, 0);
   camera.updateMatrixWorld();
 
-  const prompt = checkPortals();
+  items.update(dt, { world, feet: player.feet, t }, camera);
+  // 纸签：眼前可以拾起的物品与按键型传送物，谁近挂谁
+  camera.getWorldDirection(look);
+  const itemP = travel || entering || book.active ? null : items.promptAt(eye, look);
+  let prompt: Promptable | null = checkPortals(itemP?.d ?? Infinity);
+  if (!prompt && itemP) {
+    prompt = itemP.p;
+    if (interact) {
+      tag.press();
+      items.pick(itemP.p, camera);
+    }
+  }
   interact = false;
   level.update(dt, t, camera, frozen);
   for (const e of level.entrances) e.crystal.update(camera, pipe.pixTexture);
   const field = fieldOf(prompt);
+  field.sources = [...items.sources(camera), ...field.sources].slice(0, MAX_FIELD);
   shadow.render(renderer, level.scene, player.feet);
   book.update(dt);
-  field.drowse = book.drowse;
-  pipe.render(level.scene, level.crystalScene, camera, field);
+  field.drowse = Math.max(book.drowse, items.drowse);
+  map.update(dt);
+  field.dim = map.dim(items.handScreen(camera, pipe.size.w, pipe.size.h), pipe.size.w, pipe.size.h);
+  pipe.render(level.scene, level.crystalScene, camera, field, items.hand);
   book.render(renderer);
   ui.clear();
-  tag.update(dt, travel || entering || book.active ? null : prompt, camera);
+  tag.update(dt, travel || entering || book.active || items.busy || items.ringActive ? null : prompt, camera);
+  items.drawUi(camera);
+  map.draw(camera, { level, world, visited: visited(), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
   book.drawCursor();
   canvas.style.cursor = book.active ? 'none' : '';
 }
@@ -462,7 +516,7 @@ function updateHud() {
   hud.textContent =
     `NEXUS · ${world}   ${fps.toFixed(0)} fps   ${pipe.size.w}×${pipe.size.h}   ` +
     `脚底 ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}  朝向 ${((player.yaw / deg) % 360).toFixed(0)}°${player.fly ? '  飞行' : ''}\n` +
-    `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 醒来 · Tab 日记 · Esc 释放 · Shift+R 回到到达处\n` +
+    `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 按住捏手里的 · F 按住看看身上的 · Tab 日记 · Esc 释放 · Shift+R 回到到达处\n` +
     `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${on(f.outline)} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · 6 三色 ${shared.uAutoRamp.value} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
 }
 
@@ -512,9 +566,15 @@ updateHud();
     /** 到达点：名字 → [x, y, z, 朝向°] */
     arrivalAt: Object.fromEntries([...level.arrivals].map(([k, v]) => [k, [...v.pos.toArray(), v.yaw / deg]])),
     entrances: level.entrances.map((e) => e.url).filter(Boolean),
+    /** 晶体（有站点的）：网址与中心位置 */
+    sitesHere: level.entrances.filter((e) => e.url).map((e) => ({ url: e.url, title: e.title, pos: e.crystal.mesh.position.toArray() })),
     visited: visited(),
   }),
   /** 日记本（测试用） */
   diary: book,
+  /** 物品系统；placeItem 在当前世界临时摆一件（脚底坐标系，位置是物品浮着的地方） */
+  items,
+  placeItem: (id: string, x: number, y: number, z: number, mode: 'pick' | 'reach' | 'custom' = 'pick', radius = 1.2) =>
+    items.place({ item: id, mode, radius, pos: new THREE.Vector3(x, y, z) }),
   keys: (code: string, down: boolean) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code })),
 };

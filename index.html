@@ -19,6 +19,13 @@
     text-shadow: 0 0 6px #ecdde6;
   }
   #hud.off { display: none; }
+  /* 罗盘地图上站点的名字：连着真实的站点，全分辨率平滑字，跟着星星走（src/mapview.ts） */
+  #maplabel {
+    position: fixed; transform: translateX(-50%); white-space: nowrap;
+    pointer-events: none; opacity: 0;
+    font: 13px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+    letter-spacing: 0.3em; color: #fbf9f7; text-shadow: 0 0 4px #1d1a2b, 0 0 10px #3a3350;
+  }
   #label {
     position: fixed; left: 50%; bottom: 12vh; transform: translateX(-50%);
     pointer-events: none; opacity: 0; transition: opacity 0.4s;
@@ -32,6 +39,7 @@
 <canvas id="ui"></canvas>
 <div id="hud"></div>
 <div id="label"></div>
+<div id="maplabel"></div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

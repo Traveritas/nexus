@@ -18,11 +18,13 @@ node scripts/walk.cjs                  # 打包后用真实按键走一遍：台
 node scripts/travel.cjs                # 打包后把所有世界的所有传送物各走一遍
 node scripts/ui-shot.cjs [世界…]        # 打包后截各个按键型传送物前的纸签提示
 node scripts/diary-shot.cjs            # 打包后截日记本：打开、悬停、翻页、合上
+node scripts/items-shot.cjs            # 打包后截物品：拾起、演出、捏、环绕、日记拾得页
+node scripts/map-shot.cjs              # 打包后截罗盘的地图：暗圈、本世界的星、星座、站点
 ```
 
 截图与行走测试需要 `%TEMP%/node_modules/puppeteer-core` 与本机 Chrome。
 
-操作：点击画面锁定视角 · WASD / 滚轮行走 · Space 跳 · Shift 快走 · E 互动 · Q 醒来（回家）· Tab 日记 · Esc 释放 · Shift+R 回到到达处
+操作：点击画面锁定视角 · WASD / 滚轮行走 · Space 跳 · Shift 快走 · E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记的目录里）· Esc 释放 · Shift+R 回到到达处
 调试键：1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · G 穿墙飞行（Space 升 / C 降） · H 隐藏提示
 查询串：`?world=`（默认 `home`；`?scene=` 同义）· `?pos=x,y,z`（脚底）`&yaw=度&pitch=度` · `?freeze=1` · `?hud=0` · `?sky=`
 
@@ -44,7 +46,11 @@ node scripts/diary-shot.cjs            # 打包后截日记本：打开、悬停
 | `src/palette.ts` | 16 色色板 |
 | `src/ui.ts` | UI 地基：低分辨率 UI 画布、像素字、剪纸 |
 | `src/prompt.ts` | 交互提示：系在东西上的纸签 |
-| `src/diary.ts` | 日记本（Tab）：3D 的书、翻页、设置 |
+| `src/diary.ts` | 日记本（Tab）：3D 的书、翻页、拾得、设置 |
+| `src/stage.ts` | 舞台：UI 里的 3D 实物（日记本）画在 UI 分辨率上，三档明暗落回色板 |
+| `src/mapview.ts` | 罗盘的地图：暗下来的一圈、本世界的星、天上的星座 |
+| `src/worlds.ts` | 世界的中文名、星座的形状、走过的连接与有站点的世界的存档 |
+| `src/items/` | 物品：定义与登记（`item.ts`）、摆放/拾取/演出/存档/手里/环绕（`system.ts`）、各件物品 |
 | `blender/nx.py` | Blender 侧的搭建、标注、导出函数 |
 | `blender/prefabs.py` | 预制件族（花之装置、框、阶、环、塔、台、器、纸片撒布） |
 | `blender/furniture.py` | 家具与器物：自己的低面数构件（椅、架、灯、钟、瓶、草木），正式世界里的现实物都用它 |

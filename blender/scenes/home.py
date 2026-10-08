@@ -3,9 +3,10 @@
 - 衣柜（走进去，拨开衣服）→ 无墙之屋  · 书房桌上摊开的书（E「翻开」）→ 回廊（博客在那里）
 - 客厅边几上的花瓶（E「凑近」）→ 花房  · 餐桌上一杯水（E）→ 浅滩
 唯一一扇真正的门是前门：开向院子，院子就是院子。
+客厅茶几上放着罗盘怀表（物品，走近按 E 拾起）。
 
 布局（俯视，x 向右、y 向上）：西北卧室、西南书房、东边一整间客厅兼餐厅（头顶天窗）；南墙前门 → 门廊 → 小径 → 院门。
-到达点按「从哪个世界回来」命名，就在通往那个世界的东西旁边：wake（床边，也是出生点，Q 醒来落在这里）、
+到达点按「从哪个世界回来」命名，就在通往那个世界的东西旁边：wake（床边，也是出生点，日记里「醒来」落在这里）、
 descent（床边）、isles（落地窗内）、room（衣柜前）、procession（书桌旁）、glasshouse（花瓶旁）、shoal（餐桌旁）。
 各世界回家是一盏灯（E「关灯」），见 prefabs.gate_home；这里的传送物都落在那边名为 home 的到达点（灯前）。
 运行：node scripts/blender.cjs build home
@@ -235,6 +236,8 @@ def build(extent=EXTENT):
     nx.box("coffee_table", (1.1, 0.6, 0.38), (6.6, 7.8, F), **WOOD)
     fu.vase("coffee_vase", (6.35, 7.75, F + 0.38), 0.26, "bottle", style=dict(a="pink", b="pink_pale", pattern="plain"))
     fu.vase("coffee_bowl", (6.85, 7.85, F + 0.38), 0.1, "bowl", style=WHITE)
+    # 茶几前沿平放着一块罗盘怀表（物品：地图；样子在网页的 src/items/compass.ts）
+    nx.item("compass", (6.62, 7.6, F + 0.38), "compass", get="pick")
     # 边几上的花瓶：凑近去闻 → 花房
     nx.box("side_table", (0.55, 0.55, 0.65), (8.45, 9.4, F), **WOOD)
     fu.vase("vase", (8.45, 9.4, F + 0.65), 0.42, "round", flowers=6, seed=3)

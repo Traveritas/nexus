@@ -2,7 +2,7 @@
    走近、看着它：纸签从东西那里升起来，先是空白的背面，一翻，正面是「[E] 标题」。
    移开视线：压扁成一条边，收走。转头时纸签跟着线晃一下，慢半拍。按 E，键帽按下去。 */
 import * as THREE from 'three';
-import type { Portal } from './level';
+import type { Promptable } from './items/system';
 import { C, inkRows, line, paper, paperMask, paperShadow, scratch, text, type Ui } from './ui';
 
 const PAD_X = 4;
@@ -37,7 +37,7 @@ const v = new THREE.Vector3();
 
 export class PromptTag {
   private ui: Ui;
-  private cur: Portal | null = null;
+  private cur: Promptable | null = null;
   private face: Face | null = null;
   private phase: 'hidden' | 'in' | 'shown' | 'out' = 'hidden';
   private ang = 90;
@@ -55,7 +55,7 @@ export class PromptTag {
     this.pressT = 0.2;
   }
 
-  update(dt: number, want: Portal | null, camera: THREE.Camera) {
+  update(dt: number, want: Promptable | null, camera: THREE.Camera) {
     this.pressT = Math.max(0, this.pressT - dt);
     if (want !== this.cur) {
       if (this.cur && this.phase !== 'hidden') this.phase = 'out';
@@ -89,7 +89,7 @@ export class PromptTag {
     this.draw(a.x, a.y);
   }
 
-  private show(p: Portal, camera: THREE.Camera) {
+  private show(p: Promptable, camera: THREE.Camera) {
     this.cur = p;
     this.face = this.build(p.title || '……');
     this.phase = 'in';

@@ -325,6 +325,18 @@ def veil(name, w, h, loc, yaw=0.0, a="blue_pale", b="white", parent=None):
     return obj
 
 
+def item(name, loc, item_id, get="pick", radius=1.2):
+    """物品：放在哪、怎么得到。物品本身（样子、效果、得到时的演出）在网页的 src/items/ 里定义，这里只标位置。
+    get="pick" 走近按 E 拾起（loc 是物品浮着的位置，大约齐胸高）；"reach" 走进 radius 米内就得到（到达某个地点）；
+    "custom" 条件由物品自己判断，这里的 loc 只是演出的位置。一个世界最多放一件"""
+    obj = _empty(f"item_{name}", loc, (0, 0, 0), "PLAIN_AXES", 0.4)
+    obj["nx_type"] = "item"
+    obj["nx_item"] = item_id
+    obj["nx_get"] = get
+    obj["nx_radius"] = float(radius)
+    return obj
+
+
 def arrive(name, loc, facing_deg=0):
     """到达点：别的世界传送过来时落在这里。loc 是脚底，facing_deg 同 spawn。别放在传送物的 radius 里"""
     obj = _empty(f"arrive_{name}", loc, (0, 0, facing_deg), "SINGLE_ARROW", 0.8)
