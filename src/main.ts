@@ -563,7 +563,7 @@ updateHud();
     armedFrom = player.feet.clone();
   },
   flags: pipe.flags,
-  /** 影子的计数：静图重画次数、动着的投影物 */
+  /** 影子的计数：重画次数、动着的投影物 */
   shadow: shadow.stats,
   sky: (name: string) => level.sky.set(name),
   player,
