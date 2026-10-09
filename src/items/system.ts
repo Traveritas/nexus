@@ -84,9 +84,8 @@ function showOf(def: ItemDef): Shown {
   const geo = new THREE.PlaneGeometry(ic.width / TEXEL, ic.height / TEXEL);
   geo.translate(0, ic.height / TEXEL / 2 + 0.1, 0);
   const m = paperMat(crisp(ic), { back: 6, id: newId() });
-  const mesh = new THREE.Mesh(geo, m);
-  mesh.userData.shadowMat = shadowVariant(m);
-  return { object: mesh };
+  // 纸片不投影
+  return { object: new THREE.Mesh(geo, m) };
 }
 
 export class ItemSystem {

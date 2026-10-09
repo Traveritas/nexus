@@ -201,7 +201,6 @@ export async function loadLevel(url: string): Promise<Level> {
           if (!isSky) geo.translate(0, sh / 2, 0);
           const mat = paper(tex, { back: num(u.nx_back, 6), fog: !isSky, id: newId() });
           const mesh = new THREE.Mesh(geo, mat);
-          if (!isSky && bool(u.nx_shadow, true)) mesh.userData.shadowMat = shadowVariant(mat);
           holder.add(mesh);
         }),
       );
