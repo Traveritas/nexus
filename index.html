@@ -8,7 +8,9 @@
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #ecdde6; }
   body { display: grid; place-items: center; }
-  #stage, #ui { grid-area: 1 / 1; display: block; image-rendering: pixelated; }
+  #stage, #glow, #ui { grid-area: 1 / 1; display: block; image-rendering: pixelated; }
+  /* 连续的光（罗盘地图的星）：全分辨率，按「滤色」叠在世界上，纸签在它上面，见 src/mapview.ts */
+  #glow { pointer-events: none; image-rendering: auto; mix-blend-mode: screen; }
   #stage { cursor: crosshair; }
   /* UI 画布：一个 UI 像素 ＝ 2 个屏幕像素，见 src/ui.ts */
   #ui { pointer-events: none; }
@@ -36,6 +38,7 @@
 </head>
 <body>
 <canvas id="stage"></canvas>
+<canvas id="glow"></canvas>
 <canvas id="ui"></canvas>
 <div id="hud"></div>
 <div id="label"></div>

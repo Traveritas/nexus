@@ -16,7 +16,7 @@ import { edges, recordEdge, recordSite, sites } from './worlds';
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
-   键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边 · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
+   键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
 
 const q = new URLSearchParams(location.search);
@@ -41,7 +41,7 @@ const fontReady = loadUiFont();
 const tag = new PromptTag(ui);
 const items = new ItemSystem(ui, night);
 /** 罗盘的地图：捏到底开、再捏到底收 */
-const map = new MapView(ui, document.getElementById('maplabel')!);
+const map = new MapView(ui, document.getElementById('maplabel')!, document.getElementById('glow') as HTMLCanvasElement);
 items.onBloom = (id) => {
   if (id === 'compass') map.toggle(camera);
 };
@@ -292,7 +292,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Digit1') f.raw = !f.raw;
   if (e.code === 'Digit2') f.field = !f.field;
   if (e.code === 'Digit3') f.palette = !f.palette;
-  if (e.code === 'Digit4') f.outline = !f.outline;
+  if (e.code === 'Digit4') f.outline = (f.outline + 1) % 3;
   if (e.code === 'Digit5') f.lock = f.lock >= 2 ? -1 : f.lock + 1;
   // 三色强度：默认 → 一半 → 全 → 关 → 默认
   if (e.code === 'Digit6') { const r = [0.3, 0.5, 1, 0]; shared.uAutoRamp.value = r[(r.indexOf(shared.uAutoRamp.value) + 1) % r.length]; }
@@ -499,12 +499,13 @@ function frame(dt: number) {
   field.drowse = Math.max(book.drowse, items.drowse);
   map.update(dt);
   field.dim = map.dim(items.handScreen(camera, pipe.size.w, pipe.size.h), pipe.size.w, pipe.size.h);
+  field.glow = map.layout(camera, { level, world, visited: visited(), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
   pipe.render(level.scene, level.crystalScene, camera, field, items.hand);
   book.render(renderer);
   ui.clear();
   tag.update(dt, travel || entering || book.active || items.busy || items.ringActive ? null : prompt, camera);
   items.drawUi(camera);
-  map.draw(camera, { level, world, visited: visited(), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
+  map.draw();
   book.drawCursor();
   canvas.style.cursor = book.active ? 'none' : '';
 }
@@ -517,7 +518,7 @@ function updateHud() {
     `NEXUS · ${world}   ${fps.toFixed(0)} fps   ${pipe.size.w}×${pipe.size.h}   ` +
     `脚底 ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}  朝向 ${((player.yaw / deg) % 360).toFixed(0)}°${player.fly ? '  飞行' : ''}\n` +
     `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 按住捏手里的 · F 按住看看身上的 · Tab 日记 · Esc 释放 · Shift+R 回到到达处\n` +
-    `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${on(f.outline)} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · 6 三色 ${shared.uAutoRamp.value} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
+    `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${['关', '格', '细线'][f.outline]} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · 6 三色 ${shared.uAutoRamp.value} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
 }
 
 let acc = 0;

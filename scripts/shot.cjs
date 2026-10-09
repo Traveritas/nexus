@@ -51,7 +51,7 @@ srv.listen(0, '127.0.0.1', async () => {
     if (only && !name.includes(only)) continue;
     await page.evaluate((x, y, z, yaw, pitch, flags) => {
       const n = window.__nexus;
-      Object.assign(n.flags, { raw: false, field: false, palette: true, outline: true, lock: -1 }, flags);
+      Object.assign(n.flags, { raw: false, field: false, palette: true, outline: 0, lock: -1 }, flags);
       n.set(x, y, z, yaw, pitch);
     }, x, y, z, yaw, pitch, flags);
     await new Promise((r) => setTimeout(r, 700));

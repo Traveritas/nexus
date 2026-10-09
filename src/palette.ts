@@ -31,11 +31,6 @@ export const AUTO_RAMP: [number, number, number][] = [
   [12, 15, 14], // 15 green → 亮处淡金
 ];
 
-/** 描边色：不用最深那枚，线要软一点 */
-export const INK = '#3a3350';
-/** 凸棱亮边色：最亮那枚，半透地压上去 */
-export const HI = '#fbf9f7';
-
 function lin(c: number) {
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }
@@ -63,5 +58,3 @@ export const paletteLab = PALETTE.map((h) => {
   const [r, g, b] = rgb(h).map(lin);
   return oklab(r, g, b);
 });
-export const inkRgb = new THREE.Vector3(...rgb(INK));
-export const hiRgb = new THREE.Vector3(...rgb(HI));

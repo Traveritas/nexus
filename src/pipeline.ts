@@ -3,11 +3,13 @@
    2. 像素化：屏幕按 8×8 分块，每块从「解析度场」取一个级别 L ∈ {0,1,2,3}，格子边长 2^L。
       一格的颜色直接取 mip 第 L 层对应的那个纹素——正好是这一格里所有像素的平均，
       比点采样稳得多，第一人称转头时不蠕动。格子只取 2 的幂，各级永远对齐在同一套网格上。
-      L ≥ 1 时落到 16 色色板（OKLab 最近两色之间按格子坐标做 Bayer 抖动）并描边；L = 0 时保留连续色。
+      L ≥ 1 时落到 16 色色板（OKLab 最近两色之间按格子坐标做 Bayer 抖动）；L = 0 时保留连续色。
+      描边两种（Flags.outline）：1 按格子描，线色取这一格自己的暗档（轮廓暗两档、凹角暗一档、凸棱亮一档），远处淡掉；
+      2 填色照旧是格子，线按全分辨率勾——细、带一点抗锯齿，压在像素填色上。
    3. 合成：把像素化结果铺到屏幕，同时按每格的视深写回深度。
    4. 晶体以全分辨率画在最上面，深度与像素世界互相遮挡，折射取的是像素化之后的画面。 */
 import * as THREE from 'three';
-import { AUTO_RAMP, paletteLab, paletteRgb, inkRgb, hiRgb } from './palette';
+import { AUTO_RAMP, paletteLab, paletteRgb } from './palette';
 
 export const MAX_FIELD = 8;
 
@@ -34,13 +36,18 @@ export interface Field {
   drowse?: number;
   /** 暗下来的一圈（罗盘的地图）：屏幕像素，原点在左下；圆里每一格暗两档，边缘按格子抖开。不变粗 */
   dim?: { x: number; y: number; r: number };
+  /** 星光（罗盘地图的星落到世界上）：屏幕像素，原点在左下，z 是半径；里圈亮两档、外圈一档，边缘按格子抖开 */
+  glow?: THREE.Vector3[];
 }
+
+export const MAX_GLOW = 16;
 
 export interface Flags {
   /** 关掉像素化，直接看原始世界 */
   raw: boolean;
   palette: boolean;
-  outline: boolean;
+  /** 0 不描 · 1 按格子描（自身暗档） · 2 全分辨率细线 */
+  outline: number;
   /** 给各级染色，看解析度场 */
   field: boolean;
   /** -1 自动；0..3 锁死一个级别 */
@@ -62,11 +69,13 @@ uniform int uCrystalCount;
 uniform float uProx, uResolve;
 uniform vec3 uPal[16];
 uniform vec3 uPalRgb[16];
-uniform vec3 uInk, uHi;
 uniform float uDark[16];
+uniform float uLight[16];
 uniform vec3 uDim;
+uniform vec3 uGlow[${MAX_GLOW}];
+uniform int uGlowCount;
 uniform mat3 uView;
-uniform float uRaw, uPaletteOn, uOutlineOn, uFieldView, uLock, uDissolve, uDrowse;
+uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse;
 out vec4 fragColor;
 
 float bayer4(ivec2 p) {
@@ -157,6 +166,8 @@ void main() {
   float id = dat.w;
 
   vec3 outc;
+  int ci = -1;
+  bool dimmed = false;
   if (L == 0 || uPaletteOn < 0.5) {
     outc = toSrgb(col);
   } else {
@@ -173,18 +184,30 @@ void main() {
     float t = clamp(dot(lab - a, b - a) / max(dot(b - a, b - a), 1e-6), 0.0, 1.0);
     // 靠近某一色时就是平涂，只在两色之间的那一段才抖
     t = clamp((t - 0.3) / 0.2, 0.0, 1.0) * 0.5;
-    int ci = t > bayer4(cell) ? i2 : i1;
+    ci = t > bayer4(cell) ? i2 : i1;
     // 犯困：每一格按三色明暗的暗档往下走一级；过渡时按格子抖开，走完就是整片暗一档，没有网点
     if (uDrowse > 0.0 && bayer4(cell + ivec2(2, 1)) < uDrowse * (1.0 - awake)) ci = int(uDark[ci]);
     if (uDim.z > 0.0) {
       float dd = length(vec2(cell * s + s / 2) - uDim.xy) - uDim.z;
-      // 入夜：暗两档
-      if (dd + (bayer4(cell + ivec2(3, 0)) - 0.5) * 24.0 < 0.0) ci = int(uDark[int(uDark[ci])]);
+      dimmed = dd + (bayer4(cell + ivec2(3, 0)) - 0.5) * 24.0 < 0.0;
     }
+    // 星光：星本身是连续的光（画在 #glow 上），落到世界上是一格一格亮回来的——
+    // 外圈撤回一档暗、里圈两档（回到原色）；圈的边缘按格子抖开
+    int up = 0;
+    for (int i = 0; i < ${MAX_GLOW}; i++) {
+      if (i >= uGlowCount) break;
+      vec3 g = uGlow[i];
+      float dd = length(vec2(cell * s + s / 2) - g.xy) / g.z + (bayer4(cell + ivec2(1, 2)) - 0.5) * 0.35;
+      up = max(up, dd < 0.5 ? 2 : dd < 1.0 ? 1 : 0);
+    }
+    // 入夜：暗两档
+    int down = dimmed ? 2 - up : -up;
+    for (int i = 0; i < 2; i++) if (i < down) ci = int(uDark[ci]);
+    if (down < 0) ci = int(uLight[ci]);
     outc = uPalRgb[ci];
   }
 
-  if (uOutlineOn > 0.5) {
+  if (uOutline > 0.5 && uOutline < 1.5) {
     vec3 n = octDecode(dat.xy);
     float edge = 0.0, crease = 0.0, ridge = 0.0;
     vec3 nv = uView * n;
@@ -203,15 +226,70 @@ void main() {
         float lap = 1.0 / nd.z + 1.0 / nd2.z - 2.0 * inv0;
         if (abs(lap) > 0.08 * inv0 && max(nd.z, nd2.z) > depth * 1.02) edge = 1.0;
         else if (dot(octDecode(nd.xy), n) < 0.6) {
-          // 折痕分凸凹：往右（上）走法线也往右（上）转＝凸棱，描一道亮边；凹角照旧压墨
+          // 折痕分凸凹：往右（上）走法线也往右（上）转＝凸棱，亮一档；凹角暗一档
           vec3 dn = uView * octDecode(nd.xy) - nv;
           if ((k == 0 ? dn.x : dn.y) > 0.0) ridge = 1.0;
           else crease = 1.0;
         }
       }
     }
-    outc = mix(outc, uInk, max(edge * 0.88, crease * 0.4));
-    if (edge < 0.5) outc = mix(outc, uHi, ridge * 0.5);
+    // 线色取这一格自己的暗档（sel-out）：粉的东西描深玫瑰，白的描雾蓝。
+    // 远处按深度分段少走一档（不抖：细东西抖开会变成虚线）；天上的东西（编号 9000 起）照旧描
+    float far = id > 8999.5 ? 0.0 : depth < 70.0 ? 0.0 : depth < 160.0 ? 1.0 : 2.0;
+    int st = int(max((edge > 0.5 ? 2.0 : crease > 0.5 ? 1.0 : 0.0) - far, 0.0));
+    // 暗下去的地方不描亮棱：让给星光
+    bool lit = edge < 0.5 && crease < 0.5 && ridge > 0.5 && far < 1.0 && !dimmed;
+    if (ci >= 0) {
+      for (int i = 0; i < 2; i++) if (i < st) ci = int(uDark[ci]);
+      if (lit) ci = int(uLight[ci]);
+      outc = uPalRgb[ci];
+    } else {
+      outc *= mix(vec3(1.0), vec3(0.5, 0.48, 0.6), float(st) * 0.5);
+      if (lit) outc = mix(outc, vec3(1.0), 0.3);
+    }
+  } else if (uOutline > 1.5) {
+    // 全分辨率细线：按屏幕像素看数据图，不看格子，线落在靠前的那一边。
+    // 八邻里「后面的另一物件」占几分就盖几分：直边一整像素，台阶的角只盖一点，像抗锯齿；近处再往外加一圈淡的
+    vec4 d0 = texelFetch(tData, px, 0);
+    float z0 = d0.z, id0 = d0.w;
+    vec3 n0 = octDecode(d0.xy);
+    float sil = 0.0, cr = 0.0, rd = 0.0;
+    ivec2 dirs[8] = ivec2[8](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1), ivec2(1, 1), ivec2(-1, -1), ivec2(1, -1), ivec2(-1, 1));
+    vec4 q[8];
+    for (int k = 0; k < 8; k++) q[k] = texelFetch(tData, clamp(px + dirs[k], ivec2(0), hi), 0);
+    for (int k = 0; k < 8; k++) {
+      if (abs(q[k].w - id0) > 0.5 && q[k].z > z0 * 1.01) sil += k < 4 ? 1.0 : 0.5;
+    }
+    if (id0 > 0.5) {
+      float inv0 = 1.0 / z0;
+      for (int k = 0; k < 4; k += 2) {
+        vec4 a = q[k], b = q[k + 1];
+        if (abs(a.w - id0) > 0.5 || abs(b.w - id0) > 0.5) continue;
+        float lap = 1.0 / a.z + 1.0 / b.z - 2.0 * inv0;
+        if (abs(lap) > 0.08 * inv0 && max(a.z, b.z) > z0 * 1.02) sil += 1.0;
+        else if (dot(octDecode(a.xy), n0) < 0.6) {
+          vec3 dn = uView * octDecode(a.xy) - uView * n0;
+          if ((k == 0 ? dn.x : dn.y) > 0.0) rd = 1.0;
+          else cr = 1.0;
+        }
+      }
+    }
+    float wide = 1.0 - smoothstep(2.5, 8.0, z0);
+    if (wide > 0.0) {
+      for (int k = 0; k < 4; k++) {
+        vec4 a = texelFetch(tData, clamp(px + dirs[k] * 2, ivec2(0), hi), 0);
+        if (abs(a.w - id0) > 0.5 && a.z > z0 * 1.01) sil += 0.6 * wide;
+      }
+    }
+    // 远处的线淡下去；天上的东西照旧描
+    float f = 1.0 - (id0 > 8999.5 ? 0.0 : clamp((z0 - 30.0) / 120.0, 0.0, 1.0));
+    float cov = clamp(sil / 2.0, 0.0, 1.0) * f;
+    vec3 dark = ci >= 0 ? uPalRgb[int(uDark[int(uDark[ci])])] : outc * vec3(0.5, 0.48, 0.6);
+    vec3 dim = ci >= 0 ? uPalRgb[int(uDark[ci])] : outc * vec3(0.75, 0.74, 0.8);
+    vec3 light = ci >= 0 ? uPalRgb[int(uLight[ci])] : mix(outc, vec3(1.0), 0.3);
+    outc = mix(outc, dim, cr * 0.6 * f * (1.0 - cov));
+    outc = mix(outc, light, rd * (dimmed ? 0.0 : 0.45) * f * (1.0 - cov));
+    outc = mix(outc, dark, cov * 0.92);
   }
 
   if (uFieldView > 0.5) {
@@ -240,7 +318,7 @@ void main() {
 `;
 
 export class Pipeline {
-  readonly flags: Flags = { raw: false, palette: true, outline: true, field: false, lock: -1 };
+  readonly flags: Flags = { raw: false, palette: true, outline: 0, field: false, lock: -1 };
   rtWorld!: THREE.WebGLRenderTarget;
   rtPix!: THREE.WebGLRenderTarget;
   private quadScene = new THREE.Scene();
@@ -267,18 +345,19 @@ export class Pipeline {
         uResolve: { value: 0 },
         uPal: { value: paletteLab },
         uPalRgb: { value: paletteRgb },
-        uInk: { value: inkRgb },
-        uHi: { value: hiRgb },
         uView: { value: new THREE.Matrix3() },
         uRaw: { value: 0 },
         uPaletteOn: { value: 1 },
-        uOutlineOn: { value: 1 },
+        uOutline: { value: 0 },
         uFieldView: { value: 0 },
         uLock: { value: -1 },
         uDissolve: { value: 0 },
         uDrowse: { value: 0 },
         uDim: { value: new THREE.Vector3() },
+        uGlow: { value: Array.from({ length: MAX_GLOW }, () => new THREE.Vector3()) },
+        uGlowCount: { value: 0 },
         uDark: { value: AUTO_RAMP.map((r) => r[0]) },
+        uLight: { value: AUTO_RAMP.map((r) => r[2]) },
       },
       vertexShader: QUAD_VERT,
       fragmentShader: PIX_FRAG,
@@ -366,6 +445,10 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     u.uDrowse.value = field.drowse ?? 0;
     const dm = field.dim;
     (u.uDim.value as THREE.Vector3).set(dm?.x ?? 0, dm?.y ?? 0, dm?.r ?? 0);
+    const gl = field.glow ?? [];
+    const ng = Math.min(gl.length, MAX_GLOW);
+    for (let i = 0; i < ng; i++) u.uGlow.value[i].copy(gl[i]);
+    u.uGlowCount.value = ng;
     const veilWhite = THREE.MathUtils.smoothstep(field.resolve, 0.55, 1);
     const veilDream = THREE.MathUtils.smoothstep(dissolve, 0.6, 1);
     this.compMat.uniforms.uVeil.value = Math.max(veilWhite, veilDream);
@@ -374,7 +457,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     else vc.set(0.984, 0.976, 0.969);
     u.uRaw.value = f.raw ? 1 : 0;
     u.uPaletteOn.value = f.palette ? 1 : 0;
-    u.uOutlineOn.value = f.outline ? 1 : 0;
+    u.uOutline.value = Number(f.outline);
     u.uFieldView.value = f.field ? 1 : 0;
     u.uLock.value = f.lock;
 
