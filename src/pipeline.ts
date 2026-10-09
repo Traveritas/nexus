@@ -7,7 +7,11 @@
       描边两种（Flags.outline）：1 按格子描，线色取这一格自己的暗档（轮廓暗两档、凹角暗一档、凸棱亮一档），远处淡掉；
       2 填色照旧是格子，线按全分辨率勾——细、带一点抗锯齿，压在像素填色上。
    3. 合成：把像素化结果铺到屏幕，同时按每格的视深写回深度。
-   4. 晶体以全分辨率画在最上面，深度与像素世界互相遮挡，折射取的是像素化之后的画面。 */
+   4. 晶体以全分辨率画在最上面，深度与像素世界互相遮挡，折射取的是像素化之后的画面。
+   降分辨率（setShift(n)）：世界只画屏幕的 1/2ⁿ×1/2ⁿ，屏幕上第 L 级的格子正好是世界图 mip 第 L-n 层的一个纹素，
+   网格不变；代价是最细的几级（L < n）退成 2ⁿpx，细线描边也按 2ⁿpx 走。
+   落色板按格子算、不按像素算：同一格里每个像素的结果都一样，所以先用一个小 pass（QUANT_FRAG）把 mip 各层
+   每个纹素的「最近两色 + 抖几成」算好，铺在一张图集上，像素化时只取一下。 */
 import * as THREE from 'three';
 import { AUTO_RAMP, paletteLab, paletteRgb } from './palette';
 
@@ -58,34 +62,14 @@ const QUAD_VERT = /* glsl */ `
 void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }
 `;
 
-const PIX_FRAG = /* glsl */ `
-precision highp float;
-precision highp int;
-uniform sampler2D tColor;
-uniform sampler2D tData;
-uniform vec2 uRes;
-uniform vec3 uCrystals[${MAX_FIELD}];
-uniform int uCrystalCount;
-uniform float uProx, uResolve;
-uniform vec3 uPal[16];
-uniform vec3 uPalRgb[16];
-uniform float uDark[16];
-uniform float uLight[16];
-uniform vec3 uDim;
-uniform vec3 uGlow[${MAX_GLOW}];
-uniform int uGlowCount;
-uniform mat3 uView;
-uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse;
-out vec4 fragColor;
-
-float bayer4(ivec2 p) {
+const COMMON = /* glsl */ `
+int bayerRank(ivec2 p) {
   int m[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
-  return (float(m[(p.y & 3) * 4 + (p.x & 3)]) + 0.5) / 16.0;
+  return m[(p.y & 3) * 4 + (p.x & 3)];
 }
 
-vec3 toSrgb(vec3 c) {
-  c = max(c, 0.0);
-  return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
+float bayer4(ivec2 p) {
+  return (float(bayerRank(p)) + 0.5) / 16.0;
 }
 
 vec3 oklab(vec3 c) {
@@ -98,6 +82,79 @@ vec3 oklab(vec3 c) {
     0.2104542553 * lms.x + 0.7936177850 * lms.y - 0.0040720468 * lms.z,
     1.9779984951 * lms.x - 2.4285922050 * lms.y + 0.4505937099 * lms.z,
     0.0259040371 * lms.x + 0.7827717662 * lms.y - 0.8086757660 * lms.z);
+}
+`;
+
+/** 世界图 mip 第 k 层在落色图集里的位置：x, y, 宽, 高 */
+const MAX_QLEVEL = 6;
+
+/* 落色：图集里每个纹素对应 mip 某一层的一格，写下最近两枚色板色 i1、i2，
+   以及 Bayer 阈值里有几个小于抖动量 t（像素化时按格子的 Bayer 名次比一下就知道取哪一色，和逐像素算完全一样） */
+const QUANT_FRAG = /* glsl */ `
+precision highp float;
+precision highp int;
+uniform sampler2D tColor;
+uniform vec3 uPal[16];
+uniform ivec4 uQLevel[${MAX_QLEVEL}];
+uniform int uQFirst;
+out vec4 fragColor;
+${COMMON}
+void main() {
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  int k = -1;
+  ivec2 c;
+  for (int i = 0; i < ${MAX_QLEVEL}; i++) {
+    if (i < uQFirst) continue;
+    ivec4 r = uQLevel[i];
+    ivec2 q = p - r.xy;
+    if (q.x >= 0 && q.y >= 0 && q.x < r.z && q.y < r.w) { k = i; c = q; break; }
+  }
+  if (k < 0) { fragColor = vec4(0.0); return; }
+  vec3 lab = oklab(texelFetch(tColor, c, k).rgb);
+  int i1 = 0, i2 = 1;
+  float d1 = 1e9, d2 = 1e9;
+  for (int i = 0; i < 16; i++) {
+    vec3 e = lab - uPal[i];
+    float d = dot(e, e);
+    if (d < d1) { d2 = d1; i2 = i1; d1 = d; i1 = i; }
+    else if (d < d2) { d2 = d; i2 = i; }
+  }
+  vec3 a = uPal[i1], b = uPal[i2];
+  float t = clamp(dot(lab - a, b - a) / max(dot(b - a, b - a), 1e-6), 0.0, 1.0);
+  // 靠近某一色时就是平涂，只在两色之间的那一段才抖
+  t = clamp((t - 0.3) / 0.2, 0.0, 1.0) * 0.5;
+  int n = 0;
+  for (int m = 0; m < 16; m++) if (t > (float(m) + 0.5) / 16.0) n++;
+  fragColor = vec4(float(i1), float(i2), float(n), 0.0) / 255.0;
+}
+`;
+
+const PIX_FRAG = /* glsl */ `
+precision highp float;
+precision highp int;
+uniform sampler2D tColor;
+uniform sampler2D tQuant;
+uniform ivec4 uQLevel[${MAX_QLEVEL}];
+uniform sampler2D tData;
+uniform vec2 uRes;
+/** 世界图比屏幕小几级：0 全分辨率，1 半 … 4 十六分之一 */
+uniform int uShift;
+uniform vec3 uCrystals[${MAX_FIELD}];
+uniform int uCrystalCount;
+uniform float uProx, uResolve;
+uniform vec3 uPalRgb[16];
+uniform float uDark[16];
+uniform float uLight[16];
+uniform vec3 uDim;
+uniform vec3 uGlow[${MAX_GLOW}];
+uniform int uGlowCount;
+uniform mat3 uView;
+uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse;
+out vec4 fragColor;
+${COMMON}
+vec3 toSrgb(vec3 c) {
+  c = max(c, 0.0);
+  return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
 }
 
 vec3 octDecode(vec2 e) {
@@ -135,10 +192,13 @@ int levelAt(ivec2 px) {
 void main() {
   ivec2 px = ivec2(gl_FragCoord.xy);
   ivec2 hi = ivec2(uRes) - 1;
+  // 世界图的纹素坐标（数据图只有第 0 层）
+  ivec2 whi = (ivec2(uRes) >> uShift) - 1;
+  ivec2 wpx = min(px >> uShift, whi);
 
   if (uRaw > 0.5) {
-    vec4 d = texelFetch(tData, px, 0);
-    fragColor = vec4(toSrgb(texelFetch(tColor, px, 0).rgb), d.z);
+    vec4 d = texelFetch(tData, wpx, 0);
+    fragColor = vec4(toSrgb(texelFetch(tColor, wpx, 0).rgb), d.z);
     return;
   }
 
@@ -156,12 +216,12 @@ void main() {
     float lz = min(uDrowse * 2.4 + (bayer4(px / 8) - 0.5) * 0.9, ls);
     L = max(L, int(clamp(floor(lz + 0.5), 0.0, 2.0)));
   }
+  L = max(L, uShift);
   int s = 1 << L;
   ivec2 cell = px >> L;
   ivec2 cpx = min(cell * s + s / 2, hi);
 
-  vec3 col = texelFetch(tColor, cell, L).rgb;
-  vec4 dat = texelFetch(tData, cpx, 0);
+  vec4 dat = texelFetch(tData, min(cpx >> uShift, whi), 0);
   float depth = dat.z;
   float id = dat.w;
 
@@ -169,22 +229,13 @@ void main() {
   int ci = -1;
   bool dimmed = false;
   if (L == 0 || uPaletteOn < 0.5) {
-    outc = toSrgb(col);
+    int lv = L - uShift;
+    outc = toSrgb(texelFetch(tColor, min(cell, textureSize(tColor, lv) - 1), lv).rgb);
   } else {
-    vec3 lab = oklab(col);
-    int i1 = 0, i2 = 1;
-    float d1 = 1e9, d2 = 1e9;
-    for (int i = 0; i < 16; i++) {
-      vec3 e = lab - uPal[i];
-      float d = dot(e, e);
-      if (d < d1) { d2 = d1; i2 = i1; d1 = d; i1 = i; }
-      else if (d < d2) { d2 = d; i2 = i; }
-    }
-    vec3 a = uPal[i1], b = uPal[i2];
-    float t = clamp(dot(lab - a, b - a) / max(dot(b - a, b - a), 1e-6), 0.0, 1.0);
-    // 靠近某一色时就是平涂，只在两色之间的那一段才抖
-    t = clamp((t - 0.3) / 0.2, 0.0, 1.0) * 0.5;
-    ci = t > bayer4(cell) ? i2 : i1;
+    // 这一格的最近两色与抖动量已在落色图集里（QUANT_FRAG）；格子的 Bayer 名次小于 n 就取第二色
+    ivec4 qr = uQLevel[L - uShift];
+    ivec4 q = ivec4(texelFetch(tQuant, clamp(cell, ivec2(0), qr.zw - 1) + qr.xy, 0) * 255.0 + 0.5);
+    ci = bayerRank(cell) < q.z ? q.y : q.x;
     // 犯困：每一格按三色明暗的暗档往下走一级；过渡时按格子抖开，走完就是整片暗一档，没有网点
     if (uDrowse > 0.0 && bayer4(cell + ivec2(2, 1)) < uDrowse * (1.0 - awake)) ci = int(uDark[ci]);
     if (uDim.z > 0.0) {
@@ -213,7 +264,7 @@ void main() {
     vec3 nv = uView * n;
     ivec2 offs[4] = ivec2[4](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1));
     vec4 nb[4];
-    for (int k = 0; k < 4; k++) nb[k] = texelFetch(tData, clamp(cpx + offs[k] * s, ivec2(0), hi), 0);
+    for (int k = 0; k < 4; k++) nb[k] = texelFetch(tData, clamp((cpx + offs[k] * s) >> uShift, ivec2(0), whi), 0);
     float inv0 = 1.0 / depth;
     for (int k = 0; k < 4; k++) {
       vec4 nd = nb[k];
@@ -250,13 +301,14 @@ void main() {
   } else if (uOutline > 1.5) {
     // 全分辨率细线：按屏幕像素看数据图，不看格子，线落在靠前的那一边。
     // 八邻里「后面的另一物件」占几分就盖几分：直边一整像素，台阶的角只盖一点，像抗锯齿；近处再往外加一圈淡的
-    vec4 d0 = texelFetch(tData, px, 0);
+    // 半分辨率时按世界图的纹素走，线就是 2px
+    vec4 d0 = texelFetch(tData, wpx, 0);
     float z0 = d0.z, id0 = d0.w;
     vec3 n0 = octDecode(d0.xy);
     float sil = 0.0, cr = 0.0, rd = 0.0;
     ivec2 dirs[8] = ivec2[8](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1), ivec2(1, 1), ivec2(-1, -1), ivec2(1, -1), ivec2(-1, 1));
     vec4 q[8];
-    for (int k = 0; k < 8; k++) q[k] = texelFetch(tData, clamp(px + dirs[k], ivec2(0), hi), 0);
+    for (int k = 0; k < 8; k++) q[k] = texelFetch(tData, clamp(wpx + dirs[k], ivec2(0), whi), 0);
     for (int k = 0; k < 8; k++) {
       if (abs(q[k].w - id0) > 0.5 && q[k].z > z0 * 1.01) sil += k < 4 ? 1.0 : 0.5;
     }
@@ -277,7 +329,7 @@ void main() {
     float wide = 1.0 - smoothstep(2.5, 8.0, z0);
     if (wide > 0.0) {
       for (int k = 0; k < 4; k++) {
-        vec4 a = texelFetch(tData, clamp(px + dirs[k] * 2, ivec2(0), hi), 0);
+        vec4 a = texelFetch(tData, clamp(wpx + dirs[k] * 2, ivec2(0), whi), 0);
         if (abs(a.w - id0) > 0.5 && a.z > z0 * 1.01) sil += 0.6 * wide;
       }
     }
@@ -294,7 +346,7 @@ void main() {
 
   if (uFieldView > 0.5) {
     vec3 tint[4] = vec3[4](vec3(1.0, 1.0, 1.0), vec3(0.6, 0.85, 1.0), vec3(1.0, 0.75, 0.85), vec3(0.75, 0.7, 0.95));
-    outc *= tint[L];
+    outc *= tint[min(L, 3)];
   }
 
 
@@ -327,8 +379,11 @@ export class Pipeline {
   private pixMat: THREE.ShaderMaterial;
   private compMat: THREE.ShaderMaterial;
   private veilMat: THREE.ShaderMaterial;
+  private quantMat: THREE.ShaderMaterial;
+  private rtQuant!: THREE.WebGLRenderTarget;
   private w = 0;
   private h = 0;
+  private shift = 0;
 
   constructor(private renderer: THREE.WebGLRenderer) {
     this.pixMat = new THREE.ShaderMaterial({
@@ -339,11 +394,13 @@ export class Pipeline {
         tColor: { value: null },
         tData: { value: null },
         uRes: { value: new THREE.Vector2() },
+        uShift: { value: 0 },
+        tQuant: { value: null },
+        uQLevel: { value: new Int32Array(MAX_QLEVEL * 4) },
         uCrystals: { value: Array.from({ length: MAX_FIELD }, () => new THREE.Vector3()) },
         uCrystalCount: { value: 0 },
         uProx: { value: 0 },
         uResolve: { value: 0 },
-        uPal: { value: paletteLab },
         uPalRgb: { value: paletteRgb },
         uView: { value: new THREE.Matrix3() },
         uRaw: { value: 0 },
@@ -361,6 +418,19 @@ export class Pipeline {
       },
       vertexShader: QUAD_VERT,
       fragmentShader: PIX_FRAG,
+    });
+    this.quantMat = new THREE.ShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      depthTest: false,
+      depthWrite: false,
+      uniforms: {
+        tColor: { value: null },
+        uPal: { value: paletteLab },
+        uQLevel: this.pixMat.uniforms.uQLevel,
+        uQFirst: { value: 1 },
+      },
+      vertexShader: QUAD_VERT,
+      fragmentShader: QUANT_FRAG,
     });
     this.compMat = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
@@ -396,13 +466,16 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     this.quadScene.add(this.quad);
   }
 
-  /** w、h 须是 8 的倍数：mip 第 3 层的一个纹素正好是 8×8 */
+  /** w、h 须是 8 的倍数：mip 第 3 层的一个纹素正好是屏幕上的 8×8 */
   setSize(w: number, h: number) {
     this.w = w;
     this.h = h;
     this.rtWorld?.dispose();
     this.rtPix?.dispose();
-    this.rtWorld = new THREE.WebGLRenderTarget(w, h, {
+    this.rtQuant?.dispose();
+    const ww = w >> this.shift;
+    const wh = h >> this.shift;
+    this.rtWorld = new THREE.WebGLRenderTarget(ww, wh, {
       count: 2,
       type: THREE.HalfFloatType,
       minFilter: THREE.LinearMipmapLinearFilter,
@@ -410,6 +483,10 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
       generateMipmaps: true,
       depthBuffer: true,
     });
+    // 数据图只按第 0 层取：不建 mip 链，省得每帧白重建一遍
+    const data = this.rtWorld.textures[1];
+    data.generateMipmaps = false;
+    data.minFilter = THREE.NearestFilter;
     this.rtPix = new THREE.WebGLRenderTarget(w, h, {
       type: THREE.HalfFloatType,
       minFilter: THREE.NearestFilter,
@@ -417,6 +494,41 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
       depthBuffer: false,
     });
     this.pixMat.uniforms.uRes.value.set(w, h);
+    this.pixMat.uniforms.uShift.value = this.shift;
+
+    // 落色图集：要落色的最细一层（屏幕 L = 1，或 L = shift 时的第 0 层）摆在左边，更粗的各层在它右边一列往上叠
+    const first = this.shift > 0 ? 0 : 1;
+    const ql = this.pixMat.uniforms.uQLevel.value as Int32Array;
+    ql.fill(0);
+    const fw = Math.max(1, ww >> first);
+    const fh = Math.max(1, wh >> first);
+    let y = 0;
+    for (let k = first; k < MAX_QLEVEL; k++) {
+      const lw = Math.max(1, ww >> k);
+      const lh = Math.max(1, wh >> k);
+      if (k === first) ql.set([0, 0, lw, lh], k * 4);
+      else {
+        ql.set([fw, y, lw, lh], k * 4);
+        y += lh;
+      }
+    }
+    this.quantMat.uniforms.uQFirst.value = first;
+    this.rtQuant = new THREE.WebGLRenderTarget(fw + Math.max(1, fw >> 1), Math.max(fh, y), {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      depthBuffer: false,
+    });
+  }
+
+  /** 世界图缩小几级：0 全分辨率，1 半 … 4 十六分之一。只取 2 的幂，格子才对得上 mip */
+  setShift(shift: number) {
+    if (shift === this.shift) return;
+    this.shift = shift;
+    if (this.w) this.setSize(this.w, this.h);
+  }
+
+  get worldShift() {
+    return this.shift;
   }
 
   get pixTexture() {
@@ -471,6 +583,14 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     }
     // 世界画完后 matrixWorldInverse 才是这一帧的；描边判断凸凹要视空间法线
     u.uView.value.setFromMatrix4(camera.matrixWorldInverse);
+
+    if (f.palette && !f.raw) {
+      this.quantMat.uniforms.tColor.value = this.rtWorld.textures[0];
+      this.quad.material = this.quantMat;
+      r.setRenderTarget(this.rtQuant);
+      r.render(this.quadScene, this.quadCam);
+    }
+    u.tQuant.value = this.rtQuant.texture;
 
     this.quad.material = this.pixMat;
     r.setRenderTarget(this.rtPix);

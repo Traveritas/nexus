@@ -27,6 +27,8 @@ const CLOSE_TIME = 0.5;
 const TURN_TIME = 0.55;
 const SENS_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const SETTINGS_KEY = 'nexus:settings';
+const RES_STEPS: Settings['res'][] = ['auto', 'full', 'half', 'quarter', 'eighth', 'sixteenth'];
+const RES_LABEL: Record<Settings['res'], string> = { auto: '自动', full: '精细', half: '流畅', quarter: '极速', eighth: '马赛克', sixteenth: '印象派' };
 const NIGHTS_KEY = 'nexus:nights';
 
 const P = (i: number) => PALETTE[i];
@@ -34,10 +36,13 @@ const P = (i: number) => PALETTE[i];
 export interface Settings {
   sens: number;
   hud: boolean;
+  /** 世界的渲染分辨率：自动（按屏幕大小）· 精细（全分辨率）· 流畅（半）· 极速（四分之一）；
+      再往下是玩笑：马赛克（八分之一）· 印象派（十六分之一） */
+  res: 'auto' | 'full' | 'half' | 'quarter' | 'eighth' | 'sixteenth';
 }
 
 export function loadSettings(): Settings {
-  const s: Settings = { sens: 1, hud: true };
+  const s: Settings = { sens: 1, hud: true, res: 'auto' };
   try {
     Object.assign(s, JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}'));
   } catch {
@@ -205,6 +210,8 @@ const settingsLeft: Draw = (g, c) => {
   r.push(item(g, c, 'sens-', '-', 30, 3));
   write(g, `×${c.settings.sens.toFixed(2).replace(/0$/, '')}`, 46, 3);
   r.push(item(g, c, 'sens+', '+', 84, 3));
+  write(g, '画面', 30, 4);
+  r.push(item(g, c, 'res', RES_LABEL[c.settings.res] ?? RES_LABEL.auto, 96, 4));
   write(g, '调试信息', 30, 5);
   r.push(item(g, c, 'hud', c.settings.hud ? '开' : '关', 96, 5));
   r.push(item(g, c, 'back', '← 目录', 30, 9));
@@ -504,6 +511,9 @@ export class Diary {
       }
       case 'hud':
         s.hud = !s.hud;
+        break;
+      case 'res':
+        s.res = RES_STEPS[(RES_STEPS.indexOf(s.res) + 1) % RES_STEPS.length];
         break;
       default:
         if (this.hover.startsWith('hold:')) {

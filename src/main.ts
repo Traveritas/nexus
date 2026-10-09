@@ -7,7 +7,7 @@ import { SKY_NAMES, skyLabel } from './skybox';
 import { shared } from './materials';
 import { Ui, UI_SCALE, loadUiFont } from './ui';
 import { PromptTag } from './prompt';
-import { Diary, night } from './diary';
+import { Diary, night, type Settings } from './diary';
 import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
 import { edges, recordEdge, recordSite, sites } from './worlds';
@@ -15,7 +15,7 @@ import { edges, recordEdge, recordSite, sites } from './worlds';
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 home——家）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
-   查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
+   查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?res=auto|full|half|quarter|eighth|sixteenth 世界的渲染分辨率  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
    键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
 
@@ -48,6 +48,19 @@ items.onBloom = (id) => {
 /** 日记本要等人和世界都有了才建（见「日记」一节）；resize 先于它跑 */
 let diary: Diary | undefined;
 
+/** 世界的渲染分辨率（日记 · 设置 · 画面）；?res=full|half|quarter|eighth|sixteenth 覆盖 */
+let resMode: Settings['res'] = 'auto';
+const RES_SHIFT = { full: 0, half: 1, quarter: 2, eighth: 3, sixteenth: 4 };
+/** 自动：画布超过约 1920×1200 按半分辨率画世界，超过约 3200×1800（4K）按四分之一（像素化是填充率受限的，开销跟像素数成正比） */
+const AUTO_HALF_PIXELS = 1920 * 1200;
+const AUTO_QUARTER_PIXELS = 3200 * 1800;
+function applyRes() {
+  const { w, h } = pipe.size;
+  const mode = (q.get('res') as typeof resMode | null) ?? resMode;
+  const px = w * h;
+  pipe.setShift(mode === 'auto' ? (px > AUTO_QUARTER_PIXELS ? 2 : px > AUTO_HALF_PIXELS ? 1 : 0) : RES_SHIFT[mode] ?? 0);
+}
+
 function resize() {
   const w = Math.max(8, Math.floor(innerWidth / 8) * 8);
   const h = Math.max(8, Math.floor(innerHeight / 8) * 8);
@@ -57,6 +70,7 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   pipe.setSize(w, h);
+  applyRes();
   ui.setSize(w, h);
   diary?.setSize(ui.w, ui.h);
 }
@@ -264,6 +278,8 @@ const book = new Diary(ui, {
   wake: () => go(HOME, 'wake'),
   apply: (s) => {
     player.sens = s.sens;
+    resMode = s.res;
+    applyRes();
     hud.classList.toggle('off', !s.hud || q.get('hud') === '0');
   },
   world: () => world,
@@ -515,7 +531,7 @@ function updateHud() {
   const on = (b: boolean) => (b ? '开' : '关');
   const p = player.feet;
   hud.textContent =
-    `NEXUS · ${world}   ${fps.toFixed(0)} fps   ${pipe.size.w}×${pipe.size.h}   ` +
+    `NEXUS · ${world}   ${fps.toFixed(0)} fps   ${pipe.size.w}×${pipe.size.h}${pipe.worldShift ? ` · 世界 1/${1 << pipe.worldShift}` : ''}   ` +
     `脚底 ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}  朝向 ${((player.yaw / deg) % 360).toFixed(0)}°${player.fly ? '  飞行' : ''}\n` +
     `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 按住捏手里的 · F 按住看看身上的 · Tab 日记 · Esc 释放 · Shift+R 回到到达处\n` +
     `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${['关', '格', '细线'][f.outline]} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · 6 三色 ${shared.uAutoRamp.value} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
