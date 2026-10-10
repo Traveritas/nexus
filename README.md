@@ -26,7 +26,7 @@ node scripts/map-shot.cjs              # 打包后截罗盘的地图：暗圈、
 
 操作：点击画面锁定视角 · WASD / 滚轮行走 · Space 跳 · Shift 快走 · E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记的目录里）· Esc 释放 · Shift+R 回到到达处
 调试键：1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · G 穿墙飞行（Space 升 / C 降） · H 隐藏提示
-查询串：`?world=`（默认 `home`；`?scene=` 同义）· `?pos=x,y,z`（脚底）`&yaw=度&pitch=度` · `?freeze=1` · `?hud=0` · `?sky=`
+查询串：`?world=`（默认 `wake_fragment`，现实的家；梦里的家是 `home`；`?scene=` 同义）· `?pos=x,y,z`（脚底）`&yaw=度&pitch=度` · `?freeze=1` · `?hud=0` · `?sky=`
 
 ## 代码地图
 

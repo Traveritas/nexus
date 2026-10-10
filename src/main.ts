@@ -13,7 +13,7 @@ import { MapView } from './mapview';
 import { SiteCard } from './sitecard';
 import { edges, recordEdge, recordSite, sites } from './worlds';
 
-/* 世界：?world=名字（public/scenes/<名字>.glb，默认 home——家）；?scene= 是旧写法，同义
+/* 世界：?world=名字（public/scenes/<名字>.glb，默认 wake_fragment——现实的家，醒着的那一间）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?res=auto|full|half|quarter|eighth|sixteenth 世界的渲染分辨率  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
@@ -29,7 +29,9 @@ const deg = Math.PI / 180;
 const RETURN_KEY = 'nexus:return';
 const DEV_KEY = 'nexus:dev';
 const VISITED_KEY = 'nexus:visited';
-const HOME = 'home';
+/** 起点：现实的家（残片）。一开始在这里醒来，日记里「醒来」也回到这里，落在床边（到达点 home） */
+const START = 'wake_fragment';
+const START_AT = 'home';
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1);
@@ -80,7 +82,7 @@ addEventListener('resize', resize);
 
 // ── 世界 ──
 const sceneUrl = (name: string) => `${import.meta.env.BASE_URL}scenes/${name}.glb`;
-let world = q.get('world') ?? q.get('scene') ?? HOME;
+let world = q.get('world') ?? q.get('scene') ?? START;
 let level: Level = await loadLevel(sceneUrl(world));
 await fontReady;
 const player = new Player(level.collider);
@@ -276,7 +278,7 @@ addEventListener('popstate', (e) => {
 
 // ── 日记 ──
 const book = new Diary(ui, {
-  wake: () => go(HOME, 'wake'),
+  wake: () => go(START, START_AT),
   apply: (s) => {
     player.sens = s.sens;
     resMode = s.res;

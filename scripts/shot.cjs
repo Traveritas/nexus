@@ -34,7 +34,7 @@ const srv = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 srv.listen(0, '127.0.0.1', async () => {
-  const base = `http://127.0.0.1:${srv.address().port}/?freeze=1&hud=0`;
+  const base = `http://127.0.0.1:${srv.address().port}/?world=slice&freeze=1&hud=0`;  // 机位是切片（slice）的
   const browser = await puppeteer.launch({
     executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
     headless: 'new',

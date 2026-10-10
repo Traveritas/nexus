@@ -19,7 +19,8 @@ const srv = http.createServer((req, res) => {
 });
 
 srv.listen(0, '127.0.0.1', async () => {
-  const base = `http://127.0.0.1:${srv.address().port}/`;
+  // 这里的坐标与「测试出口」晶体都是切片（slice）的
+  const base = `http://127.0.0.1:${srv.address().port}/?world=slice`;
   const browser = await puppeteer.launch({
     executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
     headless: 'new',

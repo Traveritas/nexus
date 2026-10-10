@@ -1,5 +1,5 @@
 /* node scripts/travel.cjs —— 先 npm run build。走一遍所有传送物：每个世界的每个传送物，站到跟前走进去 / 按 E，看是不是到了该去的世界。
-   另测：默认进家、日记里醒来、浏览器后退、转场中途截图。 */
+   另测：默认进现实的家、日记里醒来（回现实的家）、浏览器后退、转场中途截图。 */
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -59,9 +59,9 @@ srv.listen(0, '127.0.0.1', async () => {
   const results = [];
   const log = (ok, msg) => { results.push(ok); console.log(ok ? 'ok  ' : 'FAIL', msg); };
 
-  // 1. 默认进家
+  // 1. 默认进现实的家
   let s = await st();
-  log(s.world === 'home', `默认世界 = ${s.world}`);
+  log(s.world === 'wake_fragment', `默认世界 = ${s.world}`);
   await page.screenshot({ path: path.join(OUT, 't-01-home.png') });
 
   // 2. 每个世界的每个传送物
@@ -125,7 +125,7 @@ srv.listen(0, '127.0.0.1', async () => {
   await page.evaluate(() => window.__nexus.diary.click());
   await sleep(450);
   await page.screenshot({ path: path.join(OUT, 't-02-dissolve-out.png') });
-  log(await waitWorld('home'), '日记 · 醒来 → home');
+  log(await waitWorld('wake_fragment'), '日记 · 醒来 → wake_fragment');
   await sleep(150);
   await page.screenshot({ path: path.join(OUT, 't-03-after-wake.png') });
   await page.goBack();
