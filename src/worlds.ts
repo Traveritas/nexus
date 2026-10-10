@@ -9,6 +9,9 @@ export const WORLD_NAMES: Record<string, string> = {
   shoal: '浅滩',
   descent: '下沉',
   room: '无墙之屋',
+  wake_fragment: '残片',
+  wake_white: '白井',
+  wake_museum: '陈列',
 };
 
 export const worldName = (w: string) => WORLD_NAMES[w] ?? w;

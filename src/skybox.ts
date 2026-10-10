@@ -6,6 +6,7 @@
    主题的意图见 docs/sky.md。 */
 import * as THREE from 'three';
 import { shared, VERT, OUTS } from './materials';
+import { scaffoldGlsl } from './scaffold';
 
 interface Light {
   /** 雾 ＝ 地平线的天色 */
@@ -45,6 +46,15 @@ function lin(hex: string) {
   const c = new THREE.Color(hex);
   return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
 }
+
+/** 一夜（overnight）的色板：着色器与窗前的站点卡片（字色跟着这一夜走）共用 */
+const NIGHT = {
+  period: 240,
+  start: 0.3,
+  at: [0.0, 0.12, 0.24, 0.42, 0.5, 0.66, 0.8, 0.92, 1.0],
+  bg: ['#edf0f4', '#dbe2ec', '#161e2e', '#111724', '#221d31', '#2a2438', '#efe7da', '#f5efe6', '#edf0f4'],
+  ink: ['#232830', '#232830', '#e6e9ef', '#e6e9ef', '#ece6f1', '#ece6f1', '#2b2620', '#2b2620', '#232830'],
+};
 
 const NONE = /* glsl */ `void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {}`;
 
@@ -475,6 +485,251 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
   }
 }`,
   },
+
+  // ── 虚空 · 流质：整只天球（脚下也是）是一种慢慢翻涌的东西，像滴进奶里的墨、液态的珍珠母；
+  //    浅紫、浅粉、雾蓝、白之间流转，等值线是一道道细的暗纹。没有地平线 ──
+  flux: {
+    label: '流质',
+    light: {
+      fog: '#e2dcea',
+      zenith: '#d6d3e8',
+      sky: ['#d8d2ec', 0.6],
+      ground: ['#ecd6e0', 0.46],
+      sun: ['#fff0ea', 0.72],
+      glow: ['#f6c6e2', 0.85],
+      fogNear: 30,
+      fogFar: 170,
+    },
+    glsl: /* glsl */ `
+vec4 nz(vec2 p) { return texture(tNoise, p / 256.0); }
+// 两层域扭曲：大涡卷着小涡，各自朝不同方向慢慢漂。p 的单位是噪声格，一面天大约跨四五格
+float flow(vec2 p, float t) {
+  vec2 w = vec2(nz(p + vec2(t * 0.05, 11.0)).x, nz(p + vec2(-t * 0.04, 53.0)).y) - 0.5;
+  p += w * 3.2;
+  vec2 w2 = vec2(nz(p * 1.9 + vec2(29.0, -t * 0.07)).z, nz(p * 1.9 + vec2(t * 0.06, 91.0)).w) - 0.5;
+  p += w2 * 1.1;
+  return nz(p * 1.3).x;
+}
+void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
+  float t = uTime;
+  // 三个投影按方向混合，球面上没有接缝也没有极点
+  vec3 a = abs(d);
+  vec3 w = a * a * a * a;
+  w /= w.x + w.y + w.z;
+  float K = 2.4;
+  float f = 0.0;
+  if (w.x > 0.01) f += flow(d.yz * K + 3.0, t) * w.x;
+  if (w.y > 0.01) f += flow(d.zx * K + 41.0, t) * w.y;
+  if (w.z > 0.01) f += flow(d.xy * K + 77.0, t) * w.z;
+  f = clamp((f - 0.5) * 1.9 + 0.58, 0.0, 1.0);
+  vec3 c0 = ${lin('#cdc8db')}, c1 = ${lin('#c3d1e6')}, c2 = ${lin('#f3d6d6')}, c3 = ${lin('#fbf9f7')};
+  vec3 c = f < 0.33 ? mix(c0, c1, f / 0.33) : (f < 0.66 ? mix(c1, c2, (f - 0.33) / 0.33) : mix(c2, c3, (f - 0.66) / 0.34));
+  // 暗纹：几条等值线，墨丝一样被卷着走；线宽按屏幕像素算，远近一样细
+  float k = f * 3.0;
+  float v = abs(fract(k) - 0.5);
+  float fw = max(fwidth(k), 0.004);
+  c = mix(c, ${lin('#a8a1bf')}, 1.0 - smoothstep(fw * 1.5, fw * 3.0, 0.5 - v));
+  col = c;
+}`,
+  },
+
+  // ── 窗景 · 一夜：博客（AveritA的昼梦叙集）的那一夜。色板取自博客主页的故事板（浅冷灰 → 深蓝 → 异相的紫 → 晨光的暖白），
+  //    一夜压成四分钟循环；地平线是一根线（同一根脑电线），线下一排排是它的回声，越近越大、越晚；天上几道极淡的穹肋；
+  //    一枚琥珀色的点（博客全站唯一的异质色）顺着线走过这一夜。种子错开时刻（1 ＝ 深眠） ──
+  overnight: {
+    label: '一夜',
+    light: {
+      fog: '#dbe2ec',
+      zenith: '#c9d2df',
+      sky: ['#d4dbe6', 0.6],
+      ground: ['#e3e0dc', 0.4],
+      sun: ['#fff4e6', 0.75],
+    },
+    glsl: /* glsl */ `
+// 一夜的色板：底、墨、雾光（rgb + 强度）。时刻 p ∈ [0, 1)
+const int NS = 9;
+const float PS[9] = float[](${NIGHT.at.map((v) => v.toFixed(2)).join(', ')});
+const vec3 BG[9] = vec3[](${NIGHT.bg.map(lin).join(', ')});
+const vec3 INK[9] = vec3[](${NIGHT.ink.map(lin).join(', ')});
+const vec4 HAZE[9] = vec4[](
+  vec4(1.0, 1.0, 1.0, 0.75), vec4(1.0, 1.0, 1.0, 0.55), vec4(${lin('#7896c8')}, 0.16), vec4(${lin('#7896c8')}, 0.12),
+  vec4(${lin('#aa8cd2')}, 0.16), vec4(${lin('#aa8cd2')}, 0.14), vec4(${lin('#ffeccd')}, 0.8), vec4(${lin('#fff0d7')}, 0.7),
+  vec4(1.0, 1.0, 1.0, 0.75));
+void night(float p, out vec3 bg, out vec3 ink, out vec4 haze) {
+  bg = BG[0]; ink = INK[0]; haze = HAZE[0];
+  for (int i = 0; i < NS - 1; i++) {
+    if (p >= PS[i] && p < PS[i + 1]) {
+      float k = smoothstep(PS[i], PS[i + 1], p);
+      bg = mix(BG[i], BG[i + 1], k); ink = mix(INK[i], INK[i + 1], k); haze = mix(HAZE[i], HAZE[i + 1], k);
+    }
+  }
+}
+float bump(float p, float a, float b, float e) { return smoothstep(a - e, a + e, p) * (1.0 - smoothstep(b - e, b + e, p)); }
+// 线的起伏（度）：随一夜换节律——醒着细而快（β），入睡变慢变大，深眠是长长的 δ，异相是锯齿样的快波，将醒时出纺锤样的簇
+float wave(float az, float t, float p) {
+  float fast = 1.0 - bump(p, 0.1, 0.86, 0.05);
+  float slow = bump(p, 0.22, 0.46, 0.04);
+  float rem = bump(p, 0.48, 0.68, 0.03);
+  float spin = bump(p, 0.12, 0.22, 0.03) + bump(p, 0.7, 0.84, 0.03);
+  float w = 0.0;
+  w += fast * 0.16 * (sin(61.0 * az + t * 2.1) + 0.6 * sin(97.0 * az - t * 2.9));
+  w += slow * 1.3 * (sin(7.0 * az + t * 0.22) * 0.7 + sin(12.0 * az - t * 0.31) * 0.3);
+  // 锯齿：缓升陡落，但是连着的（断开的话线会断）
+  float s = fract(69.0 * az / 6.2831853 + t * 0.35);
+  float saw = s < 0.8 ? s / 0.8 : (1.0 - s) / 0.2;
+  w += rem * 0.28 * (saw - 0.5) * 2.0 * (0.6 + 0.4 * sin(5.0 * az + t * 0.4));
+  w += spin * 0.42 * sin(44.0 * az + t * 1.6) * pow(max(0.0, sin(6.0 * az - t * 0.5)), 6.0);
+  w += 0.18 * sin(3.0 * az + t * 0.07);
+  return w;
+}
+// 一根线：v 是到线的角距（弧度），w 是线宽（屏幕像素倍数）
+float strand(float v, float w) {
+  float fw = max(fwidth(v), 1e-5);
+  return 1.0 - smoothstep(fw * (w - 0.5), fw * (w + 0.5), abs(v));
+}
+void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
+  float t = uTime;
+  float p = fract(t / ${NIGHT.period.toFixed(1)} + ${NIGHT.start} + (uSeed - 1.0) * 0.125);
+  vec3 bg, ink; vec4 haze;
+  night(p, bg, ink, haze);
+  float el = asin(clamp(d.y, -1.0, 1.0));
+  float az = atan(d.x, -d.z);
+  const float DEG = 0.01745329;
+
+  // 底：线下比天沉一点（往暗里压，不往墨色里混——夜里的墨是浅的）；贴着地平线一层雾光
+  vec3 c = el < 0.0 ? bg * mix(0.9, 0.78, smoothstep(0.0, 0.5, -el)) : mix(bg, ink, 0.03 * smoothstep(0.0, 1.2, el));
+  c = mix(c, haze.rgb, haze.a * exp(-abs(el) / (5.0 * DEG)) * 0.6);
+
+  // 穹肋：同一个圆心的几道拱，一道套一道，像从一只极大的穹顶里面往外看；不相交
+  vec3 pole = normalize(vec3(0.0, -0.45, -1.0));
+  float pa = acos(clamp(dot(d, pole), -1.0, 1.0));
+  for (int i = 0; i < 4; i++) {
+    float r = (44.0 + float(i) * 9.0) * DEG;
+    c = mix(c, ink, (0.08 - float(i) * 0.015) * strand(pa - r, 1.0) * smoothstep(0.0, 0.04, el));
+  }
+
+  // 地平线：一根线
+  float y0 = wave(az, t, p) * DEG;
+  c = mix(c, ink, 0.85 * strand(el - y0, 1.3));
+  // 线下：它的回声，一排比一排近（大、粗、晚、淡）
+  for (int i = 1; i <= 10; i++) {
+    float fi = float(i);
+    float base = -0.9 * pow(1.42, fi) * DEG;
+    float s = min(1.0 + 0.9 * pow(1.42, fi) / 6.0, 2.6);
+    float yi = base + wave(az, t - fi * 1.4, p) * s * DEG;
+    float aL = 0.3 * pow(1.0 - fi / 11.0, 1.4);
+    c = mix(c, ink, aL * strand(el - yi, 1.0 + fi * 0.12));
+  }
+
+  // 琥珀色的一点：顺着线，在这一夜里从左走到右
+  float aa = (-28.0 + 56.0 * p) * DEG;
+  vec2 q = vec2(atan(sin(az - aa), cos(az - aa)) * cos(el), el - wave(aa, t, p) * DEG);
+  float r = length(q);
+  vec3 amber = ${lin('#d9a05b')};
+  float dark = 1.0 - smoothstep(0.1, 0.5, dot(bg, vec3(0.3, 0.6, 0.1)));
+  c = mix(c, amber, (0.25 + 0.35 * dark) * exp(-r / (1.6 * DEG)));
+  c = mix(c, amber, 1.0 - smoothstep(0.32 * DEG, 0.32 * DEG + max(fwidth(r), 1e-5), r));
+  col = c;
+}`,
+  },
+
+  // ── 窗景 · 构造：GitHub（AveritA）——「可构造的」。一张制图纸样的天：浅暖灰的纸色，铅灰的细线，地上几条收向灭点的透视引线；
+  //    地平线上远远近近几座线框（塔架、门形的双拱框、没搭完的立方格架、伸到半空的桁架桥，见 scaffold.ts），
+  //    一笔一笔按顺序画上去，停一停，搭到七八成又从最后一笔往回擦掉一些，再接着画；画到哪儿，笔尖是一枚淡蓝的墨点。
+  //    还没画上的边先以极淡的虚线露着：看得出它本来要搭成什么，只是还没完成 ──
+  scaffold: {
+    label: '构造',
+    light: {
+      fog: '#efeee9',
+      zenith: '#e3e2dd',
+      sky: ['#e9e8e3', 0.6],
+      ground: ['#e7e5df', 0.4],
+      sun: ['#fffaf0', 0.8],
+    },
+    glsl: /* glsl */ `
+const float DEG = 0.01745329;
+${scaffoldGlsl()}
+// 第 s 座此刻画到第几笔（带小数：正在画的那一笔画了多少）。慢慢搭到七八成，又往回擦一些；一笔画完停一停
+float drawnOf(int s, float t) {
+  float T = s == 0 ? 150.0 : s == 1 ? 190.0 : s == 2 ? 130.0 : 170.0;
+  float ph = s == 0 ? 0.15 : s == 1 ? 0.55 : s == 2 ? 0.35 : 0.8;
+  float x = NS[s] * (0.32 + 0.58 * (0.5 - 0.5 * cos(6.2831853 * (t / T + ph + (uSeed - 1.0) * 0.21))));
+  return floor(x) + smoothstep(0.12, 0.88, fract(x));
+}
+void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
+  float t = uTime;
+  float el = asin(clamp(d.y, -1.0, 1.0));
+  // 一个屏幕像素是几度：在分支、循环外面量一次（里面的 fwidth 靠不住）
+  float px = max(fwidth(el) / DEG, 1e-3);
+  vec3 ink = ${lin('#3b404b')};
+  vec3 c = mix(${lin('#efeee9')}, ${lin('#e3e2dd')}, smoothstep(0.0, 0.7, el));
+  // 纸的纹理：极淡的一层
+  c *= 1.0 - 0.018 * texture(tNoise, vec2(atan(d.x, -d.z) * 120.0, el * 120.0) / 256.0).x;
+  if (el < 0.0) {
+    c = mix(c, ${lin('#e7e5df')}, smoothstep(0.0, 4.0 * DEG, -el));
+    // 透视引线：地上一组平行线，收向正前方的灭点
+    float gx = d.x / max(-d.y, 1e-4) * 3.0 / 14.0;
+    float fx = max(fwidth(gx), 1e-4);
+    float g = 1.0 - smoothstep(fx * 0.6, fx * 1.6, abs(fract(gx + 0.5) - 0.5));
+    c = mix(c, ink, 0.09 * g * smoothstep(0.3 * DEG, 3.0 * DEG, -el));
+  }
+  // 地平线
+  c = mix(c, ink, 0.32 * (1.0 - smoothstep(px * 0.5 * DEG, px * 1.5 * DEG, abs(el))));
+
+  float drawn[4];
+  for (int s = 0; s < 4; s++) drawn[s] = drawnOf(s, t);
+  float W = px * 2.0 * DEG;
+  for (int i = 0; i < NE; i++) {
+    vec3 n = EN[i];
+    float dn = dot(d, n);
+    if (abs(dn) > W) continue;
+    vec3 a = EA[i];
+    vec3 q = d - n * dn;
+    vec3 k = EK[i];
+    float s = atan(dot(cross(a, q), n), dot(a, q)) / k.x;
+    if (s < 0.0 || s > 1.0) continue;
+    float f = clamp(drawn[int(k.z)] - k.y, 0.0, 1.0);
+    float cov = 1.0 - smoothstep(0.55, 1.5, abs(asin(dn)) / DEG / px);
+    if (s <= f) c = mix(c, ink, 0.82 * cov);
+    else {
+      // 底稿：极淡的虚线，一段约 0.6 度
+      float dash = step(0.5, fract(s * k.x / DEG / 0.6));
+      c = mix(c, ink, 0.13 * dash * cov);
+    }
+  }
+  // 笔尖：每一座正在画的那一笔的末端
+  vec3 pen = ${lin('#4a76c4')};
+  int off = 0;
+  for (int s = 0; s < 4; s++) {
+    int j = off + int(floor(drawn[s]));
+    float f = fract(drawn[s]);
+    off += int(NS[s]);
+    if (j >= off || f <= 0.001) continue;
+    vec3 a = EA[j];
+    vec3 p = a * cos(f * EK[j].x) + cross(EN[j], a) * sin(f * EK[j].x);
+    float r = acos(clamp(dot(d, p), -1.0, 1.0)) / DEG;
+    c = mix(c, pen, 0.25 * exp(-r / 0.6));
+    c = mix(c, pen, 1.0 - smoothstep(0.22, 0.22 + px, r));
+  }
+  col = c;
+}`,
+  },
+
+  // ── 巨构 · 素：几乎是白的天，只有天光；给纯白的建筑用 ──
+  pale: {
+    label: '素',
+    light: {
+      fog: '#f1eef3',
+      zenith: '#e4e3ef',
+      sky: ['#dcdcf0', 0.34],
+      ground: ['#e6e4ee', 0.28],
+      sun: ['#fff4ea', 1.15],
+      glow: ['#f6c6e2', 0.8],
+      fogNear: 40,
+      fogFar: 220,
+    },
+    glsl: NONE,
+  },
 };
 
 export const SKY_NAMES = Object.keys(THEMES);
@@ -486,6 +741,13 @@ function bump(dst: THREE.Color, [hex, k]: [string, number]) {
 const uTime = { value: 0 };
 /** 程序化主题的种子：`dye:7` 里的 7；不写时为 1，截图可复现 */
 const uSeed = { value: 1 };
+/** 窗里的天自己一套底色与种子：和世界的天同时在画，互不相干 */
+const win = {
+  uFogCol: { value: new THREE.Color() },
+  uZenith: { value: new THREE.Color() },
+  uSun: shared.uSun,
+  uSeed: { value: 1 },
+};
 const cache = new Map<string, THREE.ShaderMaterial>();
 
 /** 噪声纹理：256² 的随机格，双线性插值后就是可平铺的值噪声；四个通道互不相干。
@@ -510,14 +772,25 @@ function noiseTexture() {
 }
 const tNoise = { value: noiseTexture() };
 
-function material(name: string) {
-  let m = cache.get(name);
+/** 世界的天只画在窗玻璃没记过的地方；窗里的天（inWindow）只画在记过的地方，
+    而且不管深度——玻璃后面漂着的东西被它盖掉，窗里只有那一处的天；深度写回最远，窗里的景（nx_window=view）照常画在它前面 */
+function material(name: string, inWindow = false) {
+  const key = inWindow ? `${name}#window` : name;
+  let m = cache.get(key);
   if (m) return m;
+  const u = inWindow ? win : { uFogCol: shared.uFogCol, uZenith: shared.uZenith, uSun: shared.uSun, uSeed };
   m = new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     side: THREE.BackSide,
-    depthWrite: false,
-    uniforms: { uFogCol: shared.uFogCol, uZenith: shared.uZenith, uSun: shared.uSun, uTime, uSeed, tNoise },
+    depthWrite: inWindow,
+    depthFunc: inWindow ? THREE.AlwaysDepth : THREE.LessEqualDepth,
+    stencilWrite: true,
+    stencilRef: 1,
+    stencilFunc: inWindow ? THREE.EqualStencilFunc : THREE.NotEqualStencilFunc,
+    stencilFail: THREE.KeepStencilOp,
+    stencilZFail: THREE.KeepStencilOp,
+    stencilZPass: THREE.KeepStencilOp,
+    uniforms: { ...u, uTime, tNoise },
     vertexShader: VERT,
     fragmentShader: /* glsl */ `
 precision highp float;
@@ -535,10 +808,11 @@ void main() {
   theme(d, col, id, depth);
   oColor = vec4(col, 1.0);
   oData = vec4(0.0, 0.0, depth, id);
+  ${inWindow ? 'gl_FragDepth = 1.0;' : ''}
 }
 `,
   });
-  cache.set(name, m);
+  cache.set(key, m);
   return m;
 }
 
@@ -584,6 +858,58 @@ export function makeSky(): SkyBox {
     },
   };
   box.set('blank');
+  return box;
+}
+
+/** 窗里的天：同一套主题，只画在窗玻璃记过的模板里（见 material）。不改世界的天光与雾，只用主题的底色 */
+export interface WindowSky {
+  mesh: THREE.Mesh;
+  name: string;
+  set(spec: string): void;
+  update(camera: THREE.Camera): void;
+  /** 此刻窗里的底色与墨色（CSS 色）：窗前的站点卡片按它配字色 */
+  tone(t: number): { bg: string; ink: string; dark: boolean };
+}
+
+const tc = [new THREE.Color(), new THREE.Color()];
+function toneOf(name: string, seed: number, t: number) {
+  if (name === 'scaffold') return { bg: '#efeee9', ink: '#2b2f38', dark: false };
+  if (name !== 'overnight') {
+    const L = { ...BASE_LIGHT, ...THEMES[name]?.light };
+    return { bg: L.fog, ink: '#3a3350', dark: false };
+  }
+  const p = (((t / NIGHT.period + NIGHT.start + (seed - 1) * 0.125) % 1) + 1) % 1;
+  let i = 0;
+  while (i < NIGHT.at.length - 2 && p >= NIGHT.at[i + 1]) i++;
+  const k = THREE.MathUtils.smoothstep(p, NIGHT.at[i], NIGHT.at[i + 1]);
+  const mix = (arr: string[], c: THREE.Color) => c.set(arr[i]).lerp(tc[1].set(arr[i + 1]), k);
+  const bg = mix(NIGHT.bg, new THREE.Color());
+  const ink = mix(NIGHT.ink, tc[0]);
+  return { bg: `#${bg.getHexString()}`, ink: `#${ink.getHexString()}`, dark: bg.r + bg.g + bg.b < 1.5 };
+}
+
+export function makeWindowSky(): WindowSky {
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(360, 24, 12), material('blank', true));
+  mesh.frustumCulled = false;
+  // 窗玻璃（1）之后、窗里的景（2）之前
+  mesh.renderOrder = 1.5;
+  const box: WindowSky = {
+    mesh,
+    name: 'blank',
+    set(spec) {
+      const [name, seed] = spec.split(':');
+      box.name = THEMES[name] ? name : 'blank';
+      win.uSeed.value = seed !== undefined && seed !== '' && Number.isFinite(Number(seed)) ? Number(seed) : 1;
+      mesh.material = material(box.name, true);
+      const L = { ...BASE_LIGHT, ...THEMES[box.name].light };
+      win.uFogCol.value.set(L.fog);
+      win.uZenith.value.set(L.zenith);
+    },
+    update(camera) {
+      mesh.position.copy(camera.position);
+    },
+    tone: (t) => toneOf(box.name, win.uSeed.value, t),
+  };
   return box;
 }
 

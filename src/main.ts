@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Pipeline, MAX_FIELD, type Field, type FieldSource } from './pipeline';
 import { SunShadow } from './shadow';
-import { loadLevel, type Entrance, type Level, type Portal } from './level';
+import { loadLevel, type Entrance, type Level, type Outlook, type Pose, type Portal } from './level';
 import { Player } from './player';
 import { SKY_NAMES, skyLabel } from './skybox';
 import { shared } from './materials';
@@ -10,6 +10,7 @@ import { PromptTag } from './prompt';
 import { Diary, night, type Settings } from './diary';
 import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
+import { SiteCard } from './sitecard';
 import { edges, recordEdge, recordSite, sites } from './worlds';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 home——家）；?scene= 是旧写法，同义
@@ -179,7 +180,7 @@ if (q.get('yaw')) player.yaw = Number(q.get('yaw')) * deg;
 if (q.get('pitch')) player.pitch = Number(q.get('pitch')) * deg;
 if (import.meta.env.DEV) {
   addEventListener('beforeunload', () => {
-    if (!entering && !travel) save(DEV_KEY, { ...player.feet, yaw: player.yaw, pitch: player.pitch, world });
+    if (!entering && !travel && !gaze) save(DEV_KEY, { ...player.feet, yaw: player.yaw, pitch: player.pitch, world });
   });
 }
 history.replaceState({ world, at: '' }, '');
@@ -293,6 +294,12 @@ book.setSize(ui.w, ui.h);
 // ── 键 ──
 let interact = false;
 addEventListener('keydown', (e) => {
+  // 凑在窗口往外看：只认窗前那几个键
+  if (gaze) {
+    if (e.code === 'Tab' || e.code === 'Space' || e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'ArrowDown') e.preventDefault();
+    if (!e.repeat) gazeKey(e.code);
+    return;
+  }
   if (e.code === 'Tab') {
     e.preventDefault();
     if (!e.repeat && !travel && !entering && !items.busy && !items.ringActive) {
@@ -356,6 +363,10 @@ addEventListener('mousemove', (e) => {
     }
     return;
   }
+  if (gaze) {
+    if (locked || dragging) gazeLook(e.movementX, e.movementY);
+    return;
+  }
   if (locked || dragging) player.look(e.movementX, e.movementY);
 });
 addEventListener('wheel', (e) => !book.active && player.nudge(-e.deltaY * 0.012), { passive: true });
@@ -369,9 +380,181 @@ addEventListener('pageshow', (e) => {
   if (e.persisted) {
     restore(RETURN_KEY);
     entering = null;
+    gaze = null;
+    card.hide();
     resolve = 0;
+    for (const g of level.poses.values()) if (g.on === 'cue') g.target = g.k = 0;
   }
 });
+
+// ── 窗（窗景 → 站点）：走近窗按 E 推开窗——窗扇（cue 的 pose）往屋里开，视角凑到窗口往外看，站点卡片浮出来。
+//    凑在窗口时：A / D（← / →）换一处窗景，E（Enter）进入，S（Esc、↓）退回屋里 ──
+const card = new SiteCard();
+const windowTags = new Map<Outlook | Pose, Promptable>();
+function tagOf(key: Outlook | Pose, title: string): Promptable {
+  let p = windowTags.get(key);
+  if (!p) windowTags.set(key, (p = { pos: key.pos, title }));
+  p.title = title;
+  return p;
+}
+
+/** 眼前的窗景或按键型的 pose（来回切换的东西）；按 E 就推开 / 切换 */
+function checkWindow(limit: number): { p: Promptable; d: number } | null {
+  if (travel || entering || gaze) return null;
+  camera.getWorldDirection(look);
+  let best: { p: Promptable; d: number; act: () => void } | null = null;
+  const consider = (pos: THREE.Vector3, radius: number, p: () => Promptable, act: () => void) => {
+    const d = eye.distanceTo(pos);
+    if (d > radius + 1.2 || d >= (best?.d ?? limit)) return;
+    tmp.copy(pos).sub(eye).normalize();
+    if (tmp.dot(look) < 0.55 && d > radius) return;
+    best = { p: p(), d, act };
+  };
+  const ol = level.outlooks[level.outlook];
+  if (ol) consider(ol.pos, ol.radius, () => tagOf(ol, '推开窗'), openWindow);
+  for (const g of level.poses.values()) {
+    if (g.on !== 'key') continue;
+    consider(g.pos, g.radius, () => tagOf(g, g.title), () => (g.target = g.target > 0.5 ? 0 : 1));
+  }
+  const b = best as { p: Promptable; d: number; act: () => void } | null;
+  if (b && interact) {
+    tag.press();
+    b.act();
+  }
+  return b;
+}
+
+/** 凑在窗口往外看：in 凑过去 · look 看着（卡片在） · out 退回屋里 · go 进站（化白）。
+    from 是推开窗那一刻的眼睛，退回时回到那里；nudge 是看着时鼠标带一点的偏转 */
+interface Gaze {
+  phase: 'in' | 'look' | 'out' | 'go';
+  t: number;
+  from: { pos: THREE.Vector3; yaw: number; pitch: number };
+  nudge: THREE.Vector2;
+  /** 换窗景：往哪边换、换了几秒（中间那一下窗外一亮，换掉天与卡片） */
+  swap: { dir: number; t: number; done: boolean } | null;
+  gone: boolean;
+}
+let gaze: Gaze | null = null;
+const GAZE_IN = 1.3;
+const GAZE_OUT = 0.9;
+const SWAP = 0.5;
+const NUDGE = 0.12;
+
+function openWindow() {
+  for (const g of level.poses.values()) if (g.on === 'cue') g.target = 1;
+  gaze = {
+    phase: 'in',
+    t: 0,
+    from: { pos: eye.clone(), yaw: player.yaw, pitch: player.pitch },
+    nudge: new THREE.Vector2(),
+    swap: null,
+    gone: false,
+  };
+  map.closeNow();
+}
+
+function leaveWindow() {
+  if (!gaze || gaze.phase !== 'look') return;
+  gaze.phase = 'out';
+  gaze.t = 0;
+  card.hide();
+  for (const g of level.poses.values()) if (g.on === 'cue') g.target = 0;
+}
+
+function enterWindow() {
+  if (!gaze || gaze.phase !== 'look' || gaze.swap || !level.outlooks[level.outlook]?.url) return;
+  gaze.phase = 'go';
+  gaze.t = 0;
+  card.hide();
+}
+
+function switchWindow(dir: number) {
+  if (!gaze || gaze.phase !== 'look' || gaze.swap || level.outlooks.length < 2) return;
+  gaze.swap = { dir, t: 0, done: false };
+  card.swapOut(dir);
+}
+
+/** 窗前那一套的按键；凑在窗口时别的键都不算 */
+function gazeKey(code: string) {
+  if (code === 'KeyA' || code === 'ArrowLeft') switchWindow(-1);
+  else if (code === 'KeyD' || code === 'ArrowRight') switchWindow(1);
+  else if (code === 'KeyE' || code === 'Enter') enterWindow();
+  else if (code === 'KeyS' || code === 'Escape' || code === 'ArrowDown' || code === 'Backspace') leaveWindow();
+}
+
+const lerpAngle = (a: number, b: number, k: number) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
+const ease = (k: number) => k * k * (3 - 2 * k);
+
+/** 每帧：推着状态走，把眼睛摆到该在的地方（camera），并推着化白（resolve） */
+function stepGaze(dt: number) {
+  if (!gaze) return;
+  const g = gaze;
+  g.t += dt;
+  const view = level.outlooks[0]?.view;
+  if (!view) {
+    gaze = null;
+    return;
+  }
+  const yaw = view.yaw + g.nudge.x;
+  const pitch = view.pitch + g.nudge.y;
+  let k = 1;
+  if (g.phase === 'in') {
+    k = ease(Math.min(1, g.t / GAZE_IN));
+    if (g.t >= GAZE_IN) {
+      g.phase = 'look';
+      card.show(level.outlooks[level.outlook], level.outlook, level.outlooks.length);
+    }
+  } else if (g.phase === 'out') {
+    k = 1 - ease(Math.min(1, g.t / GAZE_OUT));
+    if (g.t >= GAZE_OUT) {
+      gaze = null;
+      player.yaw = g.from.yaw;
+      player.pitch = g.from.pitch;
+      return;
+    }
+  }
+  camera.position.lerpVectors(g.from.pos, view.pos, k);
+  camera.rotation.set(THREE.MathUtils.lerp(g.from.pitch, pitch, k), lerpAngle(g.from.yaw, yaw, k), 0);
+  camera.updateMatrixWorld();
+
+  resolve = 0;
+  if (g.swap) {
+    const s = g.swap;
+    s.t += dt;
+    resolve = 0.8 * Math.sin(Math.PI * Math.min(1, s.t / SWAP));
+    if (!s.done && s.t >= SWAP / 2) {
+      s.done = true;
+      level.showOutlook(level.outlook + s.dir);
+      card.swapIn(level.outlooks[level.outlook], level.outlook, level.outlooks.length);
+    }
+    if (s.t >= SWAP) g.swap = null;
+  }
+  if (g.phase === 'go') {
+    resolve = Math.min(1, g.t * 1.3);
+    if (resolve >= 1 && !g.gone) {
+      g.gone = true;
+      // 回来时站在推开窗前的地方，窗关着
+      save(RETURN_KEY, { x: player.feet.x, y: player.feet.y + 0.05, z: player.feet.z, yaw: g.from.yaw, pitch: 0, world });
+      const url = level.outlooks[level.outlook].url;
+      setTimeout(() => location.assign(url), 120);
+    }
+  }
+  if (card.shown || g.phase === 'go') card.tone(level.windowSky?.tone(frozen ? 0 : t) ?? { bg: '#edf0f4', ink: '#232830', dark: false });
+}
+
+// 指针锁着时按 Esc，浏览器先把锁放了、不一定把键传进来：看着窗外时丢了锁也算退回
+document.addEventListener('pointerlockchange', () => {
+  if (!document.pointerLockElement && gaze?.phase === 'look') leaveWindow();
+});
+
+/** 看着时，鼠标只带一点偏转，松开不回弹（人还在窗口，只是头偏了一点） */
+function gazeLook(dx: number, dy: number) {
+  if (!gaze || gaze.phase !== 'look') return;
+  const s = 0.0016 * player.sens;
+  gaze.nudge.x = THREE.MathUtils.clamp(gaze.nudge.x - dx * s, -NUDGE, NUDGE);
+  gaze.nudge.y = THREE.MathUtils.clamp(gaze.nudge.y - dy * s, -NUDGE * 0.7, NUDGE * 0.7);
+}
 
 function enter(e: Entrance) {
   entering = e;
@@ -469,7 +652,8 @@ function fieldOf(prompt: Promptable | null): Field {
     target = 1 - THREE.MathUtils.smoothstep(nearestD, r * 0.9, r * 7);
     if (!entering && nearestD < r * 0.9) enter(nearest);
   }
-  resolve = entering ? Math.min(1, resolve + 0.12) : target;
+  // 凑在窗口时的化白（换景的一亮、进站）由 stepGaze 推
+  if (!gaze) resolve = entering ? Math.min(1, resolve + 0.12) : target;
 
   // 晶体的名字连着真实的站点，不走像素 UI，保持全分辨率；有纸签时让开
   label.textContent = nearest?.title ?? '';
@@ -486,19 +670,24 @@ let fps = 0;
 function frame(dt: number) {
   if (!frozen) t += dt;
   stepTravel(dt);
-  player.update(dt, !!entering || !!travel || book.active || items.locked);
+  player.update(dt, !!entering || !!gaze || !!travel || book.active || items.locked);
   if (player.feet.y < -40) respawn();
   player.eyePosition(eye);
   camera.position.copy(eye);
   camera.rotation.set(player.pitch, player.yaw, 0);
   camera.updateMatrixWorld();
+  stepGaze(dt);
 
   items.update(dt, { world, feet: player.feet, t }, camera);
   // 纸签：眼前可以拾起的物品与按键型传送物，谁近挂谁
   camera.getWorldDirection(look);
   const itemP = travel || entering || book.active ? null : items.promptAt(eye, look);
-  let prompt: Promptable | null = checkPortals(itemP?.d ?? Infinity);
-  if (!prompt && itemP) {
+  // 窗先看：它按了 E 就把 E 用掉，后面的传送物、物品不再响应
+  const winP = travel || entering || book.active ? null : checkWindow(itemP?.d ?? Infinity);
+  if (winP && interact) interact = false;
+  let prompt: Promptable | null = checkPortals(winP?.d ?? itemP?.d ?? Infinity);
+  if (!prompt && winP) prompt = winP.p;
+  if (!prompt && itemP && !winP) {
     prompt = itemP.p;
     if (interact) {
       tag.press();
@@ -509,6 +698,13 @@ function frame(dt: number) {
   level.update(dt, t, camera, frozen);
   for (const e of level.entrances) e.crystal.update(camera, pipe.pixTexture);
   const field = fieldOf(prompt);
+  // 窗景的站名：和晶体的名字一样是全分辨率的字，走近窗时浮出来，和纸签同时在
+  const ol = level.outlooks[level.outlook];
+  if (ol?.title && !level.entrances.length) {
+    const d = eye.distanceTo(ol.pos);
+    label.textContent = ol.title;
+    label.style.opacity = String((1 - THREE.MathUtils.smoothstep(d, 2.2, 4.2)) * (1 - resolve) * (1 - dissolve) * (gaze ? 0 : 1));
+  }
   field.sources = [...items.sources(camera), ...field.sources].slice(0, MAX_FIELD);
   shadow.render(renderer, level.scene, player.feet);
   book.update(dt);
@@ -516,10 +712,12 @@ function frame(dt: number) {
   map.update(dt);
   field.dim = map.dim(items.handScreen(camera, pipe.size.w, pipe.size.h), pipe.size.w, pipe.size.h);
   field.glow = map.layout(camera, { level, world, visited: visited(), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
+  // 现实的世界是干净低模，不做像素化（只有转场时变粗）
+  pipe.setClean(level.style === 'clean');
   pipe.render(level.scene, level.crystalScene, camera, field, items.hand);
   book.render(renderer);
   ui.clear();
-  tag.update(dt, travel || entering || book.active || items.busy || items.ringActive ? null : prompt, camera);
+  tag.update(dt, travel || entering || gaze || book.active || items.busy || items.ringActive ? null : prompt, camera);
   items.drawUi(camera);
   map.draw();
   book.drawCursor();
@@ -566,6 +764,12 @@ updateHud();
   /** 影子的计数：重画次数、动着的投影物 */
   shadow: shadow.stats,
   sky: (name: string) => level.sky.set(name),
+  /** 窗里的天（测试用，如 overnight:3 错开时刻） */
+  windowSky: (spec: string) => level.windowSky?.set(spec),
+  poses: () => [...level.poses.values()].map((g) => ({ name: g.name, on: g.on, k: g.k })),
+  /** 窗景（测试用：可以往里临时加一处，试换景） */
+  outlooks: () => level.outlooks,
+  gaze: () => gaze && { phase: gaze.phase, swap: !!gaze.swap, outlook: level.outlook },
   player,
   freeze(b: boolean) {
     frozen = b;

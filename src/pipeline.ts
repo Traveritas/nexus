@@ -149,12 +149,32 @@ uniform vec3 uDim;
 uniform vec3 uGlow[${MAX_GLOW}];
 uniform int uGlowCount;
 uniform mat3 uView;
-uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse;
+uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse, uClean;
 out vec4 fragColor;
 ${COMMON}
 vec3 toSrgb(vec3 c) {
   c = max(c, 0.0);
   return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
+}
+
+// FXAA（Lottes 的简版）：沿亮度梯度的垂直方向取四个双线性样，干净的世界用
+float fxLuma(vec3 c) { return dot(sqrt(max(c, 0.0)), vec3(0.299, 0.587, 0.114)); }
+vec3 fxTap(vec2 uv) { return textureLod(tColor, uv, 0.0).rgb; }
+vec3 fxaa(vec2 uv, vec2 rcp) {
+  vec3 cM = fxTap(uv);
+  float lNW = fxLuma(fxTap(uv + vec2(-0.5, -0.5) * rcp)), lNE = fxLuma(fxTap(uv + vec2(0.5, -0.5) * rcp));
+  float lSW = fxLuma(fxTap(uv + vec2(-0.5, 0.5) * rcp)), lSE = fxLuma(fxTap(uv + vec2(0.5, 0.5) * rcp));
+  float lM = fxLuma(cM);
+  float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+  float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+  if (lMax - lMin < max(0.03, lMax * 0.1)) return cM;
+  vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), (lNW + lSW) - (lNE + lSE));
+  float red = max((lNW + lNE + lSW + lSE) * 0.03125, 1.0 / 128.0);
+  dir = clamp(dir / (min(abs(dir.x), abs(dir.y)) + red), vec2(-8.0), vec2(8.0)) * rcp;
+  vec3 a = 0.5 * (fxTap(uv + dir * (1.0 / 3.0 - 0.5)) + fxTap(uv + dir * (2.0 / 3.0 - 0.5)));
+  vec3 b = a * 0.5 + 0.25 * (fxTap(uv - dir * 0.5) + fxTap(uv + dir * 0.5));
+  float lB = fxLuma(b);
+  return lB < lMin || lB > lMax ? a : b;
 }
 
 vec3 octDecode(vec2 e) {
@@ -199,6 +219,24 @@ void main() {
   if (uRaw > 0.5) {
     vec4 d = texelFetch(tData, wpx, 0);
     fragColor = vec4(toSrgb(texelFetch(tColor, wpx, 0).rgb), d.z);
+    return;
+  }
+
+  // 干净的世界（现实）：连续色、不落色板、不描边、不按解析度场变粗；只有转场与犯困时一路变粗
+  if (uClean > 0.5) {
+    int Lc = 0;
+    if (uDissolve > 0.0) Lc = int(clamp(floor(uDissolve * 5.0 + (bayer4(px / 8) - 0.5) * 0.9 + 0.5), 0.0, 5.0));
+    if (uDrowse > 0.0) Lc = max(Lc, int(clamp(floor(uDrowse * 2.4 + (bayer4(px / 8) - 0.5) * 0.9 + 0.5), 0.0, 2.0)));
+    float dz = texelFetch(tData, wpx, 0).z;
+    vec3 c;
+    if (Lc <= uShift) {
+      // 抗锯齿用 FXAA（多重采样的世界图太贵）：颜色图是线性过滤的，世界图比屏幕小时顺带双线性放大
+      c = fxaa((vec2(px) + 0.5) / uRes, 1.0 / vec2(textureSize(tColor, 0)));
+    } else {
+      int lv = Lc - uShift;
+      c = texelFetch(tColor, min(px >> Lc, textureSize(tColor, lv) - 1), lv).rgb;
+    }
+    fragColor = vec4(toSrgb(c), dz);
     return;
   }
 
@@ -384,6 +422,7 @@ export class Pipeline {
   private w = 0;
   private h = 0;
   private shift = 0;
+  private clean = false;
 
   constructor(private renderer: THREE.WebGLRenderer) {
     this.pixMat = new THREE.ShaderMaterial({
@@ -410,6 +449,7 @@ export class Pipeline {
         uLock: { value: -1 },
         uDissolve: { value: 0 },
         uDrowse: { value: 0 },
+        uClean: { value: 0 },
         uDim: { value: new THREE.Vector3() },
         uGlow: { value: Array.from({ length: MAX_GLOW }, () => new THREE.Vector3()) },
         uGlowCount: { value: 0 },
@@ -482,7 +522,11 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
       magFilter: THREE.NearestFilter,
       generateMipmaps: true,
       depthBuffer: true,
+      // 模板：窗玻璃记一笔，窗里的景只画在那里（materials.ts 的 pane / throughPane）
+      stencilBuffer: true,
     });
+    // 颜色图线性过滤：像素化都用 texelFetch，不受影响；干净的世界的 FXAA 要双线性取样
+    this.rtWorld.textures[0].magFilter = THREE.LinearFilter;
     // 数据图只按第 0 层取：不建 mip 链，省得每帧白重建一遍
     const data = this.rtWorld.textures[1];
     data.generateMipmaps = false;
@@ -529,6 +573,13 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
 
   get worldShift() {
     return this.shift;
+  }
+
+  /** 干净的世界（现实）：不像素化、不落色板、不描边，FXAA 抗锯齿。换世界时按 level.style 设 */
+  setClean(b: boolean) {
+    if (b === this.clean) return;
+    this.clean = b;
+    this.pixMat.uniforms.uClean.value = b ? 1 : 0;
   }
 
   get pixTexture() {
@@ -584,7 +635,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     // 世界画完后 matrixWorldInverse 才是这一帧的；描边判断凸凹要视空间法线
     u.uView.value.setFromMatrix4(camera.matrixWorldInverse);
 
-    if (f.palette && !f.raw) {
+    if (f.palette && !f.raw && !this.clean) {
       this.quantMat.uniforms.tColor.value = this.rtWorld.textures[0];
       this.quad.material = this.quantMat;
       r.setRenderTarget(this.rtQuant);

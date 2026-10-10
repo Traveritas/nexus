@@ -454,6 +454,122 @@ void main() {
   });
 }
 
+export interface CleanOpts {
+  /** 线性色 */
+  color: THREE.Color;
+  /** 0..1：自己发光（灯罩、亮着的窗），1 ＝ 不吃明暗 */
+  emit?: number;
+  /** 接不接影子 */
+  recv?: boolean;
+  fog?: boolean;
+  /** 双面（纸、布条） */
+  double?: boolean;
+  /** 窗里的景：用自己的一套光（下午的太阳），不用这个世界的 */
+  view?: boolean;
+  id?: number;
+}
+
+/** 干净低模（现实的世界用）：每个面一个法线（按屏幕导数算，导出的法线怎样都行），平滑受光、柔和的影子（3×3 PCF），
+    颜色是任意的线性色，不落色板、不铺纹素格。管线在 clean 世界里不做像素化、落色板与描边 */
+export function clean(o: CleanOpts) {
+  return new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    side: o.double ? THREE.DoubleSide : THREE.FrontSide,
+    uniforms: {
+      ...shared,
+      uColor: { value: o.color },
+      uEmit: { value: o.emit ?? 0 },
+      uRecv: { value: o.recv === false ? 0 : 1 },
+      uUseFog: { value: o.fog === false ? 0 : 1 },
+      uView: { value: o.view ? 1 : 0 },
+      uId: { value: o.id ?? newId() },
+    },
+    vertexShader: VERT,
+    fragmentShader: /* glsl */ `
+precision highp float;
+${OUTS}
+${LIGHT_UNIFORMS}
+uniform vec3 uColor;
+uniform float uEmit, uRecv, uUseFog, uView, uId;
+in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
+${COMMON}
+void main() {
+  // 面法线：低模的每个面一块平的颜色；朝向镜头的那一面
+  vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
+  if (dot(n, cameraPosition - vWorld) < 0.0) n = -n;
+  bool view = uView > 0.5;
+  // 窗里的景：傍晚的暖光，太阳低低地在西北（与 wake_fragment.py 里画的太阳同一方向：Blender (-0.56, 0.8, 0.2)）
+  vec3 sunD = view ? normalize(vec3(-0.56, 0.2, -0.8)) : uSun;
+  vec3 sunC = view ? vec3(1.15, 0.86, 0.6) : uSunCol * 1.2;
+  vec3 skyC = view ? vec3(0.56, 0.58, 0.78) : uSkyCol;
+  vec3 gndC = view ? vec3(0.62, 0.5, 0.42) : uGroundCol;
+  float ndl = max(dot(n, sunD), 0.0);
+  float sh = 1.0;
+  if (!view && uRecv > 0.5 && uShadowOn > 0.5 && ndl > 0.0) {
+    // 斜着受光的面往法线方向多推一点（影子图一个纹素约 4cm，推少了会长出一片斜纹）
+    vec4 sc = uShadowMat * vec4(vWorld + n * (0.05 + 0.1 * (1.0 - ndl)), 1.0);
+    vec3 s = sc.xyz / sc.w;
+    if (all(greaterThan(s, vec3(0.0))) && all(lessThan(s, vec3(1.0)))) {
+      vec2 sz = vec2(textureSize(tShadow, 0));
+      float z = s.z - 0.0003;
+      float lit = 0.0;
+      // 3×3 个点，每个点在四个纹素之间双线性地比：影子边是软的、没有台阶
+      for (int i = -1; i <= 1; i++)
+        for (int j = -1; j <= 1; j++) {
+          vec2 p = (s.xy + vec2(float(i), float(j)) / sz) * sz - 0.5;
+          vec2 f = fract(p);
+          vec2 b = (floor(p) + 0.5) / sz;
+          float a00 = step(z, texture(tShadow, b).r);
+          float a10 = step(z, texture(tShadow, b + vec2(1.0, 0.0) / sz).r);
+          float a01 = step(z, texture(tShadow, b + vec2(0.0, 1.0) / sz).r);
+          float a11 = step(z, texture(tShadow, b + vec2(1.0, 1.0) / sz).r);
+          lit += mix(mix(a00, a10, f.x), mix(a01, a11, f.x), f.y);
+        }
+      sh = lit / 9.0;
+    }
+  }
+  vec3 amb = mix(gndC, skyC, n.y * 0.5 + 0.5);
+  vec3 col = uColor * (amb + sunC * ndl * sh);
+  col = mix(col, uColor * 1.1, uEmit);
+  if (uUseFog > 0.5) col = mix(col, uFogCol, smoothstep(uFogNear, uFogFar, vDepth));
+  oColor = vec4(col, 1.0);
+  oData = vec4(octEncode(n), vDepth, uId);
+}
+`,
+  });
+}
+
+/** 窗玻璃：什么颜色也不画，只在模板里记一笔——窗里的景（clean 的 view）只画在这一笔里。
+    单面朝屋里：从外面看进窗来，看见的是屋里，不是窗外的景 */
+export function pane() {
+  return new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    colorWrite: false,
+    depthWrite: false,
+    stencilWrite: true,
+    stencilRef: 1,
+    stencilFunc: THREE.AlwaysStencilFunc,
+    stencilZPass: THREE.ReplaceStencilOp,
+    vertexShader: /* glsl */ `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+precision highp float;
+${OUTS}
+void main() { oColor = vec4(0.0); oData = vec4(0.0); }
+`,
+  });
+}
+
+/** 让一种材质只画在窗玻璃记过的地方 */
+export function throughPane(m: THREE.Material) {
+  m.stencilWrite = true;
+  m.stencilRef = 1;
+  m.stencilFunc = THREE.EqualStencilFunc;
+  m.stencilFail = THREE.KeepStencilOp;
+  m.stencilZFail = THREE.KeepStencilOp;
+  m.stencilZPass = THREE.KeepStencilOp;
+  return m;
+}
+
 /** 影子版本：只写深度；纸片按贴图透明度挖空 */
 export function shadowVariant(mat: THREE.ShaderMaterial) {
   const tMap = mat.uniforms.tMap;

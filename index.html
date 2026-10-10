@@ -21,6 +21,29 @@
     text-shadow: 0 0 6px #ecdde6;
   }
   #hud.off { display: none; }
+  /* 窗前的站点卡片（src/sitecard.ts）：连着真实的站点，全分辨率平滑字；字体与留白取那个站点的样子，字色跟着窗里的天 */
+  .site, .sitekeys { --ink: #232830; --bg: #edf0f4; position: fixed; pointer-events: none; opacity: 0; color: var(--ink);
+    text-shadow: 0 0 10px var(--bg), 0 0 22px var(--bg); transition: opacity 0.3s ease, transform 0.3s ease; }
+  .site { left: 11vw; top: 17vh; max-width: 30em; transform: translateY(6px); }
+  .site.on { opacity: 1; transform: none; transition-duration: 0.9s; }
+  .site.away-l { opacity: 0; transform: translateX(-28px); transition-duration: 0.28s; }
+  .site.away-r { opacity: 0; transform: translateX(28px); transition-duration: 0.28s; }
+  .site .kicker { font: 11px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace; letter-spacing: 0.32em; opacity: 0.62; }
+  .site .title { margin-top: 18px; font: 400 38px/1.15 'Noto Serif SC', 'Palatino Linotype', 'Iowan Old Style', Palatino, Georgia, 'Source Han Serif SC', 'Songti SC', SimSun, serif; letter-spacing: 0.12em; }
+  .site .rule { margin-top: 20px; height: 1px; width: 0; background: var(--ink); opacity: 0.45; transition: width 1.6s cubic-bezier(.2, .7, .2, 1) 0.3s; }
+  .site.on .rule { width: 9em; }
+  .site .desc { margin-top: 18px; font: 15px/1.9 'Noto Serif SC', 'Palatino Linotype', 'Iowan Old Style', Palatino, Georgia, 'Source Han Serif SC', 'Songti SC', SimSun, serif; letter-spacing: 0.06em; opacity: 0.85; }
+  /* 博客（overnight）用博客自己的标题字栈（拉丁字是 Palatino），见 personal-website 的 tokens.css；GitHub（scaffold）：GitHub 自己的无衬线标题，简介用正文字 */
+  .site[data-sky="scaffold"] .title { font: 600 34px/1.2 -apple-system, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; letter-spacing: 0.02em; }
+  .site[data-sky="scaffold"] .desc { font: 15px/1.7 -apple-system, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; letter-spacing: 0.02em; }
+  .site .idx { margin-top: 26px; font: 11px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace; letter-spacing: 0.3em; opacity: 0.5; }
+  .sitekeys { left: 50%; bottom: 9vh; transform: translateX(-50%); white-space: nowrap;
+    font: 12px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace; letter-spacing: 0.18em; }
+  .sitekeys.on { opacity: 0.8; transition-duration: 0.9s; transition-delay: 0.5s; }
+  .sitekeys span { margin: 0 1.4em; }
+  .sitekeys b { display: inline-block; min-width: 1.6em; padding: 3px 0; margin-right: 0.5em; text-align: center; font-weight: 400;
+    letter-spacing: 0; border: 1px solid var(--ink); border-radius: 2px; }
+  .sitekeys b + b { margin-left: -0.2em; }
   /* 罗盘地图上站点的名字：连着真实的站点，全分辨率平滑字，跟着星星走（src/mapview.ts） */
   #maplabel {
     position: fixed; transform: translateX(-50%); white-space: nowrap;

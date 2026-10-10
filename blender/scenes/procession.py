@@ -74,7 +74,7 @@ def build(extent=EXTENT):
     ent = pf.halo_gate("gate", (0, 82, F), 0, size=5.2, seed=4,
                        styles=[dict(a="white", b="pink_pale"), dict(a="pink_pale", b="pink"), dict(a="mist", b="white")])
     nx.box("gate_floor", (12, 12, F + 0.01), (0, 80, 0), a="white", b="mist", pattern="tiles")
-    nx.entrance("entrance_gate", ent, "https://traveritas.github.io/", "随笔 · 醒梦")
+    nx.entrance("entrance_gate", ent, "https://traveritas.github.io/", "AveritA的昼梦叙集")
     pf.bloom("gate_drift", (0, 80, 2), kind="drift", size=4, seed=5, petals=8)
 
     # ── 侧园：立着的残环 ──

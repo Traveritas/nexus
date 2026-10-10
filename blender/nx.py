@@ -94,11 +94,60 @@ def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=T
     return obj
 
 
+def clean(obj, color, emit=0.0, recv=True, fog=True, double=False, collide=True, shadow=True, window=None):
+    """干净低模（现实的世界用）：color 是 '#rrggbb'；emit 0..1 自己发光；recv 接不接影子；
+    window='view' 的东西只在窗玻璃里看得见（窗外的景，用自己的一套光，不投影、不挡人）"""
+    obj["nx_mat"] = "clean"
+    obj["nx_color"] = color
+    if emit:
+        obj["nx_emit"] = float(emit)
+    if not recv:
+        obj["nx_recv"] = 0
+    if not fog:
+        obj["nx_fog"] = 0
+    if double:
+        obj["nx_double"] = 1
+    if window:
+        obj["nx_window"] = window
+        collide, shadow = False, False
+    obj["nx_collide"] = 1 if collide else 0
+    obj["nx_shadow"] = 1 if shadow else 0
+    return obj
+
+
+def pane(obj):
+    """窗玻璃：不画颜色，只让窗外的景（clean 的 window='view'）画在它后面；单面，正面朝屋里"""
+    obj["nx_mat"] = "pane"
+    obj["nx_collide"] = 0
+    obj["nx_shadow"] = 0
+    return obj
+
+
 def collider_only(obj):
     """看不见、只挡人"""
     obj["nx_mat"] = "collider"
     obj["nx_collide"] = 1
     obj.display_type = "WIRE"
+    return obj
+
+
+def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=None, time=0.8, title=""):
+    """会动的东西：在原样与另一个样子之间来回。同一 group 的物体一起动，触发条件取组里第一个物体上写的。
+    on="near" 走近（离 at 水平 radius 米内）就变、走开变回（窗帘）；"key" 走近 at 按 E 来回切换（title 是纸签）；
+    "cue" 由别的东西叫它（推开窗时的窗扇）。at 不给 ＝ 物体自己的原点。
+    rot：绕物体自己原点的欧拉角（度，物体本地轴）；scale：本地轴上的缩放倍数；move：世界坐标的位移（米）。
+    转与缩放都绕原点，所以原点要放在铰链 / 收拢的那一头。会动的东西不进静态碰撞"""
+    obj["nx_pose"] = group
+    obj["nx_pose_on"] = on
+    obj["nx_pose_radius"] = float(radius)
+    obj["nx_pose_time"] = float(time)
+    if at is not None:
+        obj["nx_pose_at"] = ",".join(f"{v:g}" for v in at)
+    for key, v in (("rot", rot), ("scale", scale), ("move", move)):
+        if v is not None:
+            obj[f"nx_pose_{key}"] = ",".join(f"{c:g}" for c in v)
+    if title:
+        obj["nx_pose_title"] = title
     return obj
 
 
@@ -282,15 +331,18 @@ def export(name):
 
 # ── 天空主题 ───────────────────────────────────────────
 
-def atmosphere(sky="blank", seed=None):
+def atmosphere(sky="blank", seed=None, style=None):
     """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
-    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
-    seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1"""
+    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
+    seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1。
+    style='clean'：这个世界是干净低模，管线不做像素化、落色板与描边（现实的世界）"""
     if ATLAS:
         return None
     obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
     obj["nx_type"] = "atmosphere"
     obj["nx_sky"] = sky if seed is None else f"{sky}:{int(seed)}"
+    if style:
+        obj["nx_style"] = style
     return obj
 
 
@@ -334,6 +386,26 @@ def item(name, loc, item_id, get="pick", radius=1.2):
     obj["nx_item"] = item_id
     obj["nx_get"] = get
     obj["nx_radius"] = float(radius)
+    return obj
+
+
+def outlook(name, loc, url, title="", sky="blank", radius=1.2, desc="", view=None, view_facing=0.0, view_pitch=0.0):
+    """窗景：窗外是哪一个站点。窗里的天是 sky 主题（只画在窗玻璃 nx.pane 里）；loc 是纸签系的地方（窗前，大约齐胸高）。
+    走近按 E「推开窗」：组里 on="cue" 的 pose（窗扇）往屋里开，眼睛凑到 view（窗口里，眼睛的位置）朝 view_facing（同 spawn）往外看，
+    站点卡片浮出来（站名 title、一句话 desc）；在那里 A / D 换一处、E 进入 url、S 退回。
+    同一扇窗可以放几处（按名字排序；眼睛的位置取第一处的）；只在某一处里看得见的点缀写 nx_window=view 与 nx_outlook=name"""
+    obj = _empty(f"outlook_{name}", loc, (0, 0, 0), "SPHERE", radius)
+    obj["nx_type"] = "outlook"
+    obj["nx_url"] = url
+    obj["nx_title"] = title
+    obj["nx_sky"] = sky
+    obj["nx_radius"] = float(radius)
+    if desc:
+        obj["nx_desc"] = desc
+    if view is not None:
+        obj["nx_view"] = ",".join(f"{v:g}" for v in view)
+        obj["nx_view_yaw"] = float(view_facing)
+        obj["nx_view_pitch"] = float(view_pitch)
     return obj
 
 
