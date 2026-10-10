@@ -12,6 +12,7 @@ import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
 import { SiteCard } from './sitecard';
 import { dreamt, edges, recordEdge, recordSite, sites } from './worlds';
+import { RealName } from './realtext';
 import { IntroPlayer, introSeen, stripIntro } from './intro';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 wake_fragment——现实的家，醒着的那一间）；?scene= 是旧写法，同义
@@ -27,6 +28,7 @@ if (q.has('ramp')) shared.uAutoRamp.value = THREE.MathUtils.clamp(Number(q.get('
 const canvas = document.getElementById('stage') as HTMLCanvasElement;
 const hud = document.getElementById('hud')!;
 const label = document.getElementById('label')!;
+const siteName = new RealName(label);
 const deg = Math.PI / 180;
 const RETURN_KEY = 'nexus:return';
 const DEV_KEY = 'nexus:dev';
@@ -196,7 +198,7 @@ let frozen = q.get('freeze') === '1';
 const deepLink = q.has('world') || q.has('scene') || q.has('pos');
 let intro: IntroPlayer | null =
   level.intro && q.get('intro') !== '0' && (q.get('intro') === '1' || (!deepLink && !restored && !introSeen()))
-    ? new IntroPlayer(level.intro, document.getElementById('intro')!)
+    ? new IntroPlayer(level.intro, document.getElementById('intro') as HTMLCanvasElement)
     : null;
 if (!intro) stripIntro(level.intro);
 const introView = { pos: new THREE.Vector3(), yaw: 0, pitch: 0 };
@@ -693,9 +695,10 @@ function fieldOf(prompt: Promptable | null): Field {
   // 凑在窗口时的化白（换景的一亮、进站）由 stepGaze 推
   if (!gaze) resolve = entering ? Math.min(1, resolve + 0.12) : target;
 
-  // 晶体的名字连着真实的站点，不走像素 UI，保持全分辨率；有纸签时让开
-  label.textContent = nearest?.title ?? '';
-  label.style.opacity = String(nearest && !prompt ? (1 - THREE.MathUtils.smoothstep(nearestD, 4, 9)) * (1 - resolve) * (1 - dissolve) : 0);
+  // 晶体的名字连着真实的站点，是「现实的字」（src/realtext.ts）：走近时对上焦；有纸签时让开
+  if (nearest) siteName.set(nearest.title, nearest.url);
+  const near = nearest && !prompt ? 1 - THREE.MathUtils.smoothstep(nearestD, 4, 9) : 0;
+  siteName.focus(near, near * (1 - resolve) * (1 - dissolve));
 
   return { sources: sources.slice(0, MAX_FIELD), prox, resolve, dissolve, veilCol };
 }
@@ -747,13 +750,7 @@ function frame(dt: number) {
   level.update(dt, t, camera, frozen);
   for (const e of level.entrances) e.crystal.update(camera, pipe.pixTexture);
   const field = fieldOf(prompt);
-  // 窗景的站名：和晶体的名字一样是全分辨率的字，走近窗时浮出来，和纸签同时在
-  const ol = level.outlooks[level.outlook];
-  if (ol?.title && !level.entrances.length) {
-    const d = eye.distanceTo(ol.pos);
-    label.textContent = ol.title;
-    label.style.opacity = String((1 - THREE.MathUtils.smoothstep(d, 2.2, 4.2)) * (1 - resolve) * (1 - dissolve) * (gaze ? 0 : 1));
-  }
+  // 窗景不挂站名：走近窗有纸签，推开窗有站点卡片，名字在卡片上
   field.sources = [...items.sources(camera), ...field.sources].slice(0, MAX_FIELD);
   shadow.render(renderer, level.scene, player.feet);
   book.update(dt);

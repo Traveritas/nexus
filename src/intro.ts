@@ -4,6 +4,8 @@
    只在第一次从根地址进来时放（localStorage 记一笔）；?intro=1 强制再放一次，?intro=0 不放。不放时木条直接拿掉。 */
 import * as THREE from 'three';
 import type { Intro } from './level';
+import { PALETTE } from './palette';
+import { UI_SCALE, text } from './ui';
 
 const SEEN_KEY = 'nexus:woke';
 const EYE = 1.6;
@@ -45,6 +47,65 @@ export function stripIntro(intro: Intro | null) {
   for (const p of intro?.pieces ?? []) p.removeFromParent();
 }
 
+/* 「点击醒来」：还在梦里，所以是像素字（和纸签同一套字），不是现实的平滑字。
+   像素层不许半透明，所以不淡入淡出，走色板的档：一个字一个字从浅档浮出来（雾 → 淡紫 → 墨）；
+   之后每个字在墨的三档之间慢慢呼吸，相位一个错一个，像一口气从左走到右；醒来时跟着木条一个个退回浅档、收走 */
+const HINT = '点击醒来';
+/** 字与字之间多空几个 UI 像素 */
+const HINT_GAP = 1;
+/** 浮出：从开场起多久出第一个字、之后每隔多久一个、每个字走完浅档要多久 */
+const HINT_AT = 0.8;
+const HINT_STEP = 0.18;
+const HINT_RISE = 0.36;
+/** 呼吸一口多久 */
+const HINT_BREATH = 3.2;
+const HINT_RAMP = [PALETTE[5], PALETTE[4], PALETTE[3]];
+const HINT_INK = [PALETTE[1], PALETTE[2], PALETTE[3]];
+
+class Hint {
+  private g: CanvasRenderingContext2D;
+  private x: number[] = [];
+
+  constructor(private el: HTMLCanvasElement) {
+    let w = 0;
+    for (const ch of HINT) {
+      this.x.push(w);
+      w += text(ch).width + HINT_GAP;
+    }
+    w -= HINT_GAP;
+    // 宽高取偶数，居中时落在整像素上
+    w += w & 1;
+    el.width = w;
+    el.height = 14;
+    el.style.width = `${w * UI_SCALE}px`;
+    el.style.height = `${14 * UI_SCALE}px`;
+    this.g = el.getContext('2d')!;
+  }
+
+  /** clock：开场的钟；gone：醒来以后过了多久（没醒是 -1） */
+  draw(clock: number, gone: number) {
+    const g = this.g;
+    g.clearRect(0, 0, this.el.width, this.el.height);
+    [...HINT].forEach((ch, i) => {
+      // v：0 看不见，0..1 在浅档里，1 是墨
+      let v = (clock - HINT_AT - i * HINT_STEP) / HINT_RISE;
+      if (gone >= 0) v = Math.min(v, 1 - (gone - DROP_AT - i * DROP_GAP * 2) / HINT_RISE);
+      if (v <= 0) return;
+      let c: string;
+      if (v < 1) c = HINT_RAMP[Math.min(2, Math.floor(v * 3))];
+      else {
+        const b = (Math.sin(((clock - i * 0.35) / HINT_BREATH) * Math.PI * 2) + 1) / 2;
+        c = HINT_INK[Math.min(2, Math.floor(b * b * 3))];
+      }
+      g.drawImage(text(ch, c), this.x[i], 0);
+    });
+  }
+
+  clear() {
+    this.g.clearRect(0, 0, this.el.width, this.el.height);
+  }
+}
+
 const smoother = (k: number) => k * k * k * (k * (k * 6 - 15) + 10);
 
 interface Falling {
@@ -70,9 +131,9 @@ export class IntroPlayer {
   private to: { pos: THREE.Vector3; yaw: number; pitch: number } | null = null;
   private readonly mid = new THREE.Vector3();
   private readonly falling: Falling[];
-  private readonly hint: HTMLElement;
+  private readonly hint: Hint;
 
-  constructor(intro: Intro, hint: HTMLElement) {
+  constructor(intro: Intro, hint: HTMLCanvasElement) {
     this.from = { pos: intro.pos.clone().add(new THREE.Vector3(0, EYE, 0)), yaw: intro.yaw, pitch: intro.pitch };
     const r = (a: number, b: number) => a + Math.random() * (b - a);
     this.falling = intro.pieces.map((obj, i) => ({
@@ -86,11 +147,8 @@ export class IntroPlayer {
       vel: new THREE.Vector3(r(-0.3, 0.3), HOP * r(0.6, 1.2), r(-0.3, 0.3)),
       spin: new THREE.Vector3(r(-1.4, 1.4), r(-0.6, 0.6), r(-1.4, 1.4)),
     }));
-    this.hint = hint;
-    hint.textContent = '点击醒来';
+    this.hint = new Hint(hint);
     document.body.classList.add('intro');
-    // 等第一帧画出来再浮出字
-    requestAnimationFrame(() => hint.classList.add('on'));
   }
 
   /** 梦的程度：标题时 1（整屏走梦的管线），滑向床边时一块块、一级级解析成干净的现实，到 0 */
@@ -109,7 +167,6 @@ export class IntroPlayer {
     // 弧的控制点：两头的中点往上抬一些
     this.mid.copy(this.from.pos).lerp(to.pos, 0.5);
     this.mid.y += 2.2;
-    this.hint.classList.remove('on');
     markSeen();
   }
 
@@ -117,7 +174,7 @@ export class IntroPlayer {
   cancel() {
     this.dream = 0;
     for (const f of this.falling) f.obj.removeFromParent();
-    this.hint.classList.remove('on');
+    this.hint.clear();
     document.body.classList.remove('intro');
     this.phase = 'done';
   }
@@ -131,6 +188,7 @@ export class IntroPlayer {
       if (this.phase === 'play' && this.t + dt > f.at) continue;
       f.obj.position.copy(f.base).addScaledVector(f.dir, Math.sin(this.clock * f.freq + f.phase) * f.amp);
     }
+    this.hint.draw(this.clock, this.phase === 'play' ? this.t : -1);
     if (this.phase === 'title') {
       out.pos.copy(this.from.pos);
       out.yaw = this.from.yaw;
@@ -170,6 +228,7 @@ export class IntroPlayer {
       for (const f of this.falling) f.obj.removeFromParent();
       this.phase = 'done';
       this.dream = 0;
+      this.hint.clear();
       document.body.classList.remove('intro');
       return true;
     }

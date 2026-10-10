@@ -4,7 +4,7 @@
    - 本世界：每个出入口（传送物）与站点（晶体）一颗星，隔着墙也看得见；不标物品。
        站点：金，大，另有一对慢慢转的斜芒 · 去过的世界的出口：白，雾蓝的晕 · 没去过的：暗紫，一点微光，没有芒。
        远处的小一号；画面外的贴在屏幕边上。正看着的那颗挂一张纸签：「→ 浅滩 · 一杯水」，没去过的「→ ？」；
-       站点的名字连着真实的站点，用全分辨率的平滑字（#maplabel）。
+       站点的名字连着真实的站点，是「现实的字」（#maplabel，src/realtext.ts），换到它时对一次焦。
    - 抬头看天：去过的世界是天上的星座，走过的连接是星与星之间两头渐隐的细线，展开时一笔画出来；有站点的世界旁边一颗小金星。
    - 开着时照常走、转头；再捏到底一次收起来（暗色缩回手边）；换世界时直接收起。
    每帧先 layout（世界画之前，像素的星光要用），再 draw。 */
@@ -13,6 +13,7 @@ import type { Level } from './level';
 import { MAX_GLOW } from './pipeline';
 import { ease } from './stage';
 import { UI_SCALE, paper, paperMask, paperShadow, text, C, type Ui } from './ui';
+import { RealName } from './realtext';
 import { starAt, worldName } from './worlds';
 
 const OPEN_TIME = 0.9;
@@ -56,6 +57,7 @@ interface Star {
   label: string;
   site: boolean;
   seed: number;
+  url?: string;
 }
 
 interface SkyStar {
@@ -145,6 +147,10 @@ export class MapView {
   private focus: Star | null = null;
   private skyFocus: SkyStar | null = null;
   private lookingUp = false;
+  private name: RealName;
+  /** 站点名字的对焦：换到一颗站点星时从 0 起 */
+  private nameF = 0;
+  private nameOf: Star | null = null;
 
   constructor(
     private ui: Ui,
@@ -152,6 +158,7 @@ export class MapView {
     private glowEl: HTMLCanvasElement,
   ) {
     this.g = glowEl.getContext('2d')!;
+    this.name = new RealName(label);
   }
 
   get active() {
@@ -172,7 +179,7 @@ export class MapView {
   closeNow() {
     this.want = false;
     this.e = 0;
-    this.label.style.opacity = '0';
+    this.name.focus(0);
   }
 
   update(dt: number) {
@@ -216,7 +223,7 @@ export class MapView {
     const all: Star[] = [];
     for (const e of c.level.entrances) {
       if (!e.url) continue;
-      all.push(this.place(e.crystal.mesh.position, camera, LOOK.site, e.title || '站点', true, seed++));
+      all.push(this.place(e.crystal.mesh.position, camera, LOOK.site, e.title || '站点', true, seed++, e.url));
     }
     for (const p of c.level.portals) {
       const seen = c.visited.includes(p.to);
@@ -287,7 +294,7 @@ export class MapView {
 
   /** 世界画完之后：星画在 #glow 上，纸签画在 UI 画布上 */
   draw() {
-    this.label.style.opacity = '0';
+    let named: Star | null = null;
     const g = this.g;
     const W = this.ui.w * UI_SCALE;
     const H = this.ui.h * UI_SCALE;
@@ -346,19 +353,23 @@ export class MapView {
     const f = this.focus;
     if (f && !this.lookingUp) {
       if (f.site) {
-        // 站点：全分辨率的平滑字
-        this.label.textContent = f.label;
+        // 站点：现实的字，对着焦浮出来
+        named = f;
+        this.name.set(f.label, f.url);
         const r = this.ui.el.getBoundingClientRect();
         this.label.style.left = `${r.left + f.x * S}px`;
-        this.label.style.top = `${r.top + (f.y + 22) * S}px`;
-        this.label.style.opacity = '1';
+        this.label.style.top = `${r.top + (f.y + 16) * S}px`;
       } else tag(ui, f.label, Math.round(f.x), Math.round(f.y) + 16);
     }
+    if (named?.label !== this.nameOf?.label) this.nameF = 0;
+    this.nameOf = named;
+    this.nameF = named ? Math.min(1, this.nameF + 1 / 30) : 0;
+    this.name.focus(ease(this.nameF));
     const sf = this.skyFocus;
     if (sf && this.lookingUp) tag(ui, sf.here ? `此刻 · ${worldName(sf.wld)}` : worldName(sf.wld), Math.round(sf.x), Math.round(sf.y) + 14);
   }
 
-  private place(pos: THREE.Vector3, camera: THREE.PerspectiveCamera, look: Look, label: string, site: boolean, seed: number): Star {
+  private place(pos: THREE.Vector3, camera: THREE.PerspectiveCamera, look: Look, label: string, site: boolean, seed: number, url?: string): Star {
     const small = camera.position.distanceTo(pos) > 10;
     tmp.copy(pos).applyMatrix4(camera.matrixWorldInverse);
     const behind = tmp.z > 0;
@@ -370,6 +381,6 @@ export class MapView {
       x = this.ui.w / 2 - (x - this.ui.w / 2) * 1e3;
       y = this.ui.h / 2 - (y - this.ui.h / 2) * 1e3;
     }
-    return { x, y, look, small, edge: false, label, site, seed };
+    return { x, y, look, small, edge: false, label, site, seed, url };
   }
 }

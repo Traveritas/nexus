@@ -4,6 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=Noto+Serif+SC&display=swap" />
 <title>NEXUS</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #ecdde6; }
@@ -44,29 +47,41 @@
   .sitekeys b { display: inline-block; min-width: 1.6em; padding: 3px 0; margin-right: 0.5em; text-align: center; font-weight: 400;
     letter-spacing: 0; border: 1px solid var(--ink); border-radius: 2px; }
   .sitekeys b + b { margin-left: -0.2em; }
-  /* 罗盘地图上站点的名字：连着真实的站点，全分辨率平滑字，跟着星星走（src/mapview.ts） */
-  #maplabel {
-    position: fixed; transform: translateX(-50%); white-space: nowrap;
-    pointer-events: none; opacity: 0;
-    font: 13px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace;
-    letter-spacing: 0.3em; color: #fbf9f7; text-shadow: 0 0 4px #1d1a2b, 0 0 10px #3a3350;
+  /* 现实的字（src/realtext.ts）：连着真实站点的名字——晶体（#label），罗盘地图上的站点（#maplabel）。
+     和纸签相对：没有纸、没有墨线和影子，四角一副发丝细的取景角，一圈光晕；不翻面，是对焦——
+     --f 从 0 到 1：虚 → 清楚，字距收拢，取景角合上来；--a 是在不在（不透明度）。上一行等宽的域名，下一行衬线的站名，拉丁字与汉字分开排 */
+  .real {
+    --f: 0; --a: 0; --ink: #3a3350; --glow: #fbf9f7;
+    position: fixed; transform: translateX(-50%); pointer-events: none; white-space: nowrap; text-align: center;
+    padding: 9px 18px 10px; color: var(--ink);
+    opacity: var(--a); filter: blur(calc((1 - var(--f)) * 3px));
+    text-shadow: 0 0 6px var(--glow), 0 0 16px var(--glow);
   }
-  /* 开场（src/intro.ts）：标题机位下方的一行「点击醒来」，慢慢呼吸；开场时不显示调试信息与晶体名 */
-  #intro {
-    position: fixed; left: 50%; bottom: 14vh; transform: translateX(-50%);
-    pointer-events: none; opacity: 0; transition: opacity 1.2s ease;
-    font: 13px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace;
-    letter-spacing: 0.6em; padding-left: 0.6em; color: #3a3350; text-shadow: 0 0 8px #fbf9f7, 0 0 18px #fbf9f7;
+  .real::before {
+    content: ''; position: absolute; inset: calc((1 - var(--f)) * -12px); opacity: 0.55;
+    --c: linear-gradient(var(--ink), var(--ink));
+    background:
+      var(--c) left top / 7px 1px no-repeat, var(--c) left top / 1px 7px no-repeat,
+      var(--c) right top / 7px 1px no-repeat, var(--c) right top / 1px 7px no-repeat,
+      var(--c) left bottom / 7px 1px no-repeat, var(--c) left bottom / 1px 7px no-repeat,
+      var(--c) right bottom / 7px 1px no-repeat, var(--c) right bottom / 1px 7px no-repeat;
   }
-  #intro.on { opacity: 0.85; animation: breathe 3.2s ease-in-out 1.2s infinite; }
-  @keyframes breathe { 50% { opacity: 0.45; } }
+  .real .host {
+    margin-bottom: 7px; padding-left: 0.24em; opacity: 0.72;
+    font: 10px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace; letter-spacing: 0.24em;
+  }
+  .real .name { font-size: 19px; line-height: 1.2; }
+  .real .name span + span { margin-left: 0.28em; }
+  .real .lat { font-family: 'Palatino Linotype', 'Iowan Old Style', Palatino, Georgia, serif; letter-spacing: calc(0.03em + (1 - var(--f)) * 0.3em); }
+  .real .lat.caps { font-size: 0.84em; letter-spacing: calc(0.2em + (1 - var(--f)) * 0.3em); }
+  .real .han { font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', SimSun, serif; letter-spacing: calc(0.14em + (1 - var(--f)) * 0.4em); }
+  .real .sep { margin: 0 0.2em; opacity: 0.5; font-family: 'Palatino Linotype', Palatino, Georgia, serif; }
+  #label { left: 50%; bottom: 12vh; }
+  /* 罗盘地图上的站点跟着星星走，夜里是浅墨 */
+  #maplabel { --ink: #fbf9f7; --glow: #3a3350; text-shadow: 0 0 4px #1d1a2b, 0 0 12px var(--glow); }
+  /* 开场（src/intro.ts）：标题机位下方的「点击醒来」，像素字（还在梦里），一个 UI 像素 ＝ 2 个屏幕像素；开场时不显示调试信息与晶体名 */
+  #intro { position: fixed; left: 50%; bottom: 14vh; transform: translateX(-50%); pointer-events: none; image-rendering: pixelated; }
   body.intro #hud, body.intro #label { display: none; }
-  #label {
-    position: fixed; left: 50%; bottom: 12vh; transform: translateX(-50%);
-    pointer-events: none; opacity: 0; transition: opacity 0.4s;
-    font: 13px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace;
-    letter-spacing: 0.3em; color: #3a3350; text-shadow: 0 0 8px #fbf9f7;
-  }
 </style>
 </head>
 <body>
@@ -75,7 +90,7 @@
 <canvas id="ui"></canvas>
 <div id="hud"></div>
 <div id="label"></div>
-<div id="intro"></div>
+<canvas id="intro"></canvas>
 <div id="maplabel"></div>
 <script type="module" src="/src/main.ts"></script>
 </body>
