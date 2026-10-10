@@ -188,6 +188,8 @@ const indexLeft: Draw = (g, c) => {
   r.push(item(g, c, 'settings', '设置', 34, 4));
   if (c.awake) write(g, '醒来', 34, 5, P(3));
   else r.push(item(g, c, 'wake', '醒来', 34, 5));
+  // 回到开场：木条重新拼成 NEXUS，再醒一次。用名字本身，不写「返回主界面」
+  r.push(item(g, c, 'title', 'NEXUS', 34, 7));
   return r;
 };
 
@@ -360,6 +362,8 @@ interface Turn {
 
 export interface DiaryHost {
   wake(): void;
+  /** 回到开场的标题（NEXUS） */
+  title(): void;
   apply(s: Settings): void;
   world(): string;
   visited(): string[];
@@ -496,6 +500,10 @@ export class Diary {
       case 'wake':
         this.close();
         this.host.wake();
+        break;
+      case 'title':
+        this.close();
+        this.host.title();
         break;
       case 'items':
         this.turnTo('items');

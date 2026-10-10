@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Pipeline, MAX_FIELD, type Field, type FieldSource } from './pipeline';
 import { SunShadow } from './shadow';
 import { loadLevel, type Entrance, type Level, type Outlook, type Pose, type Portal } from './level';
-import { Player } from './player';
+import { PLAYER, Player } from './player';
 import { SKY_NAMES, skyLabel } from './skybox';
 import { shared } from './materials';
 import { Ui, UI_SCALE, loadUiFont } from './ui';
@@ -20,7 +20,7 @@ import { IntroPlayer, introSeen, stripIntro } from './intro';
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    开场：第一次从根地址进来时停在标题的机位上，「点击醒来」以后木条掉进虚空、视角滑到床边（src/intro.ts）；?intro=1 强制再放一次，?intro=0 不放
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?res=auto|full|half|quarter|eighth|sixteenth 世界的渲染分辨率  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
-   键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
+   键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来、回到开场的 NEXUS 在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
 
 const q = new URLSearchParams(location.search);
@@ -202,13 +202,20 @@ let intro: IntroPlayer | null =
     : null;
 if (!intro) stripIntro(level.intro);
 const introView = { pos: new THREE.Vector3(), yaw: 0, pitch: 0 };
-/** 点击醒来：终点是现在人站的地方（出生点）的眼睛 */
+/** 点击醒来：终点每次都一样——人放回床边（到达点），眼睛平视，回头望着标题的机位（木条掉进去的那片虚空）。
+    不取此刻人身上的状态：眼高的缓动、走路的起伏、朝向都会让终点每次差一点 */
 function wakeIntro() {
-  if (intro?.phase !== 'title') return;
-  const pos = new THREE.Vector3();
-  player.eyePosition(pos);
-  intro.wake({ pos, yaw: player.yaw, pitch: player.pitch });
-  introEnd = { yaw: player.yaw, pitch: player.pitch };
+  // 从日记里翻回来时，等转场解析完再认点击
+  if (intro?.phase !== 'title' || travel || !level.intro) return;
+  arriveAt(lastArrival);
+  const back = level.intro.pos.clone().sub(player.feet);
+  const end = { yaw: Math.atan2(-back.x, -back.z), pitch: 0 };
+  player.yaw = end.yaw;
+  player.pitch = end.pitch;
+  const pos = player.feet.clone();
+  pos.y += PLAYER.eye;
+  intro.wake({ pos, ...end });
+  introEnd = end;
 }
 let introEnd = { yaw: 0, pitch: 0 };
 if (q.get('hud') === '0') hud.classList.add('off');
@@ -227,6 +234,8 @@ interface Travel {
   /** 从哪个世界来；是不是穿过传送物来的（是的话记一条走过的连接，罗盘的星座图用） */
   from: string;
   via: boolean;
+  /** 到了以后停在开场的标题上（日记里点 NEXUS） */
+  dream: boolean;
 }
 let travel: Travel | null = null;
 let dissolve = 0;
@@ -235,13 +244,13 @@ const IN = 1.0;
 const veilCol = new THREE.Color();
 const fogSrgb = () => shared.uFogCol.value.clone().convertLinearToSRGB();
 
-function go(to: string, at = '', push = true, via = false) {
+function go(to: string, at = '', push = true, via = false, dream = false) {
   if (travel || entering || !to) return;
   const next = loadLevel(sceneUrl(to)).catch((err) => {
     console.warn('[nexus] 去不了', to, err);
     return null;
   });
-  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb(), from: world, via };
+  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb(), from: world, via, dream };
   map.closeNow();
   travel = tr;
   player.vel.set(0, 0, 0);
@@ -268,10 +277,12 @@ function stepTravel(dt: number) {
     }
     disposeLevel(level);
     level = l;
-    stripIntro(level.intro);
     // 开场还没放完就走了（只有测试会这样）：收起来，别把人锁在新世界里
     intro?.cancel();
     intro = null;
+    // 日记里点 NEXUS：回到现实的家，停在标题的机位上，木条重新拼成字，再点一下醒来
+    if (travel.dream && level.intro) intro = new IntroPlayer(level.intro, document.getElementById('intro') as HTMLCanvasElement);
+    else stripIntro(level.intro);
     level.apply();
     world = travel.to;
     player.setCollider(level.collider);
@@ -306,6 +317,7 @@ addEventListener('popstate', (e) => {
 // ── 日记 ──
 const book = new Diary(ui, {
   wake: () => go(START, START_AT),
+  title: () => go(START, START_AT, true, false, true),
   apply: (s) => {
     player.sens = s.sens;
     resMode = s.res;
