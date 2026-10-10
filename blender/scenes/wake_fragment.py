@@ -9,7 +9,8 @@
 - 床（E「睡」→ 梦里的家）、床头柜与台灯、闹钟、一杯水。
 - 北墙一扇窗，窗外有两处（窗景 outlook）：博客的那一夜（overnight）与 GitHub 的未完成的构造（scaffold）。两幅窗帘平时合着，走近就拉开；按 E 推开窗，两扇窗往外开，眼睛凑到窗口往外看，站点卡片浮出来，可以进博客或退回。窗下一张书桌（桌面右手空着一块）、一把椅子。
 - 西墙一架书、一本挂历；床头上方一幅歪了一点的画；角落一把扶手椅、一张小圆几。
-- 头顶浮着撕下来的一块天花板，吊灯还挂着、亮着。断墙口垂下一截电线，吊着一个开关。
+- 头顶浮着撕下来的一块天花板，吊灯还挂着。断墙口垂下一截电线，吊着一个开关：按 E 拨一下，世界入夜——
+  天和天光暗下去，吊灯、台灯（连同漂着的那盏）亮起；再拨一下天亮。白天太阳从窗外斜照进来。
 - 四周漂着同一栋房子的别处：几块撕下来的楼板，上面各留着一样东西（椅子、一截门、书架、台灯），还有几条地板慢慢浮着。
 运行：node scripts/blender.cjs build wake_fragment，网页 ?world=wake_fragment
 """
@@ -49,6 +50,11 @@ C = {k: tuple(lp.soft(c) for c in v) if isinstance(v, tuple) else lp.soft(v) for
 P = {k: lp.soft(v) for k, v in P.items()}
 
 H = 2.7          # 墙高（原来的天花板）
+
+
+def cone(r, dz):
+    """灯罩开口的半角（度）：从灯泡看罩口的边——罩口半径 r，灯泡到罩口的高差 dz"""
+    return math.degrees(math.atan2(r, dz))
 COURSE = 0.15    # 一皮砖
 # 墙的三层：内墙灰皮 0.03 · 砖芯 0.14 · 外墙抹灰 0.03
 N_SKIN, N_CORE, N_REND = (2.80, 2.83), (2.83, 2.97), (2.97, 3.00)
@@ -182,7 +188,8 @@ def window():
             y = 0.035 if i % 2 else -0.035
             verts += [(x, y, bot + (0.02 if i % 2 else 0)), (x, y, top)]
         cu["curtain"].add(verts, [(2 * i, 2 * i + 2, 2 * i + 3, 2 * i + 1) for i in range(n)])
-        cu.done({"curtain": dict(color=C["curtain"], double=True, collide=False, one_sided=True)})
+        # 薄布不挡太阳：合着时窗洞照样在地上落一块亮斑
+        cu.done({"curtain": dict(color=C["curtain"], double=True, collide=False, one_sided=True, shadow=False)})
         rg = lp.Thing(f"curtain_rings_{side}", (end, 2.66, 0))
         for i in range(0, n, 2):
             x = (x1 - end) * (i + 0.5) / n
@@ -254,7 +261,12 @@ def nightstand():
     lamp = lp.Thing("bedlamp", (-0.70, 2.60, top))
     lamp["base"].lathe([(0.06, 0), (0.075, 0.04), (0.07, 0.12), (0.04, 0.2), (0.012, 0.24), (0.012, 0.3)], 8)
     lamp["shade"].lathe([(0.14, 0.25), (0.09, 0.43)], 10)
-    lamp.done({"base": C["ceramic"], "shade": dict(color=C["shade"], emit=0.85)}, collide=False)
+    lamp.done({"base": C["ceramic"], "shade": dict(color=C["shade"], emit=0.85, lit=True)}, collide=False)
+    # 灯光：灯泡在灯座顶上；罩上下都开口，光拢在两头出去——下口大，桌面、地上一片亮；上口小，在墙上打出一道淡些的弧；
+    # 布罩的侧面透一点
+    bulb = 0.33
+    nx.lamp("bedlamp_light", (0, 0, bulb), color="#ffc890", radius=3.5, power=2.6, parent=lamp.g,
+            down=cone(0.14, bulb - 0.25), up=cone(0.09, 0.43 - bulb), up_power=0.4, leak=0.1, edge=5)
     # 闹钟：圆身子、两只铃，钟面朝屋里
     ck = lp.Thing("clock", (-0.43, 2.45, top), yaw=160)
     ck["body"].cyl(0.055, 0.045, 12, loc=(0, -0.0225, 0.065), rot=(-90, 0, 0))
@@ -439,8 +451,13 @@ def wall_things(nc):
     for p0, p1 in zip(pts, pts[1:]):
         wire["ink"].rod(p0, p1, 0.006, 5)
     wire["trim"].box((0.08, 0.035, 0.11), (xb, 2.75, 0.84), rot=(0, 8, 0))
-    wire["ink"].box((0.02, 0.01, 0.035), (xb, 2.729, 0.88), rot=(0, 8, 0))
     wire.done({"ink": C["ink"], "trim": C["trim"]}, collide=False, shadow=False)
+    # 开关的翘板：按 E 拨一下，世界在昼夜之间换（pose 组 lights，night）。原点在翘板中心，绕自己的横轴翻
+    key = lp.Thing("switch_key", (xb, 2.731, 0.8975), rot=(0, 8, 0))
+    key["ink"].box((0.022, 0.012, 0.035), rot=(-15, 0, 0), base=False)
+    key.done({"ink": C["ink"]}, collide=False, shadow=False)
+    for o in key.g.children:
+        nx.pose(o, "lights", on="key", at=(xb, 2.725, 0.8975), radius=0.9, rot=(30, 0, 0), time=0.15, title="开灯|关灯", night=True)
 
 
 def ceiling():
@@ -464,14 +481,20 @@ def ceiling():
                         (span + r.uniform(-0.15, 0.1), y0 + 0.155), (-span + r.uniform(-0.1, 0.15), y0 + 0.155)], 0.21, 0.245)
     t["book"].box((0.16, 0.22, 0.03), (0.4, -0.2, 0.245), rot=(0, 0, 25))
     # 吊灯：顶盘、电线、灯罩（亮着）、灯泡
-    px, py = 0.2, 0.35
-    t["trim"].cyl(0.07, 0.03, 10, loc=(px, py, -0.03))
-    t["ink"].rod((px, py, -0.03), (px, py, -0.72), 0.005, 4)
-    t["shade"].lathe([(0.03, -0.74), (0.2, -0.95), (0.19, -0.96), (0.025, -0.75)], 12, loc=(px, py, 0))
-    t["bulb"].blob(0.04, (px, py, -0.8), scale=(1, 1, 1.2), seg=8, rings=4, jitter=0)
-    t.done({"plaster": C["plaster"], "joist": C["joist"], "oak": C["oak"][1], "book": C["books"][4], "trim": C["trim"],
-            "ink": C["ink"], "shade": dict(color=C["shade"], emit=0.7), "bulb": dict(color=P["white"], emit=1.0)},
-           collide=False)
+    t.done({"plaster": C["plaster"], "joist": C["joist"], "oak": C["oak"][1], "book": C["books"][4]}, collide=False)
+    # 吊灯不跟着天花板歪：电线垂直吊着，挂在床的正中上方（床心 (0.6, 1.685)，那里天花板底面约 3.576m 高；
+    # 天花板歪了约 3.6°，顶盘往里多嵌 1cm，边上不露缝）。灯罩是一只深的锥：灯泡缩在罩里，光只从下口拢成一束
+    p = lp.Thing("pendant", (0.6, 1.685, 3.576))
+    p["trim"].cyl(0.07, 0.04, 10, loc=(0, 0, -0.03))
+    p["ink"].rod((0, 0, -0.03), (0, 0, -0.48), 0.005, 4)
+    p["shade"].lathe([(0.03, -0.48), (0.1, -0.98), (0.09, -0.99), (0.025, -0.49)], 12)
+    p["bulb"].blob(0.028, (0, 0, -0.54), scale=(1, 1, 1.2), seg=8, rings=4, jitter=0)
+    p.done({"trim": C["trim"], "ink": C["ink"], "shade": dict(color=C["shade"], emit=0.7, lit=True),
+            "bulb": dict(color=P["white"], emit=1.0, lit=True)}, collide=False)
+    # 灯光：只从罩的下口出去，光圈落在床面正中、整个在床里（光心离被面约 2.5m：全亮到 7°，边软到 15°，半径约 0.66m，
+    # 被面宽 1.63m）；顶上封着，罩是实的。灯光不投影：光束照到床面（往下 2.72m 到 0.36m 高）就停，床底下的地上不亮
+    nx.lamp("pendant_light", (0, 0, -0.5), color="#ffd8a8", radius=6.0, power=4.5, parent=p.g,
+            down=11, edge=4, leak=0.015, reach=2.72)
 
 
 # ── 漂着的：同一栋房子的别处 ──────────────────────
@@ -536,7 +559,9 @@ def drift():
             t = lp.Thing(f"bit{i}_lamp", (0, 0, 0), parent=g)
             t["base"].lathe([(0.12, 0), (0.15, 0.08), (0.14, 0.24), (0.08, 0.4), (0.024, 0.48), (0.024, 0.6)], 8)
             t["shade"].lathe([(0.28, 0.5), (0.18, 0.86)], 10)
-            t.done({"base": C["ceramic"], "shade": dict(color=C["shade"], emit=0.6)}, collide=False)
+            t.done({"base": C["ceramic"], "shade": dict(color=C["shade"], emit=0.6, lit=True)}, collide=False)
+            nx.lamp(f"bit{i}_lamp_light", (0, 0, 0.6), color="#ffc890", radius=3.0, power=2.0, parent=t.g,
+                    down=cone(0.28, 0.1), up=cone(0.18, 0.26), up_power=0.4, leak=0.1, edge=5)
     # 几条地板，慢慢浮着（不投影）
     for i in range(14):
         a = r.uniform(0, 2 * math.pi)
@@ -613,7 +638,8 @@ def title():
 
 def build(extent=None):
     nx.into("env")
-    nx.sun((0.35, -0.5, 0.75))
+    # 太阳从窗外（西北）斜着照进来：窗洞在地上落一块亮斑，北墙、西墙把屋里大半罩在影子里
+    nx.sun((-0.5, 0.75, 0.95))
     nx.atmosphere("flux", style="clean")
     nc, wc = walls()
     window()

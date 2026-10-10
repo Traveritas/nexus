@@ -12,6 +12,7 @@ import { PALETTE, AUTO_RAMP } from './palette';
 
 export const TEXEL = 16;
 export const MAX_GLOWS = 4;
+export const MAX_LAMPS = 4;
 
 const lin = (hex: string) => new THREE.Color(hex);
 /** 色板编号 → 线性色 */
@@ -38,6 +39,17 @@ export const shared = {
   uAutoRamp: { value: 0.3 },
   /** 秒；会动的材质（传送物的膜）用 */
   uTime: { value: 0 },
+  /** 昼夜：0 白天 … 1 夜里（开关拨过去）。夜里 nx_lit 的灯才发光、灯光（uLamps）才亮 */
+  uNight: { value: 0 },
+  /** 灯光：xyz 位置，w 照到多远（0 ＝ 空位）；颜色已乘强度。只照干净低模，不投影 */
+  uLamps: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Vector4()) },
+  uLampCols: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Color(0, 0, 0)) },
+  /** 灯罩：xyz 罩口朝下的方向，w 下口半角的余弦（2 ＝ 封着）；
+      下一组 x 上口半角的余弦、y 别处透出多少、z 往上那一束的倍数、w 光圈边上软的那一圈（弧度） */
+  uLampAxis: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Vector4(0, -1, 0, -1)) },
+  uLampShade: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Vector4(2, 1, 1, 0.07)) },
+  /** 下口那一束照到罩口方向多远为止（米；被床面之类挡住，灯光不投影时用它代替影子）。很大 ＝ 不挡 */
+  uLampReach: { value: Array.from({ length: MAX_LAMPS }, () => 1e4) },
 };
 
 const COMMON = /* glsl */ `
@@ -466,6 +478,8 @@ export interface CleanOpts {
   double?: boolean;
   /** 窗里的景：用自己的一套光（下午的太阳），不用这个世界的 */
   view?: boolean;
+  /** 灯（灯罩、灯泡）：白天关着，emit 只在夜里起作用 */
+  lit?: boolean;
   id?: number;
 }
 
@@ -482,6 +496,7 @@ export function clean(o: CleanOpts) {
       uRecv: { value: o.recv === false ? 0 : 1 },
       uUseFog: { value: o.fog === false ? 0 : 1 },
       uView: { value: o.view ? 1 : 0 },
+      uLit: { value: o.lit ? 1 : 0 },
       uId: { value: o.id ?? newId() },
     },
     vertexShader: VERT,
@@ -490,7 +505,11 @@ precision highp float;
 ${OUTS}
 ${LIGHT_UNIFORMS}
 uniform vec3 uColor;
-uniform float uEmit, uRecv, uUseFog, uView, uId;
+uniform float uEmit, uRecv, uUseFog, uView, uId, uLit, uNight;
+uniform vec4 uLamps[${MAX_LAMPS}];
+uniform vec3 uLampCols[${MAX_LAMPS}];
+uniform vec4 uLampAxis[${MAX_LAMPS}], uLampShade[${MAX_LAMPS}];
+uniform float uLampReach[${MAX_LAMPS}];
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
 void main() {
@@ -529,8 +548,32 @@ void main() {
     }
   }
   vec3 amb = mix(gndC, skyC, n.y * 0.5 + 0.5);
-  vec3 col = uColor * (amb + sunC * ndl * sh);
-  col = mix(col, uColor * 1.1, uEmit);
+  // 夜里的灯光：近似平方反比地暗下去，到 w 米收成 0；不投影。
+  // 灯罩把光拢在罩口里：下口一束（光圈），上口一束（S.z 倍），边上软 S.w 弧度；别的方向只透出 S.y
+  vec3 lamp = vec3(0.0);
+  if (!view && uNight > 0.0)
+    for (int i = 0; i < ${MAX_LAMPS}; i++) {
+      vec4 L = uLamps[i];
+      if (L.w <= 0.0) continue;
+      vec3 dv = L.xyz - vWorld;
+      float d = length(dv);
+      vec3 l = dv / max(d, 1e-4);
+      float win = clamp(1.0 - d * d / (L.w * L.w), 0.0, 1.0);
+      float att = win * win / (1.0 + d * d);
+      vec4 S = uLampShade[i];
+      // 按角度比：离罩口的边多少弧度（正 ＝ 在光束里）
+      float a = acos(clamp(dot(-l, uLampAxis[i].xyz), -1.0, 1.0));
+      float aDown = uLampAxis[i].w > 1.0 ? -1.0 : acos(uLampAxis[i].w);
+      float aUp = S.x > 1.0 ? -1.0 : acos(S.x);
+      float down = aDown < 0.0 ? 0.0 : smoothstep(-S.w, S.w, aDown - a);
+      // 下口那一束照到 reach 米（沿罩口方向）就被挡住，再往下只剩透出来的那一点
+      down *= 1.0 - smoothstep(uLampReach[i], uLampReach[i] + 0.04, dot(-dv, uLampAxis[i].xyz));
+      float up = aUp < 0.0 ? 0.0 : S.z * smoothstep(-S.w, S.w, aUp - (3.14159265 - a));
+      float shade = max(S.y, max(down, up));
+      lamp += uLampCols[i] * att * shade * max(dot(n, l), 0.0);
+    }
+  vec3 col = uColor * (amb + sunC * ndl * sh + lamp * uNight);
+  col = mix(col, uColor * 1.1, uEmit * (uLit > 0.5 ? uNight : 1.0));
   if (uUseFog > 0.5) col = mix(col, uFogCol, smoothstep(uFogNear, uFogFar, vDepth));
   oColor = vec4(col, 1.0);
   oData = vec4(octEncode(n), vDepth, uId);

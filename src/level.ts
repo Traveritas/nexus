@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH } from 'three-mesh-bvh';
-import { asset, clean, matte, pane, paper, throughPane, veil, shared, shadowVariant, newId, TEXEL } from './materials';
+import { asset, clean, matte, pane, paper, throughPane, veil, shared, shadowVariant, newId, TEXEL, MAX_LAMPS } from './materials';
 import { makeSky, makeWindowSky, type SkyBox, type WindowSky } from './skybox';
 import { makeCrystal } from './crystal';
 import { loadSprite, spriteSize } from './sprites';
@@ -76,6 +76,8 @@ export interface Pose {
   target: number;
   /** 0 原样 … 1 另一个样子 */
   k: number;
+  /** 拨到另一个样子 ＝ 世界入夜（nx_pose_night，房间里的开关） */
+  night: boolean;
   members: { obj: THREE.Object3D; p0: THREE.Vector3; q0: THREE.Quaternion; s0: THREE.Vector3; dp: THREE.Vector3; dq: THREE.Quaternion; ds: THREE.Vector3 }[];
 }
 
@@ -120,7 +122,9 @@ export interface Level {
   intro: Intro | null;
   /** 画风：'pixel'（默认，解析度场像素化）或 'clean'（干净低模，不做后处理） */
   style: string;
-  /** 把这个世界的太阳、天色、雾重新套到共享的 uniform 上（几个世界同时在内存里时，后加载的会改掉它们） */
+  /** 昼夜：0 白天 … 1 夜里（跟着 night 的 pose 慢慢变） */
+  readonly night: number;
+  /** 把这个世界的太阳、天色、雾、灯重新套到共享的 uniform 上（几个世界同时在内存里时，后加载的会改掉它们） */
   apply(): void;
   update(dt: number, t: number, camera: THREE.Camera, frozen: boolean): void;
 }
@@ -177,6 +181,22 @@ export async function loadLevel(url: string): Promise<Level> {
   const outlookProps: { name: string; obj: THREE.Object3D }[] = [];
   const poses = new Map<string, Pose>();
   let hasPane = false;
+  /** 夜里亮的灯光：位置、照多远、颜色（已乘强度） */
+  const lamps: {
+    pos: THREE.Vector3;
+    radius: number;
+    color: THREE.Color;
+    /** 灯罩：罩口朝下的方向、下口 / 上口半角的余弦（2 ＝ 封着）、别的方向透出多少 */
+    axis: THREE.Vector3;
+    cosDown: number;
+    cosUp: number;
+    leak: number;
+    /** 往上那一束的倍数、光圈边上软的那一圈（弧度） */
+    upPower: number;
+    edge: number;
+    /** 下口那一束照到多远为止（米，沿罩口方向） */
+    reach: number;
+  }[] = [];
 
   /** 网格带 nx_pose：归进那一组。转、缩放都绕物体自己的原点（Blender 里物体的原点放在铰链 / 帘子收拢的那一头） */
   function addPose(m: THREE.Object3D, u: Record<string, unknown>) {
@@ -193,6 +213,7 @@ export async function loadLevel(url: string): Promise<Level> {
         time: Math.max(0.05, num(u.nx_pose_time, 0.8)),
         target: 0,
         k: 0,
+        night: bool(u.nx_pose_night, false),
         members: [],
       };
       poses.set(name, g);
@@ -302,6 +323,27 @@ export async function loadLevel(url: string): Promise<Level> {
       continue;
     }
 
+    if (type === 'lamp') {
+      // 灯罩的半角（度）→ 余弦；0 ＝ 那一头封着（余弦给 2，锥里什么也进不去）
+      const cosOf = (deg: number) => (deg > 0 ? Math.cos(deg * (Math.PI / 180)) : 2);
+      if (lamps.length < MAX_LAMPS)
+        lamps.push({
+          pos: wpos.clone(),
+          radius: num(u.nx_radius, 4),
+          color: new THREE.Color(String(u.nx_color ?? '#ffd2a0')).multiplyScalar(num(u.nx_power, 1)),
+          // 罩口朝下：空物体本地的 −Z（Blender）＝ three 的 −Y，跟着父级歪
+          axis: new THREE.Vector3(0, -1, 0).applyQuaternion(wquat).normalize(),
+          cosDown: cosOf(num(u.nx_down, 180)),
+          cosUp: cosOf(num(u.nx_up, 0)),
+          leak: num(u.nx_leak, 1),
+          upPower: num(u.nx_up_power, 1),
+          edge: num(u.nx_edge, 4) * (Math.PI / 180),
+          reach: num(u.nx_reach, 1e4),
+        });
+      else console.warn('[nexus] 灯光最多', MAX_LAMPS, '盏，多出来的不亮：', o.name);
+      continue;
+    }
+
     if (type === 'atmosphere') {
       skyName = String(u.nx_sky ?? 'blank');
       style = String(u.nx_style ?? 'pixel');
@@ -389,6 +431,7 @@ export async function loadLevel(url: string): Promise<Level> {
               fog: bool(u.nx_fog, true),
               double: bool(u.nx_double, false),
               view,
+              lit: bool(u.nx_lit, false),
               id: u.nx_id as number | undefined,
             });
       if (view) throughPane(cm);
@@ -509,7 +552,37 @@ export async function loadLevel(url: string): Promise<Level> {
     if (merged) collider = new MeshBVH(merged);
   }
 
+  // 昼夜：跟着开关（night 的 pose）慢慢变，天光、天色、灯一起
+  const nightPose = [...poses.values()].find((g) => g.night) ?? null;
+  let nightK = 0;
+  let night = 0;
+  const applyLamps = () => {
+    shared.uLamps.value.forEach((v, i) => {
+      const l = lamps[i];
+      if (l) v.set(l.pos.x, l.pos.y, l.pos.z, l.radius);
+      else v.set(0, 0, 0, 0);
+    });
+    shared.uLampCols.value.forEach((c, i) => c.copy(lamps[i]?.color ?? BLACK));
+    shared.uLampAxis.value.forEach((v, i) => {
+      const l = lamps[i];
+      if (l) v.set(l.axis.x, l.axis.y, l.axis.z, l.cosDown);
+    });
+    shared.uLampShade.value.forEach((v, i) => {
+      const l = lamps[i];
+      if (l) v.set(l.cosUp, l.leak, l.upPower, Math.max(l.edge, 1e-3));
+    });
+    const reach = shared.uLampReach.value;
+    for (let i = 0; i < reach.length; i++) reach[i] = lamps[i]?.reach ?? 1e4;
+  };
+  applyLamps();
+
   function update(dt: number, t: number, camera: THREE.Camera, frozen: boolean) {
+    const nt = nightPose?.target ?? 0;
+    if (nightK !== nt) {
+      nightK = nt > nightK ? Math.min(nt, nightK + dt / NIGHT_TIME) : Math.max(nt, nightK - dt / NIGHT_TIME);
+      night = smooth(nightK);
+      sky.night(night);
+    }
     sky.update(frozen ? 0 : t, camera);
     windowSky?.update(camera);
     for (const g of poses.values()) {
@@ -561,6 +634,7 @@ export async function loadLevel(url: string): Promise<Level> {
   const apply = () => {
     shared.uSun.value.copy(sunDir);
     sky.set(sky.spec);
+    applyLamps();
     // 窗里的天的底色与种子也是共用的一份
     showOutlook(outlook);
   };
@@ -569,11 +643,17 @@ export async function loadLevel(url: string): Promise<Level> {
     get outlook() {
       return outlook;
     },
+    get night() {
+      return night;
+    },
     showOutlook, poses, intro, style, apply, update,
   };
 }
 
 const tq = new THREE.Quaternion();
+const BLACK = new THREE.Color(0, 0, 0);
+/** 昼夜换一次要几秒 */
+const NIGHT_TIME = 1.6;
 
 function behaviorOf(obj: THREE.Object3D, u: Record<string, unknown>, faceDefault: boolean): Behavior | null {
   const spin = num(u.nx_spin, 0) * (Math.PI / 180);

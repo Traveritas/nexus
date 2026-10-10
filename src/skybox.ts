@@ -25,8 +25,11 @@ interface Theme {
   /** 中文名，显示在提示里 */
   label: string;
   light: Light;
+  /** 夜里（开关拨过去，uNight → 1）的天光、雾色；不写的项取 NIGHT_LIGHT */
+  night?: Partial<Light>;
   /** 定义 void theme(vec3 d, inout vec3 col, inout float id, inout float depth)
-      d 是视线方向（three 坐标，y 朝上），col 进来时已是雾色→天顶的底色 */
+      d 是视线方向（three 坐标，y 朝上），col 进来时已是雾色→天顶的底色。
+      可以读 uNight（0 白天 … 1 夜里）自己换夜色；没读的主题在夜里整体压暗、偏冷 */
   glsl: string;
 }
 
@@ -39,6 +42,16 @@ const BASE_LIGHT: Light = {
   glow: ['#f6c6e2', 0.85],
   fogNear: 16,
   fogFar: 130,
+};
+
+/** 世界入夜时的天光（主题的 night 没写的项取这里）：天光、地面反光压低偏冷，太阳只剩一点月光 */
+const NIGHT_LIGHT: Light = {
+  fog: '#3a3350',
+  zenith: '#1d1a2b',
+  sky: ['#6a6fa8', 0.3],
+  ground: ['#5a4a66', 0.18],
+  sun: ['#b9c6ee', 0.22],
+  glow: ['#f6c6e2', 1.1],
 };
 
 /** 色板色（sRGB 十六进制）→ 着色器里的线性色 vec3(...) */
@@ -500,6 +513,8 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
       fogNear: 30,
       fogFar: 170,
     },
+    // 夜里：同一种东西沉成墨色，深紫、夜蓝之间翻涌，暗纹反过来成了浅的亮丝
+    night: { fog: '#2e2a44', zenith: '#2e2a44' },
     glsl: /* glsl */ `
 vec4 nz(vec2 p) { return texture(tNoise, p / 256.0); }
 // 两层域扭曲：大涡卷着小涡，各自朝不同方向慢慢漂。p 的单位是噪声格，一面天大约跨四五格
@@ -522,13 +537,14 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
   if (w.y > 0.01) f += flow(d.zx * K + 41.0, t) * w.y;
   if (w.z > 0.01) f += flow(d.xy * K + 77.0, t) * w.z;
   f = clamp((f - 0.5) * 1.9 + 0.58, 0.0, 1.0);
-  vec3 c0 = ${lin('#cdc8db')}, c1 = ${lin('#c3d1e6')}, c2 = ${lin('#f3d6d6')}, c3 = ${lin('#fbf9f7')};
+  vec3 c0 = mix(${lin('#cdc8db')}, ${lin('#1d1a2b')}, uNight), c1 = mix(${lin('#c3d1e6')}, ${lin('#262b45')}, uNight);
+  vec3 c2 = mix(${lin('#f3d6d6')}, ${lin('#3a3350')}, uNight), c3 = mix(${lin('#fbf9f7')}, ${lin('#4e4768')}, uNight);
   vec3 c = f < 0.33 ? mix(c0, c1, f / 0.33) : (f < 0.66 ? mix(c1, c2, (f - 0.33) / 0.33) : mix(c2, c3, (f - 0.66) / 0.34));
-  // 暗纹：几条等值线，墨丝一样被卷着走；线宽按屏幕像素算，远近一样细
+  // 暗纹：几条等值线，墨丝一样被卷着走；线宽按屏幕像素算，远近一样细。夜里是浅的亮丝
   float k = f * 3.0;
   float v = abs(fract(k) - 0.5);
   float fw = max(fwidth(k), 0.004);
-  c = mix(c, ${lin('#a8a1bf')}, 1.0 - smoothstep(fw * 1.5, fw * 3.0, 0.5 - v));
+  c = mix(c, mix(${lin('#a8a1bf')}, ${lin('#82799e')}, uNight), 1.0 - smoothstep(fw * 1.5, fw * 3.0, 0.5 - v));
   col = c;
 }`,
   },
@@ -735,7 +751,7 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
 export const SKY_NAMES = Object.keys(THEMES);
 
 function bump(dst: THREE.Color, [hex, k]: [string, number]) {
-  dst.set(hex).multiplyScalar(k);
+  return dst.set(hex).multiplyScalar(k);
 }
 
 const uTime = { value: 0 };
@@ -747,6 +763,7 @@ const win = {
   uZenith: { value: new THREE.Color() },
   uSun: shared.uSun,
   uSeed: { value: 1 },
+  uNight: { value: 0 },
 };
 const cache = new Map<string, THREE.ShaderMaterial>();
 
@@ -778,7 +795,9 @@ function material(name: string, inWindow = false) {
   const key = inWindow ? `${name}#window` : name;
   let m = cache.get(key);
   if (m) return m;
-  const u = inWindow ? win : { uFogCol: shared.uFogCol, uZenith: shared.uZenith, uSun: shared.uSun, uSeed };
+  // 窗里的天是那个站点自己的，不跟着世界入夜
+  const u = inWindow ? win : { uFogCol: shared.uFogCol, uZenith: shared.uZenith, uSun: shared.uSun, uSeed, uNight: shared.uNight };
+  const ownNight = THEMES[name].glsl.includes('uNight');
   m = new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     side: THREE.BackSide,
@@ -796,7 +815,7 @@ function material(name: string, inWindow = false) {
 precision highp float;
 ${OUTS}
 uniform vec3 uFogCol, uZenith, uSun;
-uniform float uTime, uSeed;
+uniform float uTime, uSeed, uNight;
 uniform sampler2D tNoise;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 
@@ -806,6 +825,7 @@ void main() {
   vec3 col = mix(uFogCol, uZenith, smoothstep(0.02, 0.75, d.y));
   float id = 0.0, depth = 1000.0;
   theme(d, col, id, depth);
+  ${ownNight ? '' : 'col *= mix(vec3(1.0), vec3(0.22, 0.22, 0.34), uNight);'}
   oColor = vec4(col, 1.0);
   oData = vec4(0.0, 0.0, depth, id);
   ${inWindow ? 'gl_FragDepth = 1.0;' : ''}
@@ -823,7 +843,16 @@ export interface SkyBox {
   spec: string;
   /** "名字" 或 "名字:种子" */
   set(spec: string): void;
+  /** 昼夜：0 白天 … 1 夜里。天光、雾色在主题的昼与夜之间插值，天球读 uNight 自己换色 */
+  night(k: number): void;
   update(t: number, camera: THREE.Camera): void;
+}
+
+const lc = [new THREE.Color(), new THREE.Color()];
+/** 昼、夜两组天光按 k 混好写进 dst（线性色） */
+function blend(dst: THREE.Color, day: [string, number], night: [string, number], k: number) {
+  bump(dst, day);
+  if (k > 0) dst.lerp(bump(lc[0], night), k);
 }
 
 export function makeSky(): SkyBox {
@@ -831,6 +860,9 @@ export function makeSky(): SkyBox {
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(370, 24, 12), material('blank'));
   mesh.frustumCulled = false;
   mesh.renderOrder = 1e6;
+  let day: Light = BASE_LIGHT;
+  let dark: Light = { ...BASE_LIGHT, ...NIGHT_LIGHT };
+  let k = 0;
   const box: SkyBox = {
     mesh,
     name: 'blank',
@@ -842,15 +874,22 @@ export function makeSky(): SkyBox {
       box.name = THEMES[name] ? name : 'blank';
       uSeed.value = seed !== undefined && seed !== '' && Number.isFinite(Number(seed)) ? Number(seed) : 1;
       mesh.material = material(box.name);
-      const L = { ...BASE_LIGHT, ...theme.light };
-      shared.uFogCol.value.set(L.fog);
-      shared.uZenith.value.set(L.zenith);
-      bump(shared.uSkyCol.value, L.sky);
-      bump(shared.uGroundCol.value, L.ground);
-      bump(shared.uSunCol.value, L.sun);
-      bump(shared.uGlowCol.value, L.glow ?? BASE_LIGHT.glow!);
-      shared.uFogNear.value = L.fogNear ?? BASE_LIGHT.fogNear!;
-      shared.uFogFar.value = L.fogFar ?? BASE_LIGHT.fogFar!;
+      day = { ...BASE_LIGHT, ...theme.light };
+      dark = { ...day, ...NIGHT_LIGHT, ...theme.night };
+      box.night(k);
+    },
+    night(next) {
+      k = next;
+      const fog = (a: string, b: string, c: THREE.Color) => c.set(a).lerp(lc[1].set(b), k);
+      fog(day.fog, dark.fog, shared.uFogCol.value);
+      fog(day.zenith, dark.zenith, shared.uZenith.value);
+      blend(shared.uSkyCol.value, day.sky, dark.sky, k);
+      blend(shared.uGroundCol.value, day.ground, dark.ground, k);
+      blend(shared.uSunCol.value, day.sun, dark.sun, k);
+      blend(shared.uGlowCol.value, day.glow!, dark.glow!, k);
+      shared.uFogNear.value = day.fogNear!;
+      shared.uFogFar.value = day.fogFar!;
+      shared.uNight.value = k;
     },
     update(t, camera) {
       mesh.position.copy(camera.position);

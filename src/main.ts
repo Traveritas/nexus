@@ -466,7 +466,9 @@ function checkWindow(limit: number): { p: Promptable; d: number } | null {
   if (ol) consider(ol.pos, ol.radius, () => tagOf(ol, '推开窗'), openWindow);
   for (const g of level.poses.values()) {
     if (g.on !== 'key') continue;
-    consider(g.pos, g.radius, () => tagOf(g, g.title), () => (g.target = g.target > 0.5 ? 0 : 1));
+    // 纸签可以写成「原样时|另一个样子时」（开关：开灯|关灯）
+    const [t0, t1] = g.title.split('|');
+    consider(g.pos, g.radius, () => tagOf(g, (g.target > 0.5 ? t1 : t0) ?? t0), () => (g.target = g.target > 0.5 ? 0 : 1));
   }
   const b = best as { p: Promptable; d: number; act: () => void } | null;
   if (b && interact) {
@@ -827,6 +829,12 @@ updateHud();
   /** 窗里的天（测试用，如 overnight:3 错开时刻） */
   windowSky: (spec: string) => level.windowSky?.set(spec),
   poses: () => [...level.poses.values()].map((g) => ({ name: g.name, on: g.on, k: g.k })),
+  /** 昼夜：不给参数就读（0 白天 … 1 夜里）；给 true / false 就像拨了开关（测试用） */
+  night(on?: boolean) {
+    const g = [...level.poses.values()].find((p) => p.night);
+    if (g && on !== undefined) g.target = on ? 1 : 0;
+    return level.night;
+  },
   /** 窗景（测试用：可以往里临时加一处，试换景） */
   outlooks: () => level.outlooks,
   gaze: () => gaze && { phase: gaze.phase, swap: !!gaze.swap, outlook: level.outlook },

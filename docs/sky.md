@@ -33,6 +33,6 @@
 
 ## 加一个主题
 
-在 `src/skybox.ts` 的 `THEMES` 里加一项：`light`（雾色、天顶、天光等，省略的取空白的值）和 `glsl`（定义 `void theme(vec3 d, inout vec3 col, inout float id, inout float depth)`，`d` 是视线方向、y 朝上，`col` 进来时已是雾色→天顶的底色）。可用的 uniform：`uFogCol` `uZenith` `uSun` `uTime`（秒；`?freeze=1` 时为 0）、`uSeed`（种子，默认 1）、`tNoise`（256² 可平铺的值噪声，四个通道互不相干；`texture(tNoise, p / 256.0)` 一次取一层，比逐格算 hash 便宜得多）。着色器里的色板色用 `${lin('#d9aab5')}` 写。
+在 `src/skybox.ts` 的 `THEMES` 里加一项：`light`（雾色、天顶、天光等，省略的取空白的值）和 `glsl`（定义 `void theme(vec3 d, inout vec3 col, inout float id, inout float depth)`，`d` 是视线方向、y 朝上，`col` 进来时已是雾色→天顶的底色）。可用的 uniform：`uFogCol` `uZenith` `uSun` `uTime`（秒；`?freeze=1` 时为 0）、`uSeed`（种子，默认 1）、`uNight`（世界的昼夜，0 白天 … 1 夜里，见 blender.md「昼夜」；读了它就自己换夜色，没读的主题夜里整体压暗偏冷；入夜的天光写在主题的 `night` 里）、`tNoise`（256² 可平铺的值噪声，四个通道互不相干；`texture(tNoise, p / 256.0)` 一次取一层，比逐格算 hash 便宜得多）。着色器里的色板色用 `${lin('#d9aab5')}` 写。
 沿方位角的频率取整数，绕一圈首尾才接得上。
 天空每个像素都要跑一遍，别写多层 fbm 套循环；天球最后画，被世界挡住的像素不跑。改完用 `node scripts/skybench.cjs 主题,主题 [--shots]` 测帧率、隔几秒连拍三张看动起来的样子（`WORLD=`、`PITCH=` 可改世界与抬头角度）。`nx.py` 的 `atmosphere()` 文档串里把名字也补上。

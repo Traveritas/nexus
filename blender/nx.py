@@ -94,8 +94,9 @@ def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=T
     return obj
 
 
-def clean(obj, color, emit=0.0, recv=True, fog=True, double=False, collide=True, shadow=True, window=None):
+def clean(obj, color, emit=0.0, recv=True, fog=True, double=False, collide=True, shadow=True, window=None, lit=False):
     """干净低模（现实的世界用）：color 是 '#rrggbb'；emit 0..1 自己发光；recv 接不接影子；
+    lit=True：灯罩、灯泡——白天灯关着（不发光），入夜（见 pose 的 night）才按 emit 亮起；
     window='view' 的东西只在窗玻璃里看得见（窗外的景，用自己的一套光，不投影、不挡人）；
     window='over' 的东西照常画，但画在窗里的天之后，伸到玻璃外面也不被盖掉（往外开的窗扇）"""
     obj["nx_mat"] = "clean"
@@ -108,6 +109,8 @@ def clean(obj, color, emit=0.0, recv=True, fog=True, double=False, collide=True,
         obj["nx_fog"] = 0
     if double:
         obj["nx_double"] = 1
+    if lit:
+        obj["nx_lit"] = 1
     if window:
         obj["nx_window"] = window
         if window == "view":
@@ -133,12 +136,13 @@ def collider_only(obj):
     return obj
 
 
-def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=None, time=0.8, title=""):
+def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=None, time=0.8, title="", night=False):
     """会动的东西：在原样与另一个样子之间来回。同一 group 的物体一起动，触发条件取组里第一个物体上写的。
-    on="near" 走近（离 at 水平 radius 米内）就变、走开变回（窗帘）；"key" 走近 at 按 E 来回切换（title 是纸签）；
-    "cue" 由别的东西叫它（推开窗时的窗扇）。at 不给 ＝ 物体自己的原点。
+    on="near" 走近（离 at 水平 radius 米内）就变、走开变回（窗帘）；"key" 走近 at 按 E 来回切换（title 是纸签，
+    可以写成 "原样时|另一个样子时"，如 "开灯|关灯"）；"cue" 由别的东西叫它（推开窗时的窗扇）。at 不给 ＝ 物体自己的原点。
     rot：绕物体自己原点的欧拉角（度，物体本地轴）；scale：本地轴上的缩放倍数；move：世界坐标的位移（米）。
-    转与缩放都绕原点，所以原点要放在铰链 / 收拢的那一头。会动的东西不进静态碰撞"""
+    转与缩放都绕原点，所以原点要放在铰链 / 收拢的那一头。会动的东西不进静态碰撞。
+    night=True：这一组拨到另一个样子 ＝ 世界入夜（天与天光暗下去，lit 的灯与 lamp 亮起），拨回来天亮"""
     obj["nx_pose"] = group
     obj["nx_pose_on"] = on
     obj["nx_pose_radius"] = float(radius)
@@ -150,6 +154,8 @@ def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=
             obj[f"nx_pose_{key}"] = ",".join(f"{c:g}" for c in v)
     if title:
         obj["nx_pose_title"] = title
+    if night:
+        obj["nx_pose_night"] = 1
     return obj
 
 
@@ -408,6 +414,32 @@ def outlook(name, loc, url, title="", sky="blank", radius=1.2, desc="", view=Non
         obj["nx_view"] = ",".join(f"{v:g}" for v in view)
         obj["nx_view_yaw"] = float(view_facing)
         obj["nx_view_pitch"] = float(view_pitch)
+    return obj
+
+
+def lamp(name, loc, color="#ffd2a0", radius=4.0, power=1.0, parent=None, down=180.0, up=0.0, leak=1.0, up_power=1.0,
+         edge=4.0, reach=None):
+    """灯光：入夜（pose 的 night）时亮起的点光，照干净低模，不投影。loc 是光心（灯泡在哪），
+    radius 米外照不到，power 是罩口里的强度（随距离近似平方反比地暗下去）。一个世界最多 4 盏。灯罩、灯泡本身用 clean(..., lit=True)。
+    灯罩把光拢在罩口里：down 是往下开口的半角（度，从灯泡看罩的下沿），up 是往上开口的半角（0 ＝ 顶上封着），
+    往上的那一束只有 up_power 倍亮；别的方向只透出 leak（0..1）倍。edge 是光圈边上软的那一圈（度，±）。
+    「下」是空物体本地的 −Z，挂在歪着的东西下面就跟着歪。不给灯罩就是四面八方一样亮。
+    reach：下口那一束沿「下」照到多远（米）就停——灯光不投影，用它代替被照的东西（床面）挡住下面（床底、地上）。
+    半角按罩的尺寸算：atan(下沿半径 / 灯泡到下沿的高差)"""
+    obj = _empty(name, loc, (0, 0, 0), "SPHERE", 0.1)
+    if parent is not None:
+        obj.parent = parent
+    obj["nx_type"] = "lamp"
+    obj["nx_color"] = color
+    obj["nx_radius"] = float(radius)
+    obj["nx_power"] = float(power)
+    obj["nx_down"] = float(down)
+    obj["nx_up"] = float(up)
+    obj["nx_leak"] = float(leak)
+    obj["nx_up_power"] = float(up_power)
+    obj["nx_edge"] = float(edge)
+    if reach is not None:
+        obj["nx_reach"] = float(reach)
     return obj
 
 
