@@ -165,14 +165,16 @@ def window():
     t["brass"].rod((WX0 - 0.42, 2.66, 2.33), (WX1 + 0.42, 2.66, 2.33), 0.012, 8)
     for x in (WX0 - 0.36, WX1 + 0.36):
         t["brass"].cuboid(x - 0.015, x + 0.015, 2.67, 2.80, 2.31, 2.35)
-        t["brass"].blob(0.025, (x + (-0.09 if x < WX0 else 0.09), 2.66, 2.33), seg=6, rings=3, jitter=0)
+    for x in (WX0 - 0.43, WX1 + 0.43):            # 杆头的球：球心压在杆端上，杆插进球里
+        t["brass"].blob(0.025, (x, 2.66, 2.33), seg=8, rings=4, jitter=0)
     t.done({"trim": C["trim"], "brass": dict(color=C["brass"], collide=False)})
     # 窗帘：两幅折出褶子的布（一层面、双面渲染），平时合着；走近窗就往两头拉开、收拢（pose 组 curtain，on=near）。
-    # 原点在杆的两头：拉开 ＝ 沿杆缩到三成，褶子同时深一些
-    for side, end, x1, folds in (("l", WX0 - 0.40, mid - 0.005, 9), ("r", WX1 + 0.40, mid + 0.005, 9)):
-        cu = lp.Thing(f"curtain_{side}", (end, 2.70, 0))
+    # 布的褶子以杆为中线左右折，上沿每隔一折（布穿过杆的地方）一只吊环套在杆上。
+    # 原点在杆上、托架里侧：拉开 ＝ 沿杆缩到三成，布的褶子同时深一些；吊环只沿杆收拢，不跟着变形
+    for side, end, x1, folds in (("l", WX0 - 0.33, mid - 0.005, 9), ("r", WX1 + 0.33, mid + 0.005, 9)):
+        cu = lp.Thing(f"curtain_{side}", (end, 2.66, 0))
         n = folds * 2
-        top, bot = 2.31, 1.0      # 下摆让过床头的台灯与桌上的相框
+        top, bot = 2.318, 1.0      # 上沿顶到吊环底；下摆让过床头的台灯与桌上的相框
         verts = []
         for i in range(n + 1):
             x = (x1 - end) * i / n
@@ -180,8 +182,15 @@ def window():
             verts += [(x, y, bot + (0.02 if i % 2 else 0)), (x, y, top)]
         cu["curtain"].add(verts, [(2 * i, 2 * i + 2, 2 * i + 3, 2 * i + 1) for i in range(n)])
         cu.done({"curtain": dict(color=C["curtain"], double=True, collide=False, one_sided=True)})
+        rg = lp.Thing(f"curtain_rings_{side}", (end, 2.66, 0))
+        for i in range(0, n, 2):
+            x = (x1 - end) * (i + 0.5) / n
+            rg["brass"].cyl(0.02, 0.012, 8, loc=(x - 0.006, 0, 2.33), rot=(0, 90, 0))
+        rg.done({"brass": C["brass"]}, collide=False)
         for o in cu.g.children:
             nx.pose(o, "curtain", on="near", at=((WX0 + WX1) / 2, 2.6, 0), radius=2.6, scale=(0.28, 1.8, 1), time=1.1)
+        for o in rg.g.children:
+            nx.pose(o, "curtain", on="near", at=((WX0 + WX1) / 2, 2.6, 0), radius=2.6, scale=(0.28, 1, 1), time=1.1)
     # 窗景：窗外是博客的那一夜。纸签系在窗前；推开窗以后眼睛凑到窗口里（在开着的两扇窗之间），朝北往外看
     nx.outlook("blog", ((WX0 + WX1) / 2, 2.55, 1.45), "https://traveritas.github.io/", "AveritA的昼梦叙集", sky="overnight",
                radius=0.9, desc="在即将醒来的那一瞬，世界究竟是在成形，还是正在融化？",
@@ -206,7 +215,7 @@ def floor():
 # ── 家具 ─────────────────────────────────────────
 
 def bed():
-    """床：床头靠北墙。胡桃木床架、拱顶床头板、床垫、软被、翻折的床单、两只枕头、一只靠垫、床尾一条毯子"""
+    """床：床头靠北墙。胡桃木床架、拱顶床头板、床垫、软被、翻折的床单、两只枕头、床尾一条毯子"""
     t = lp.Thing("bed", (0.6, 1.685, 0))
     w = t["walnut"]
     for sx in (-1, 1):
@@ -222,10 +231,9 @@ def bed():
     t["sheet"].cushion(-0.82, 0.82, 0.28, 0.50, 0.46, 0.60, 6, 2, puff=0.015, seed=3, edge=0.01)
     t["pillow"].cushion(-0.70, -0.08, 0.50, 0.92, 0.52, 0.66, 3, 3, puff=0.04, seed=4, edge=0.04)
     t["pillow2"].cushion(0.08, 0.70, 0.52, 0.93, 0.52, 0.65, 3, 3, puff=0.04, seed=5, edge=0.04)
-    t["mustard"].box((0.36, 0.11, 0.30), (0.05, 0.70, 0.58), rot=(-24, 0, 8))
     t["throw"].cushion(-0.84, 0.86, -0.86, -0.42, 0.45, 0.64, 6, 2, puff=0.02, seed=6, edge=0.01)
     t.done({"walnut": C["walnut"], "sheet": C["sheet"], "quilt": C["quilt"], "pillow": C["pillow"],
-            "pillow2": C["pillow2"], "mustard": C["mustard"], "throw": C["throw"]})
+            "pillow2": C["pillow2"], "throw": C["throw"]})
     nx.portal("portal_bed", (0.6, 1.9, 0.8), "home", at="wake", mode="key", title="睡", radius=1.3)
 
 
@@ -262,7 +270,7 @@ def nightstand():
 
 
 def desk():
-    """书桌（窗下）：桌面、四条腿、牵条、一只抽屉；桌上摊开的本子、一支笔、笔筒、马克杯、小相框。桌面右手空着一块"""
+    """书桌（窗下）：桌面、四条腿、牵条、左右两只抽屉；桌上摊开的本子、一支笔、笔筒、马克杯、小相框。桌面右手空着一块"""
     t = lp.Thing("desk", (-2.05, 2.48, 0), yaw=180)
     d = t["oak"]
     d.box((1.6, 0.56, 0.03), (0, 0, 0.72))
@@ -271,8 +279,9 @@ def desk():
             d.cyl(0.024, 0.72, 6, loc=(sx * 0.75, sy * 0.23, 0), r2=0.02)
     d.cuboid(-0.72, 0.72, 0.195, 0.215, 0.63, 0.72)
     d.cuboid(-0.72, 0.72, -0.215, -0.195, 0.63, 0.72)
-    t["drawer"].cuboid(0.18, 0.68, 0.215, 0.228, 0.645, 0.71)
-    t["brass"].blob(0.012, (0.43, 0.24, 0.678), seg=6, rings=3, jitter=0)
+    for x in (-0.43, 0.43):                         # 左右两只抽屉
+        t["drawer"].cuboid(x - 0.25, x + 0.25, 0.215, 0.228, 0.645, 0.71)
+        t["brass"].blob(0.012, (x, 0.24, 0.678), seg=6, rings=3, jitter=0)
     t.done({"oak": C["desk"], "drawer": C["walnut"], "brass": dict(color=C["brass"], collide=False)})
     top = 0.75
     nb = lp.Thing("notebook", (-2.25, 2.40, top), yaw=8)
@@ -294,9 +303,13 @@ def desk():
         mug["mug"].rod(p0, p1, 0.008, 5)
     mug["tea"].cyl(0.036, 0.004, 10, loc=(0, 0, 0.083))
     mug.done({"mug": P["pink"], "tea": P["rose_deep"]}, collide=False)
-    ph = lp.Thing("photo", (-2.5, 2.70, top), yaw=170)
-    ph["frame"].box((0.14, 0.012, 0.18), (0, 0, 0), rot=(-12, 0, 0))
-    ph["pic"].box((0.1, 0.004, 0.13), (0, 0.007, 0.025), rot=(-12, 0, 0))
+    # 相框：正面朝屋里（朝椅子），往后仰 12°，背后一条撑脚
+    ph = lp.Thing("photo", (-2.5, 2.68, top), yaw=170)
+    tilt = math.radians(12)
+    lean = lambda y, z: (0, y * math.cos(tilt) - z * math.sin(tilt), y * math.sin(tilt) + z * math.cos(tilt))
+    ph["frame"].box((0.14, 0.012, 0.18), (0, 0, 0), rot=(12, 0, 0))
+    ph["pic"].box((0.1, 0.004, 0.13), lean(0.007, 0.025), rot=(12, 0, 0))
+    ph["frame"].rod(lean(-0.006, 0.12), (0, -0.075, 0.0), 0.005, 5)
     ph.done({"frame": C["walnut"], "pic": P["blue_pale"]}, collide=False)
     # 椅子：漆成鼠尾草绿，椅背上搭着一件毛衣
     ch = lp.Thing("chair", (-2.0, 1.78, 0), yaw=12)
@@ -355,7 +368,7 @@ def shelf():
 
 def corner():
     """西南角：扶手椅（毯子搭在扶手上）、小圆几（茶杯、两本书）"""
-    t = lp.Thing("armchair", (-2.25, -1.30, 0), yaw=-43)
+    t = lp.Thing("armchair", (-2.25, -1.30, 0), yaw=137)    # 背对屋里，朝外面的虚空
     for sx in (-1, 1):
         for sy in (-1, 1):
             t["walnut"].cyl(0.022, 0.1, 6, loc=(sx * 0.33, sy * 0.3, 0), r2=0.016)
@@ -414,7 +427,8 @@ def wall_things(nc):
     for i in range(5):
         for j in range(4):
             cal["ink"].cuboid(-3.192, -3.1905, 2.08 + i * 0.055, 2.115 + i * 0.055, 1.27 + j * 0.065, 1.30 + j * 0.065)
-    cal["brass"].blob(0.008, (-3.188, 2.21, 1.685), seg=5, rings=3, jitter=0)
+    cal["brass"].cyl(0.0035, 0.02, 8, loc=(-3.20, 2.21, 1.635), rot=(0, 90, 0))      # 平头钉：钉身从墙里钉出来
+    cal["brass"].cyl(0.011, 0.004, 10, loc=(-3.18, 2.21, 1.635), rot=(0, 90, 0))     # 平的钉帽
     cal.done({"paper": C["paper"], "red": C["red"], "ink": C["pillow2"], "brass": C["brass"]}, collide=False)
     # 断墙口垂下来的电线：从砖芯的断面里伸出来，末端吊着一个开关盒（避开床头板）
     x0 = s_at(nc, 1.45) - 0.02
