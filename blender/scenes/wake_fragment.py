@@ -145,23 +145,25 @@ def window():
     gp = lp.Geo()
     gp.quad([(a, 2.95, WZ0), (b, 2.95, WZ0), (b, 2.95, WZ1 - 0.03), (a, 2.95, WZ1 - 0.03)])
     nx.pane(gp.build("window_pane", recalc=False, color="#ffffff", collide=False, shadow=False))
-    # 两扇窗：各自绕外侧的铰链往外开（推开窗时，pose 组 sash，on=cue）。原点就在铰链上。
+    # 两扇窗：各自绕外侧的铰链往外开，翻到贴着外墙（推开窗时，pose 组 sash，on=cue）。
+    # 原点就是铰链，在外墙面上（y 3.00），窗扇在它屋里那一侧 7–12cm：这样转过 90° 以后窗扇落在墙外，不切进窗套。
     # 开出去的窗扇在玻璃外面，窗里的天会盖住它，所以画在窗里的天之后（window="over"）
     for side, hinge, sx in (("l", a, 1), ("r", b, -1)):
-        lf = lp.Thing(f"sash_{side}", (hinge, 2.88, 0))
+        lf = lp.Thing(f"sash_{side}", (hinge, N_REND[1], 0))
         s = lf["sash"]
         w = mid - a
+        y0, y1 = 2.88 - N_REND[1], 2.93 - N_REND[1]
         X = lambda u0, u1: (min(sx * u0, sx * u1), max(sx * u0, sx * u1))   # 铰链往窗中间的方向量 u
-        s.cuboid(*X(0, 0.05), 0, 0.05, WZ0, WZ1 - 0.03)                     # 外侧的边梃
-        s.cuboid(*X(w - 0.03, w), 0, 0.05, WZ0, WZ1 - 0.03)                 # 中间合缝的边梃（两扇各一半）
-        s.cuboid(*X(0.05, w - 0.03), 0, 0.05, WZ0, WZ0 + 0.05)
-        s.cuboid(*X(0.05, w - 0.03), 0, 0.05, WZ1 - 0.08, WZ1 - 0.03)
-        s.cuboid(*X(0.05, w - 0.03), 0.005, 0.045, 1.74, 1.77)
+        s.cuboid(*X(0, 0.05), y0, y1, WZ0, WZ1 - 0.03)                      # 外侧的边梃
+        s.cuboid(*X(w - 0.03, w), y0, y1, WZ0, WZ1 - 0.03)                  # 中间合缝的边梃（两扇各一半）
+        s.cuboid(*X(0.05, w - 0.03), y0, y1, WZ0, WZ0 + 0.05)
+        s.cuboid(*X(0.05, w - 0.03), y0, y1, WZ1 - 0.08, WZ1 - 0.03)
+        s.cuboid(*X(0.05, w - 0.03), y0 + 0.005, y1 - 0.005, 1.74, 1.77)
         if side == "r":
-            lf["brass"].cuboid(*X(w - 0.027, w - 0.003), -0.04, 0, 1.36, 1.46)
+            lf["brass"].cuboid(*X(w - 0.027, w - 0.003), y0 - 0.04, y0, 1.36, 1.46)
         lf.done({"sash": C["trim"], "brass": dict(color=C["brass"], collide=False)}, collide=False, window="over")
         for o in lf.g.children:
-            nx.pose(o, "sash", on="cue", rot=(0, 0, 100 * sx), time=0.9)
+            nx.pose(o, "sash", on="cue", rot=(0, 0, 175 * sx), time=1.1)
     # 窗帘杆与托架
     t["brass"].rod((WX0 - 0.42, 2.66, 2.33), (WX1 + 0.42, 2.66, 2.33), 0.012, 8)
     for x in (WX0 - 0.36, WX1 + 0.36):
