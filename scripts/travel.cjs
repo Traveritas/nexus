@@ -35,7 +35,7 @@ srv.listen(0, '127.0.0.1', async () => {
   page.on('pageerror', (e) => console.log('[pageerror]', e.message));
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('[page]', m.text()); });
   await page.setViewport({ width: 960, height: 540 });
-  await page.goto(base + '?hud=0', { waitUntil: 'load' });
+  await page.goto(base + '?hud=0&intro=0', { waitUntil: 'load' });
   await page.waitForFunction(() => window.__nexus);
   await sleep(600);
   const st = () => page.evaluate(() => window.__nexus.state());

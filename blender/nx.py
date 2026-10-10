@@ -409,6 +409,15 @@ def outlook(name, loc, url, title="", sky="blank", radius=1.2, desc="", view=Non
     return obj
 
 
+def intro(loc, facing_deg=0, pitch_deg=0):
+    """开场的机位：一进来先停在这里（loc 是脚底，眼睛高 1.6m；facing_deg 同 spawn，pitch_deg 抬头为正），
+    「点击醒来」以后标着 nx_intro 的东西按编号逐个掉进虚空，视角滑到出生点。一个场景放一个"""
+    obj = _empty("intro", loc, (0, 0, facing_deg), "SINGLE_ARROW", 1.0)
+    obj["nx_type"] = "intro"
+    obj["nx_pitch"] = float(pitch_deg)
+    return obj
+
+
 def arrive(name, loc, facing_deg=0):
     """到达点：别的世界传送过来时落在这里。loc 是脚底，facing_deg 同 spawn。别放在传送物的 radius 里"""
     obj = _empty(f"arrive_{name}", loc, (0, 0, facing_deg), "SINGLE_ARROW", 0.8)

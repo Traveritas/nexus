@@ -534,6 +534,68 @@ def drift():
             nx.behave(o, bob=r.uniform(0.1, 0.3))
 
 
+# ── 开场：漂着的地板条，从一处看过去拼成 NEXUS ──────────
+# 每一笔是一条地板，沿「机位 → 字面上那一点」的视线推远或拉近、按距离等比放大缩小——
+# 从机位看过去五个字整整齐齐；走开一步就散成四处漂着的木条。
+# 开场停在机位上（nx.intro），「点击醒来」以后木条逐个掉进虚空、视角滑到床边；不放开场时网页直接拿掉它们（src/intro.ts）。
+TITLE_EYE = Vector((12.5, -14.5, 4.6))      # 机位（眼睛）
+TITLE_LOOK = Vector((-0.6, 0.6, 0.9))      # 机位看向哪里（屋子的中间）
+TITLE_D = 9.0                              # 字面离机位多远（深浅倍数 1 的地方）
+TITLE_H = 2.3                             # 字高（在字面上）
+TITLE_LIFT = 2.8                          # 字面中心比视线中心高多少（让出下面的屋子）
+# 字的笔画：字高为 1 的格子里的线段
+GLYPHS = {
+    "N": [((0, 0), (0, 1)), ((0, 1), (0.68, 0)), ((0.68, 0), (0.68, 1))],
+    "E": [((0, 0), (0, 1)), ((0, 1), (0.58, 1)), ((0, 0.5), (0.46, 0.5)), ((0, 0), (0.58, 0))],
+    "X": [((0, 0), (0.7, 1)), ((0, 1), (0.7, 0))],
+    "U": [((0, 1), (0, 0)), ((0, 0), (0.6, 0)), ((0.6, 0), (0.6, 1))],
+    "S": [((0.62, 1), (0.1, 1)), ((0, 0.9), (0, 0.6)), ((0.1, 0.5), (0.52, 0.5)), ((0.62, 0.4), (0.62, 0.1)), ((0.52, 0), (0, 0))],
+}
+
+
+def title_view():
+    """机位：脚底（Blender 坐标）、yaw、pitch（度，同 spawn / ?yaw ?pitch）"""
+    f = (TITLE_LOOK - TITLE_EYE).normalized()
+    yaw = math.degrees(math.atan2(-f.x, f.y))
+    pitch = math.degrees(math.asin(f.z))
+    return TITLE_EYE - Vector((0, 0, 1.6)), yaw, pitch
+
+
+def title():
+    nx.into("title")
+    r = random.Random(11)
+    eye = TITLE_EYE
+    f = (TITLE_LOOK - eye).normalized()
+    right = f.cross(Vector((0, 0, 1))).normalized()
+    up = right.cross(f)
+    gap, stroke = 0.3, 0.15          # 字距、笔画宽（字高为 1）
+    word = "NEXUS"
+    widths = [max(max(a[0], b[0]) for a, b in GLYPHS[ch]) for ch in word]
+    total = sum(widths) + gap * (len(word) - 1)
+    mid = eye + f * TITLE_D + up * TITLE_LIFT
+    x0 = -total / 2
+    i = 0
+    for ch, w in zip(word, widths):
+        for (ax, ay), (bx, by) in GLYPHS[ch]:
+            pa = mid + (right * (x0 + ax) + up * (ay - 0.5)) * TITLE_H
+            pb = mid + (right * (x0 + bx) + up * (by - 0.5)) * TITLE_H
+            s = (pb - pa).normalized()
+            ext = stroke * TITLE_H / 2          # 两头各伸出半个笔宽，转角接得上
+            pa, pb = pa - s * ext, pb + s * ext
+            n = (-f).cross(s).normalized() * (stroke * TITLE_H / 2)
+            depth = (-f) * 0.035
+            # 沿视线推远 / 拉近：以眼睛为中心整条等比缩放，从机位看过去投影不变
+            k = r.uniform(0.6, 1.25)
+            corners = [pa - n, pb - n, pb + n, pa + n]
+            verts = [eye + (c - depth - eye) * k for c in corners] + [eye + (c + depth - eye) * k for c in corners]
+            t = lp.Thing(f"title{i}")
+            t["x"].add(verts, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
+            t.done({"x": r.choice((C["joist"], C["brick"], C["oak"][1]))}, collide=False, shadow=False)
+            t.g["nx_intro"] = i          # 「点击醒来」以后按这个次序逐个掉进虚空
+            i += 1
+        x0 += w + gap
+
+
 def build(extent=None):
     nx.into("env")
     nx.sun((0.35, -0.5, 0.75))
@@ -551,6 +613,8 @@ def build(extent=None):
     wall_things(nc)
     ceiling()
     drift()
+    title()
+    nx.intro(*title_view())
     # 醒来在床的东边，面朝屋里（看得见床、窗和窗外的街）
     land = (2.0, 1.45, 0)
     nx.arrive("home", land, facing_deg=95)

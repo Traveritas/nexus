@@ -30,7 +30,7 @@ srv.listen(0, '127.0.0.1', async () => {
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('[page]', m.text()); });
   await page.setViewport({ width: 1280, height: 720 });
   const base = `http://127.0.0.1:${srv.address().port}/`;
-  await page.goto(base + '?hud=0', { waitUntil: 'load' });
+  await page.goto(base + '?hud=0&intro=0', { waitUntil: 'load' });
   await page.evaluate(() => {
     localStorage.setItem('nexus:visited', JSON.stringify(['home', 'procession', 'shoal', 'isles']));
     localStorage.setItem('nexus:edges', JSON.stringify(['home|procession', 'home|shoal', 'isles|procession']));

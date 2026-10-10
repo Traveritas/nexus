@@ -12,10 +12,12 @@ import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
 import { SiteCard } from './sitecard';
 import { dreamt, edges, recordEdge, recordSite, sites } from './worlds';
+import { IntroPlayer, introSeen, stripIntro } from './intro';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 wake_fragment——现实的家，醒着的那一间）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
+   开场：第一次从根地址进来时停在标题的机位上，「点击醒来」以后木条掉进虚空、视角滑到床边（src/intro.ts）；?intro=1 强制再放一次，?intro=0 不放
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?res=auto|full|half|quarter|eighth|sixteenth 世界的渲染分辨率  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
    键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
@@ -172,7 +174,7 @@ function save(key: string, s: Saved) {
 }
 
 // 从站点按后退回来：回到入口前几步；开发时改了场景自动刷新，也回到刚才的位置
-restore(RETURN_KEY) || (import.meta.env.DEV && restore(DEV_KEY));
+const restored = restore(RETURN_KEY) || (import.meta.env.DEV && restore(DEV_KEY));
 if (q.get('pos')) {
   const [x, y, z] = q.get('pos')!.split(',').map(Number);
   player.feet.set(x, y, z);
@@ -188,6 +190,25 @@ if (import.meta.env.DEV) {
 history.replaceState({ world, at: '' }, '');
 
 let frozen = q.get('freeze') === '1';
+
+// ── 开场 ──
+// 第一次从根地址进来（不是深链接、不是从站点退回来）才放；?intro=1 强制。不放就把那些木条拿掉
+const deepLink = q.has('world') || q.has('scene') || q.has('pos');
+let intro: IntroPlayer | null =
+  level.intro && q.get('intro') !== '0' && (q.get('intro') === '1' || (!deepLink && !restored && !introSeen()))
+    ? new IntroPlayer(level.intro, document.getElementById('intro')!)
+    : null;
+if (!intro) stripIntro(level.intro);
+const introView = { pos: new THREE.Vector3(), yaw: 0, pitch: 0 };
+/** 点击醒来：终点是现在人站的地方（出生点）的眼睛 */
+function wakeIntro() {
+  if (intro?.phase !== 'title') return;
+  const pos = new THREE.Vector3();
+  player.eyePosition(pos);
+  intro.wake({ pos, yaw: player.yaw, pitch: player.pitch });
+  introEnd = { yaw: player.yaw, pitch: player.pitch };
+}
+let introEnd = { yaw: 0, pitch: 0 };
 if (q.get('hud') === '0') hud.classList.add('off');
 
 // ── 世界之间的转场 ──
@@ -245,6 +266,10 @@ function stepTravel(dt: number) {
     }
     disposeLevel(level);
     level = l;
+    stripIntro(level.intro);
+    // 开场还没放完就走了（只有测试会这样）：收起来，别把人锁在新世界里
+    intro?.cancel();
+    intro = null;
     level.apply();
     world = travel.to;
     player.setCollider(level.collider);
@@ -296,6 +321,11 @@ book.setSize(ui.w, ui.h);
 // ── 键 ──
 let interact = false;
 addEventListener('keydown', (e) => {
+  // 开场里不认键（Tab 也别让浏览器拿去换焦点）
+  if (intro) {
+    if (e.code === 'Tab' || e.code === 'Space') e.preventDefault();
+    return;
+  }
   // 凑在窗口往外看：只认窗前那几个键
   if (gaze) {
     if (e.code === 'Tab' || e.code === 'Space' || e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'ArrowDown') e.preventDefault();
@@ -346,6 +376,11 @@ const lockPointer = () => {
   (canvas.requestPointerLock?.() as Promise<void> | undefined)?.catch?.(() => {});
 };
 canvas.addEventListener('mousedown', (e) => {
+  if (intro) {
+    if (e.button === 0) wakeIntro();
+    lockPointer();
+    return;
+  }
   if (book.active) {
     if (e.button === 0) book.click();
     lockPointer();
@@ -357,6 +392,7 @@ canvas.addEventListener('mousedown', (e) => {
 addEventListener('mouseup', () => (dragging = false));
 addEventListener('mousemove', (e) => {
   const locked = document.pointerLockElement === canvas;
+  if (intro) return;
   if (book.active) {
     if (locked) book.move(e.movementX, e.movementY);
     else {
@@ -672,20 +708,31 @@ let fps = 0;
 function frame(dt: number) {
   if (!frozen) t += dt;
   stepTravel(dt);
-  player.update(dt, !!entering || !!gaze || !!travel || book.active || items.locked);
+  player.update(dt, !!entering || !!gaze || !!travel || book.active || items.locked || !!intro);
   if (player.feet.y < -40) respawn();
   player.eyePosition(eye);
   camera.position.copy(eye);
   camera.rotation.set(player.pitch, player.yaw, 0);
+  if (intro) {
+    if (intro.update(dt, introView)) {
+      // 放完了：交还给人，朝向就是滑到的那个
+      player.yaw = introEnd.yaw;
+      player.pitch = introEnd.pitch;
+      intro = null;
+    }
+    eye.copy(introView.pos);
+    camera.position.copy(eye);
+    camera.rotation.set(introView.pitch, introView.yaw, 0);
+  }
   camera.updateMatrixWorld();
   stepGaze(dt);
 
   items.update(dt, { world, feet: player.feet, t }, camera);
   // 纸签：眼前可以拾起的物品与按键型传送物，谁近挂谁
   camera.getWorldDirection(look);
-  const itemP = travel || entering || book.active ? null : items.promptAt(eye, look);
+  const itemP = travel || entering || book.active || intro ? null : items.promptAt(eye, look);
   // 窗先看：它按了 E 就把 E 用掉，后面的传送物、物品不再响应
-  const winP = travel || entering || book.active ? null : checkWindow(itemP?.d ?? Infinity);
+  const winP = travel || entering || book.active || intro ? null : checkWindow(itemP?.d ?? Infinity);
   if (winP && interact) interact = false;
   let prompt: Promptable | null = checkPortals(winP?.d ?? itemP?.d ?? Infinity);
   if (!prompt && winP) prompt = winP.p;
@@ -716,10 +763,12 @@ function frame(dt: number) {
   field.glow = map.layout(camera, { level, world, visited: dreamt(visited()), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
+  // 开场：标题是梦的画面，滑向床边时醒过来
+  pipe.setDream(intro?.dream ?? 0);
   pipe.render(level.scene, level.crystalScene, camera, field, items.hand);
   book.render(renderer);
   ui.clear();
-  tag.update(dt, travel || entering || gaze || book.active || items.busy || items.ringActive ? null : prompt, camera);
+  tag.update(dt, intro || travel || entering || gaze || book.active || items.busy || items.ringActive ? null : prompt, camera);
   items.drawUi(camera);
   map.draw();
   book.drawCursor();
@@ -773,6 +822,9 @@ updateHud();
   outlooks: () => level.outlooks,
   gaze: () => gaze && { phase: gaze.phase, swap: !!gaze.swap, outlook: level.outlook },
   player,
+  /** 开场：现在在哪一步（title / play / done）；wake() 等于点了一下 */
+  intro: () => intro?.phase ?? 'done',
+  wake: wakeIntro,
   freeze(b: boolean) {
     frozen = b;
   },

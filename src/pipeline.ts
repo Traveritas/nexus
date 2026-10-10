@@ -149,7 +149,7 @@ uniform vec3 uDim;
 uniform vec3 uGlow[${MAX_GLOW}];
 uniform int uGlowCount;
 uniform mat3 uView;
-uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse, uClean;
+uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse, uClean, uDream;
 out vec4 fragColor;
 ${COMMON}
 vec3 toSrgb(vec3 c) {
@@ -222,8 +222,12 @@ void main() {
     return;
   }
 
+  // 干净的世界里做梦（开场）：按块抖开，Bayer 名次小于 uDream 的块仍走梦的那套（解析度场像素化、落色板），其余是干净的；
+  // 梦的块里格子也跟着 uDream 一级级变细——醒来是一块块、一级级解析出来的，不是淡入淡出
+  bool dreamBlk = uClean > 0.5 && uDream > 0.0 && bayer4(px / 8 + ivec2(1, 3)) < uDream;
+
   // 干净的世界（现实）：连续色、不落色板、不描边、不按解析度场变粗；只有转场与犯困时一路变粗
-  if (uClean > 0.5) {
+  if (uClean > 0.5 && !dreamBlk) {
     int Lc = 0;
     if (uDissolve > 0.0) Lc = int(clamp(floor(uDissolve * 5.0 + (bayer4(px / 8) - 0.5) * 0.9 + 0.5), 0.0, 5.0));
     if (uDrowse > 0.0) Lc = max(Lc, int(clamp(floor(uDrowse * 2.4 + (bayer4(px / 8) - 0.5) * 0.9 + 0.5), 0.0, 2.0)));
@@ -241,6 +245,7 @@ void main() {
   }
 
   int L = levelAt(px);
+  if (dreamBlk) L = min(L, int(clamp(floor(uDream * 3.0 + (bayer4(px / 8) - 0.5) * 0.9 + 0.5), 0.0, 2.0)));
   // 转场：整屏一路粗到 32px 一格，按块抖开，不是齐刷刷地跳
   if (uDissolve > 0.0) {
     float ld = uDissolve * 5.0 + (bayer4(px / 8) - 0.5) * 0.9;
@@ -423,6 +428,7 @@ export class Pipeline {
   private h = 0;
   private shift = 0;
   private clean = false;
+  private dream = 0;
 
   constructor(private renderer: THREE.WebGLRenderer) {
     this.pixMat = new THREE.ShaderMaterial({
@@ -450,6 +456,7 @@ export class Pipeline {
         uDissolve: { value: 0 },
         uDrowse: { value: 0 },
         uClean: { value: 0 },
+        uDream: { value: 0 },
         uDim: { value: new THREE.Vector3() },
         uGlow: { value: Array.from({ length: MAX_GLOW }, () => new THREE.Vector3()) },
         uGlowCount: { value: 0 },
@@ -582,6 +589,12 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     this.pixMat.uniforms.uClean.value = b ? 1 : 0;
   }
 
+  /** 干净的世界里做梦的程度（开场）：1 整屏走梦的管线，0 干净；中间按块、按格子大小抖开 */
+  setDream(k: number) {
+    this.dream = k;
+    this.pixMat.uniforms.uDream.value = k;
+  }
+
   get pixTexture() {
     return this.rtPix.texture;
   }
@@ -635,7 +648,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     // 世界画完后 matrixWorldInverse 才是这一帧的；描边判断凸凹要视空间法线
     u.uView.value.setFromMatrix4(camera.matrixWorldInverse);
 
-    if (f.palette && !f.raw && !this.clean) {
+    if (f.palette && !f.raw && (!this.clean || this.dream > 0)) {
       this.quantMat.uniforms.tColor.value = this.rtWorld.textures[0];
       this.quad.material = this.quantMat;
       r.setRenderTarget(this.rtQuant);

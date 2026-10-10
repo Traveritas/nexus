@@ -51,6 +51,16 @@
     font: 13px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace;
     letter-spacing: 0.3em; color: #fbf9f7; text-shadow: 0 0 4px #1d1a2b, 0 0 10px #3a3350;
   }
+  /* 开场（src/intro.ts）：标题机位下方的一行「点击醒来」，慢慢呼吸；开场时不显示调试信息与晶体名 */
+  #intro {
+    position: fixed; left: 50%; bottom: 14vh; transform: translateX(-50%);
+    pointer-events: none; opacity: 0; transition: opacity 1.2s ease;
+    font: 13px/1 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+    letter-spacing: 0.6em; padding-left: 0.6em; color: #3a3350; text-shadow: 0 0 8px #fbf9f7, 0 0 18px #fbf9f7;
+  }
+  #intro.on { opacity: 0.85; animation: breathe 3.2s ease-in-out 1.2s infinite; }
+  @keyframes breathe { 50% { opacity: 0.45; } }
+  body.intro #hud, body.intro #label { display: none; }
   #label {
     position: fixed; left: 50%; bottom: 12vh; transform: translateX(-50%);
     pointer-events: none; opacity: 0; transition: opacity 0.4s;
@@ -65,6 +75,7 @@
 <canvas id="ui"></canvas>
 <div id="hud"></div>
 <div id="label"></div>
+<div id="intro"></div>
 <div id="maplabel"></div>
 <script type="module" src="/src/main.ts"></script>
 </body>

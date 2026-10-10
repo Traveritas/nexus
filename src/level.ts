@@ -88,6 +88,16 @@ export interface ItemPlace {
   pos: THREE.Vector3;
 }
 
+/** 开场（docs/blender.md「开场」）：一进来先停在机位上，「点击醒来」以后 pieces 按次序逐个掉进虚空，视角滑到出生点 */
+export interface Intro {
+  /** 机位：脚底（眼睛高 1.6m）、朝向（同 spawn）、俯仰（弧度） */
+  pos: THREE.Vector3;
+  yaw: number;
+  pitch: number;
+  /** 掉下去的东西，按 nx_intro 排好 */
+  pieces: THREE.Object3D[];
+}
+
 export interface Level {
   scene: THREE.Scene;
   crystalScene: THREE.Scene;
@@ -106,6 +116,8 @@ export interface Level {
   outlook: number;
   showOutlook(i: number): void;
   poses: Map<string, Pose>;
+  /** 开场（有 nx_type=intro 的世界才有） */
+  intro: Intro | null;
   /** 画风：'pixel'（默认，解析度场像素化）或 'clean'（干净低模，不做后处理） */
   style: string;
   /** 把这个世界的太阳、天色、雾重新套到共享的 uniform 上（几个世界同时在内存里时，后加载的会改掉它们） */
@@ -153,6 +165,13 @@ export async function loadLevel(url: string): Promise<Level> {
   const portals: Portal[] = [];
   const items: ItemPlace[] = [];
   const arrivals = new Map<string, { pos: THREE.Vector3; yaw: number }>();
+  let intro: Intro | null = null;
+  /** 开场里掉下去的网格（nx_intro 写在网格或它的父级上） */
+  const introMeshes: { m: THREE.Mesh; order: number }[] = [];
+  const noteIntro = (m: THREE.Mesh, o: THREE.Object3D) => {
+    const v = o.userData.nx_intro ?? o.parent?.userData.nx_intro;
+    if (v !== undefined) introMeshes.push({ m, order: num(v, 0) });
+  };
   const pending: Promise<void>[] = [];
   const outlooks: Outlook[] = [];
   const outlookProps: { name: string; obj: THREE.Object3D }[] = [];
@@ -227,6 +246,11 @@ export async function loadLevel(url: string): Promise<Level> {
     if (type === 'spawn') {
       spawn.pos.copy(wpos);
       spawn.yaw = Math.atan2(-fwd.x, -fwd.z);
+      continue;
+    }
+
+    if (type === 'intro') {
+      intro = { pos: wpos.clone(), yaw: Math.atan2(-fwd.x, -fwd.z), pitch: num(u.nx_pitch, 0) * (Math.PI / 180), pieces: [] };
       continue;
     }
 
@@ -375,6 +399,7 @@ export async function loadLevel(url: string): Promise<Level> {
       m.renderOrder = kind === 'pane' ? 1 : view ? 2 : 0;
       if (kind === 'clean' && !view && bool(u.nx_shadow, true)) m.userData.shadowMat = shadowVariant(cm);
       scene.add(m);
+      noteIntro(m, o);
       if (kind === 'pane') hasPane = true;
       if (view && u.nx_outlook !== undefined) outlookProps.push({ name: String(u.nx_outlook), obj: m });
       if (u.nx_pose !== undefined && !b) addPose(m, u);
@@ -431,6 +456,7 @@ export async function loadLevel(url: string): Promise<Level> {
     m.scale.copy(wscale);
     if (bool(u.nx_shadow, true)) m.userData.shadowMat = shadowVariant(mat);
     scene.add(m);
+    noteIntro(m, o);
     if (u.nx_pose !== undefined && !b) addPose(m, u);
     if (b) {
       b.obj = m;
@@ -456,6 +482,25 @@ export async function loadLevel(url: string): Promise<Level> {
   };
   showOutlook(0);
   const smooth = (k: number) => k * k * (3 - 2 * k);
+
+  // 同一编号的网格收进一个以它们中心为原点的组：掉下去时绕自己翻
+  if (intro) {
+    const byOrder = new Map<number, THREE.Mesh[]>();
+    for (const { m, order } of introMeshes) byOrder.set(order, [...(byOrder.get(order) ?? []), m]);
+    (intro as Intro).pieces = [...byOrder.keys()].sort((p, q) => p - q).map((k) => {
+      const ms = byOrder.get(k)!;
+      const box = new THREE.Box3();
+      for (const m of ms) box.expandByObject(m);
+      const g = new THREE.Group();
+      box.getCenter(g.position);
+      scene.add(g);
+      for (const m of ms) {
+        m.position.sub(g.position);
+        g.add(m);
+      }
+      return g;
+    });
+  }
 
   let collider: MeshBVH | null = null;
   if (colliderGeos.length) {
@@ -523,7 +568,7 @@ export async function loadLevel(url: string): Promise<Level> {
     get outlook() {
       return outlook;
     },
-    showOutlook, poses, style, apply, update,
+    showOutlook, poses, intro, style, apply, update,
   };
 }
 
