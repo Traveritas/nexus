@@ -46,7 +46,7 @@ srv.listen(0, '127.0.0.1', async () => {
   // 迈台阶：0.3m 一级，五级上到 1.5m 平台
   await set(-15.66, 0, -8.17, -12);
   await sleep(300);
-  await hold('KeyW', 2300);
+  await hold('KeyW', 1800); // 平台尽头有入口，走太久会走进去
   await sleep(500);
   s = await state();
   check('走上 0.3m 台阶到平台', Math.abs(s.feet[1] - 1.5) < 0.08, `脚底 ${s.feet.map((v) => v.toFixed(2))}`);

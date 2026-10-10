@@ -3,6 +3,8 @@
    · 跳：起跳速度 7.2m/s、重力 22m/s² → 约 1.15m；松开早一点就跳得低一点。
      带「土狼时间」（离开边缘 0.1s 内还能起跳）与预输入（落地前 0.12s 按下也算）。
    · 台阶：贴地走时遇到 ≤ 0.35m 的坎自动迈上去；更高的要跳。
+   · 能站的面（坡度 ≤ ~56°，含棱边）只往正上推，站着不顺坡滑、站在小台子边上不被推下去；
+     下坡时贴地吸附 snap 以内的落差，不会一路蹦着走。
    · G 切到穿墙飞行（搭场景时用）：Space 上升、C 下降。 */
 import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
@@ -16,6 +18,10 @@ export const PLAYER = {
   jump: 7.2,
   gravity: 22,
   step: 0.35,
+  /** 能站的面：推出方向的 y 分量下限（cos 56°） */
+  floorY: 0.55,
+  /** 下坡吸附：上一帧在地上、这一帧离地不到这么多，就直接贴回去 */
+  snap: 0.2,
   coyote: 0.1,
   buffer: 0.12,
 };
@@ -145,17 +151,27 @@ export class Player {
     this.vel.y = Math.max(this.vel.y - g * dt, -40);
 
     // 分小步走，快速移动也不会穿过薄墙
+    const wasGrounded = this.grounded;
     const steps = 4;
     const sdt = dt / steps;
     let grounded = false;
     for (let i = 0; i < steps; i++) grounded = this.substep(sdt) || grounded;
+    // 下坡、走下很矮的坎：往下量 snap，有能站的面就贴上去
+    if (!grounded && wasGrounded && this.vel.y <= 0 && this.bvh) {
+      const down = this.collide(this.feet.clone().setY(this.feet.y - PLAYER.snap));
+      if (down.grounded && down.pos.y <= this.feet.y + 1e-4 &&
+          Math.hypot(down.pos.x - this.feet.x, down.pos.z - this.feet.z) < 0.02) {
+        this.feet.copy(down.pos);
+        grounded = true;
+      }
+    }
     if (grounded) {
       this.sinceGround = 0;
       if (this.vel.y < 0) this.vel.y = 0;
     }
     this.grounded = grounded;
-    // 地面上往上的高差慢慢跟，跳起、落下、飞行都直接跟
-    if (grounded && this.feet.y > this.eyeY && this.feet.y - this.eyeY < PLAYER.step + 0.05) {
+    // 地面上的小高差（迈台阶、下坡吸附）慢慢跟，跳起、落下、飞行都直接跟
+    if (grounded && Math.abs(this.feet.y - this.eyeY) < PLAYER.step + 0.05) {
       this.eyeY += (this.feet.y - this.eyeY) * (1 - Math.exp(-dt * 22));
     } else this.eyeY = this.feet.y;
     this.walked += grounded ? Math.hypot(this.vel.x, this.vel.z) * dt : 0;
@@ -173,10 +189,21 @@ export class Player {
     // 高差在 step 以内，就先把人抬到那一级的高度，再照常往前走
     const blocked = (res.pos.x - target.x) * this.wantDir.x + (res.pos.z - target.z) * this.wantDir.z < -1e-5;
     if (this.bvh && this.grounded && this.wantDir.lengthSq() > 0 && (blocked || gotH < wantH * 0.6)) {
-      this.ray.origin.copy(start).addScaledVector(this.wantDir, PLAYER.radius + 0.08);
-      this.ray.origin.y = start.y + PLAYER.step + 0.05;
-      const hit = this.bvh.raycastFirst(this.ray, THREE.DoubleSide, 0, PLAYER.step + 0.1);
-      const rise = hit ? hit.point.y - start.y : 0;
+      // 先朝挡住人的那个面量（斜着走向台阶时，沿走向量会量到台阶边外面），再沿走向量；
+      // 每个方向量两处：前沿外 8cm，量不到（很窄的一级）再试 2cm
+      const dirs = [this.wantDir];
+      const wall = new THREE.Vector3(target.x - res.pos.x, 0, target.z - res.pos.z);
+      if (wall.lengthSq() > 1e-12 && wall.normalize().dot(this.wantDir) > 0.1) dirs.unshift(wall);
+      let rise = 0;
+      probe: for (const d of dirs) {
+        for (const ahead of [0.08, 0.02]) {
+          this.ray.origin.copy(start).addScaledVector(d, PLAYER.radius + ahead);
+          this.ray.origin.y = start.y + PLAYER.step + 0.05;
+          const hit = this.bvh.raycastFirst(this.ray, THREE.DoubleSide, 0, PLAYER.step + 0.1);
+          rise = hit ? hit.point.y - start.y : 0;
+          if (rise > 0.01) break probe;
+        }
+      }
       if (rise > 0.01 && rise <= PLAYER.step + 1e-3) {
         const lifted = this.collide(target.clone().setY(start.y + rise + 0.01));
         // 头顶要有空：抬起来没被压回去才算
@@ -203,7 +230,9 @@ export class Player {
     return res.grounded;
   }
 
-  /** 把脚底在 p 的胶囊推出所有三角形；grounded ＝ 有一次推是朝上的 */
+  /** 把脚底在 p 的胶囊推出所有三角形；grounded ＝ 碰到了能站的面。
+      能站的面只往正上推（推 depth / dir.y 正好离开那个面）：顺着法线推会带出水平分量，
+      坡上一帧帧往下挪；小台子顶面两个三角形的公共斜边、台子的棱也会把人往外推下去 */
   private collide(p: THREE.Vector3) {
     const R = PLAYER.radius;
     const pos = p.clone();
@@ -231,9 +260,12 @@ export class Player {
             if (dir.lengthSq() < 1e-12) dir.copy(tri.getNormal(new THREE.Vector3()));
             dir.normalize();
             const depth = R - d;
-            this.seg.start.addScaledVector(dir, depth);
-            this.seg.end.addScaledVector(dir, depth);
-            if (dir.y > 0.55) grounded = true;
+            if (dir.y > PLAYER.floorY) {
+              dir.set(0, depth / dir.y, 0);
+              grounded = true;
+            } else dir.multiplyScalar(depth);
+            this.seg.start.add(dir);
+            this.seg.end.add(dir);
             moved = true;
           }
         },
