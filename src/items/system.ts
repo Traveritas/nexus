@@ -14,6 +14,7 @@ import { PALETTE } from '../palette';
 import { clamp01, ease } from '../stage';
 import { C, UI_SCALE, paper, paperMask, paperShadow, scratch, text, type Ui } from '../ui';
 import { itemDef, type HeldModel, type ItemCtx, type ItemDef, type Shown } from './item';
+import { isReality } from '../worlds';
 
 const STORE_KEY = 'nexus:items';
 const P = (i: number) => PALETTE[i];
@@ -108,6 +109,9 @@ export class ItemSystem {
   private ring: RingShow[] = [];
   private focus: RingShow | null = null;
   private emptyT = 0;
+  /** 在现实里：身上的东西拿不出来——不能举、不能环绕，拿着的那件也收着；按 F 只出一张纸签 */
+  private sealed = false;
+  private sealedT = 0;
   /** 捏到底时（主循环接上罗盘的地图） */
   onBloom?: (id: string) => void;
 
@@ -163,6 +167,11 @@ export class ItemSystem {
     this.places = [];
     this.level = level;
     this.world = world;
+    this.sealed = isReality(world);
+    if (this.sealed) {
+      this.want = false;
+      this.ringWant = false;
+    }
     for (const place of level.items) this.place(place);
   }
 
@@ -244,12 +253,16 @@ export class ItemSystem {
 
   /** 按住 Q：举起来捏；松开放下 */
   use(down: boolean) {
-    this.want = down && !!this.held && !this.reveal && !this.ringActive;
+    this.want = down && !this.sealed && !!this.held && !this.reveal && !this.ringActive;
   }
 
   /** 按住 F：环绕展示；松开时拿起正看着的那一件 */
   showRing(down: boolean, camera: THREE.Camera) {
     if (down) {
+      if (this.sealed) {
+        this.sealedT = 1.6;
+        return;
+      }
       if (this.reveal || this.ringWant) return;
       if (!this.owned.length) {
         this.emptyT = 1.4;
@@ -288,6 +301,7 @@ export class ItemSystem {
       if (this.reveal.t >= R_END) this.reveal = null;
     }
     this.emptyT = Math.max(0, this.emptyT - dt);
+    this.sealedT = Math.max(0, this.sealedT - dt);
 
     right.set(1, 0, 0).applyQuaternion(camera.quaternion);
     up.set(0, 1, 0).applyQuaternion(camera.quaternion);
@@ -448,6 +462,7 @@ export class ItemSystem {
       }
     }
     if (this.emptyT > 0) drawTag(g, [text('身上还没有东西', P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
+    if (this.sealedT > 0) drawTag(g, [text('醒着，什么也没带出来', P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
   }
 }
 

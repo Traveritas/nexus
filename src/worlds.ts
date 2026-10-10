@@ -16,6 +16,13 @@ export const WORLD_NAMES: Record<string, string> = {
 
 export const worldName = (w: string) => WORLD_NAMES[w] ?? w;
 
+/** 现实：醒着的那几间（干净低模的世界）。它们自成一处，不在梦的网里——
+    不进罗盘的星座、不记连接、不列进日记的「去过」；在这里身上的东西拿不出来（看不了、拿不起、用不了） */
+export const REALITY = new Set(['wake_fragment', 'wake_white', 'wake_museum']);
+export const isReality = (w: string) => REALITY.has(w);
+/** 梦里去过的（日记、星座用） */
+export const dreamt = (visited: string[]) => visited.filter((w) => !isReality(w));
+
 /** 星座图上的位置（x 向右、y 向前；家在正中）。没写的世界排在外圈 */
 export const CONSTELLATION: Record<string, [number, number]> = {
   home: [0, 0],
@@ -56,12 +63,14 @@ function writeList(key: string, v: string[]) {
 
 /** 走过的连接（无向）：[a, b] */
 export function edges(): [string, string][] {
-  return readList(EDGES_KEY).map((s) => s.split('|') as [string, string]);
+  return readList(EDGES_KEY)
+    .map((s) => s.split('|') as [string, string])
+    .filter(([a, b]) => !isReality(a) && !isReality(b));
 }
 
-/** 穿过一个传送物，从 a 到了 b */
+/** 穿过一个传送物，从 a 到了 b（入睡、醒来不算：现实不在梦的网里） */
 export function recordEdge(a: string, b: string) {
-  if (!a || !b || a === b) return;
+  if (!a || !b || a === b || isReality(a) || isReality(b)) return;
   const k = [a, b].sort().join('|');
   const all = readList(EDGES_KEY);
   if (!all.includes(k)) writeList(EDGES_KEY, [...all, k]);

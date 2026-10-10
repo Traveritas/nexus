@@ -11,7 +11,7 @@ import { Diary, night, type Settings } from './diary';
 import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
 import { SiteCard } from './sitecard';
-import { edges, recordEdge, recordSite, sites } from './worlds';
+import { dreamt, edges, recordEdge, recordSite, sites } from './worlds';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 wake_fragment——现实的家，醒着的那一间）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
@@ -713,7 +713,7 @@ function frame(dt: number) {
   field.drowse = Math.max(book.drowse, items.drowse);
   map.update(dt);
   field.dim = map.dim(items.handScreen(camera, pipe.size.w, pipe.size.h), pipe.size.w, pipe.size.h);
-  field.glow = map.layout(camera, { level, world, visited: visited(), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
+  field.glow = map.layout(camera, { level, world, visited: dreamt(visited()), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
   pipe.render(level.scene, level.crystalScene, camera, field, items.hand);

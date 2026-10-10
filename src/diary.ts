@@ -7,7 +7,7 @@ import { PALETTE } from './palette';
 import { Stage, box, canvasTex, clamp01, ease, mat, plane, setMap, solid } from './stage';
 import { itemDef } from './items/item';
 import type { Owned } from './items/system';
-import { worldName } from './worlds';
+import { dreamt, isReality, worldName } from './worlds';
 import { C, UI_SCALE, inkRows, paper, paperMask, scratch, text, type Ui } from './ui';
 
 /** 一页的尺寸（UI 像素 ＝ 书场景里的单位） */
@@ -91,6 +91,8 @@ interface PageCtx {
   night: number;
   owned: Owned[];
   held: string | null;
+  /** 此刻在现实里（醒着）：身上的东西看不了，也没有「醒来」 */
+  awake: boolean;
 }
 
 type Draw = (g: CanvasRenderingContext2D, c: PageCtx) => Region[];
@@ -179,17 +181,19 @@ function title(g: CanvasRenderingContext2D, s: string, x: number) {
 
 const indexLeft: Draw = (g, c) => {
   title(g, '目录', 30);
-  return [
-    item(g, c, 'resume', '继续', 34, 2),
-    item(g, c, 'items', '拾得', 34, 3),
-    item(g, c, 'settings', '设置', 34, 4),
-    item(g, c, 'wake', '醒来', 34, 5),
-  ];
+  const r = [item(g, c, 'resume', '继续', 34, 2)];
+  // 醒着的时候：拾得看不了，也已经醒了——两行淡下去，点不了
+  if (c.awake) write(g, '拾得', 34, 3, P(3));
+  else r.push(item(g, c, 'items', '拾得', 34, 3));
+  r.push(item(g, c, 'settings', '设置', 34, 4));
+  if (c.awake) write(g, '醒来', 34, 5, P(3));
+  else r.push(item(g, c, 'wake', '醒来', 34, 5));
+  return r;
 };
 
 const journalRight: Draw = (g, c) => {
   title(g, `第 ${c.night} 夜`, 26);
-  write(g, `此刻在 · ${worldName(c.world)}`, 26, 2);
+  write(g, c.awake ? '此刻 · 醒着' : `此刻在 · ${worldName(c.world)}`, 26, 2);
   write(g, `去过 ${c.visited.length} 处：`, 26, 3);
   const max = 7;
   c.visited.slice(0, max).forEach((w, i) => {
@@ -531,7 +535,8 @@ export class Diary {
   }
 
   private ctx(): PageCtx {
-    return { hover: this.hover, settings: this.settings, world: this.host.world(), visited: this.host.visited(), night: this.night, ...this.host.items() };
+    const world = this.host.world();
+    return { hover: this.hover, settings: this.settings, world, visited: dreamt(this.host.visited()), night: this.night, awake: isReality(world), ...this.host.items() };
   }
 
   private redraw(s: Spread) {
