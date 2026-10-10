@@ -96,7 +96,8 @@ def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=T
 
 def clean(obj, color, emit=0.0, recv=True, fog=True, double=False, collide=True, shadow=True, window=None):
     """干净低模（现实的世界用）：color 是 '#rrggbb'；emit 0..1 自己发光；recv 接不接影子；
-    window='view' 的东西只在窗玻璃里看得见（窗外的景，用自己的一套光，不投影、不挡人）"""
+    window='view' 的东西只在窗玻璃里看得见（窗外的景，用自己的一套光，不投影、不挡人）；
+    window='over' 的东西照常画，但画在窗里的天之后，伸到玻璃外面也不被盖掉（往外开的窗扇）"""
     obj["nx_mat"] = "clean"
     obj["nx_color"] = color
     if emit:
@@ -109,7 +110,8 @@ def clean(obj, color, emit=0.0, recv=True, fog=True, double=False, collide=True,
         obj["nx_double"] = 1
     if window:
         obj["nx_window"] = window
-        collide, shadow = False, False
+        if window == "view":
+            collide, shadow = False, False
     obj["nx_collide"] = 1 if collide else 0
     obj["nx_shadow"] = 1 if shadow else 0
     return obj

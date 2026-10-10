@@ -396,7 +396,8 @@ export async function loadLevel(url: string): Promise<Level> {
       m.position.copy(wpos);
       m.quaternion.copy(wquat);
       m.scale.copy(wscale);
-      m.renderOrder = kind === 'pane' ? 1 : view ? 2 : 0;
+      // nx_window=over：照常画，但在窗里的天之后，伸到玻璃外面也不被盖掉（往外开的窗扇）
+      m.renderOrder = kind === 'pane' ? 1 : view || u.nx_window === 'over' ? 2 : 0;
       if (kind === 'clean' && !view && bool(u.nx_shadow, true)) m.userData.shadowMat = shadowVariant(cm);
       scene.add(m);
       noteIntro(m, o);

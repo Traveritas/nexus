@@ -7,7 +7,7 @@
 - 西墙、北墙还在，各自断在一头：砖芯一皮皮参差地断，内墙的灰皮断得更靠里，露出一圈砖。墙顶还留着一道顶角线（这里原来有天花板）。
 - 撕下来的楼板：木地板、结构层、楼下天花板的白灰三层，南边、东边撕开，一层比一层撕得狠。
 - 床（E「睡」→ 梦里的家）、床头柜与台灯、闹钟、一杯水。
-- 北墙一扇窗，窗外有两处（窗景 outlook）：博客的那一夜（overnight）与 GitHub 的未完成的构造（scaffold）。两幅窗帘平时合着，走近就拉开；按 E 推开窗，两扇窗往屋里开，眼睛凑到窗口往外看，站点卡片浮出来，可以进博客或退回。窗下一张书桌（桌面右手空着一块）、一把椅子。
+- 北墙一扇窗，窗外有两处（窗景 outlook）：博客的那一夜（overnight）与 GitHub 的未完成的构造（scaffold）。两幅窗帘平时合着，走近就拉开；按 E 推开窗，两扇窗往外开，眼睛凑到窗口往外看，站点卡片浮出来，可以进博客或退回。窗下一张书桌（桌面右手空着一块）、一把椅子。
 - 西墙一架书、一本挂历；床头上方一幅歪了一点的画；角落一把扶手椅、一张小圆几。
 - 头顶浮着撕下来的一块天花板，吊灯还挂着、亮着。断墙口垂下一截电线，吊着一个开关。
 - 四周漂着同一栋房子的别处：几块撕下来的楼板，上面各留着一样东西（椅子、一截门、书架、台灯），还有几条地板慢慢浮着。
@@ -141,11 +141,12 @@ def window():
     a, b = WX0 + 0.03, WX1 - 0.03
     mid = (a + b) / 2
     # 窗玻璃（模板）：贴在窗扇外侧（y 2.95，窗扇在 2.88..2.93），正面朝屋里。窗里只画窗景的天（outlook），
-    # 窗扇往屋里开以后也还在原处，所以开着的窗洞里照样是那一处
+    # 窗扇往外开以后也还在原处，所以开着的窗洞里照样是那一处
     gp = lp.Geo()
     gp.quad([(a, 2.95, WZ0), (b, 2.95, WZ0), (b, 2.95, WZ1 - 0.03), (a, 2.95, WZ1 - 0.03)])
     nx.pane(gp.build("window_pane", recalc=False, color="#ffffff", collide=False, shadow=False))
-    # 两扇窗：各自绕外侧的铰链往屋里开（推开窗时，pose 组 sash，on=cue）。原点就在铰链上
+    # 两扇窗：各自绕外侧的铰链往外开（推开窗时，pose 组 sash，on=cue）。原点就在铰链上。
+    # 开出去的窗扇在玻璃外面，窗里的天会盖住它，所以画在窗里的天之后（window="over"）
     for side, hinge, sx in (("l", a, 1), ("r", b, -1)):
         lf = lp.Thing(f"sash_{side}", (hinge, 2.88, 0))
         s = lf["sash"]
@@ -158,9 +159,9 @@ def window():
         s.cuboid(*X(0.05, w - 0.03), 0.005, 0.045, 1.74, 1.77)
         if side == "r":
             lf["brass"].cuboid(*X(w - 0.027, w - 0.003), -0.04, 0, 1.36, 1.46)
-        lf.done({"sash": C["trim"], "brass": dict(color=C["brass"], collide=False)}, collide=False)
+        lf.done({"sash": C["trim"], "brass": dict(color=C["brass"], collide=False)}, collide=False, window="over")
         for o in lf.g.children:
-            nx.pose(o, "sash", on="cue", rot=(0, 0, -75 * sx), time=0.9)
+            nx.pose(o, "sash", on="cue", rot=(0, 0, 100 * sx), time=0.9)
     # 窗帘杆与托架
     t["brass"].rod((WX0 - 0.42, 2.66, 2.33), (WX1 + 0.42, 2.66, 2.33), 0.012, 8)
     for x in (WX0 - 0.36, WX1 + 0.36):
