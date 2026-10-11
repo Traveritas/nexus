@@ -11,12 +11,13 @@ import { Diary, night, type Settings } from './diary';
 import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
 import { SiteCard } from './sitecard';
-import { dreamt, edges, recordEdge, recordSite, sites } from './worlds';
+import { dreamt, edges, isReality, recordEdge, recordSite, sites } from './worlds';
 import { RealName } from './realtext';
 import { IntroPlayer, introSeen, stripIntro } from './intro';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 wake_fragment——现实的家，醒着的那一间）；?scene= 是旧写法，同义
-   世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来。
+   世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来；
+   现实与梦之间（入梦、醒来）不蒙色：粗到 32px 时两个世界按块交接，视野一路朝同一方向走（见 SLEEP）。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    开场：第一次从根地址进来时停在标题的机位上，「点击醒来」以后木条掉进虚空、视角滑到床边（src/intro.ts）；?intro=1 强制再放一次，?intro=0 不放
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?res=auto|full|half|quarter|eighth|sixteenth 世界的渲染分辨率  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
@@ -39,7 +40,9 @@ const START_AT = 'home';
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1);
-const camera = new THREE.PerspectiveCamera(68, 16 / 9, 0.1, 400);
+/** 视野（竖直，度）；入梦、醒来时临时变（SLEEP.fovWide / fovNarrow） */
+const FOV = 68;
+const camera = new THREE.PerspectiveCamera(FOV, 16 / 9, 0.1, 400);
 camera.rotation.order = 'YXZ';
 const pipe = new Pipeline(renderer);
 const shadow = new SunShadow();
@@ -222,7 +225,8 @@ if (q.get('hud') === '0') hud.classList.add('off');
 
 // ── 世界之间的转场 ──
 interface Travel {
-  phase: 'out' | 'in';
+  /** out 旧世界变粗 · hand 马赛克交接（只有入梦、醒来） · in 新世界解析出来 */
+  phase: 'out' | 'hand' | 'in';
   t: number;
   to: string;
   at: string;
@@ -236,12 +240,56 @@ interface Travel {
   via: boolean;
   /** 到了以后停在开场的标题上（日记里点 NEXUS） */
   dream: boolean;
+  /** plain 同一边之间（变粗、蒙雾色）；sleep 现实 → 梦；wake 梦 → 现实 */
+  kind: 'plain' | 'sleep' | 'wake';
 }
 let travel: Travel | null = null;
 let dissolve = 0;
 const OUT = 0.75;
 const IN = 1.0;
 const veilCol = new THREE.Color();
+/** 入梦与醒来：只靠分辨率。全屏均匀地一级级粗到 32px（现实那一侧粗到 4–16px 时一块块落进色板），
+    两个世界在最粗的马赛克里交接（按块一块块换），再一级级解析出来；不蒙色、不黑场。醒来是入梦倒着放。
+    秒数都在这里，window.__nexus.sleep 可以现调 */
+const SLEEP = {
+  /** 入睡：现实粗到底 · 交接 · 梦解析出来 */
+  out: 2.2,
+  hand: 0.35,
+  in: 2.0,
+  /** 醒来：梦粗到底 · 交接 · 现实解析出来 */
+  wakeOut: 1.6,
+  wakeHand: 0.35,
+  wakeIn: 2.4,
+  /** 曲线：整段是一个 V——变粗先慢后快（在细的几级流连，然后塌成色块），交接一闪而过，
+      解析先快后慢（很快从色块里浮出来，最后几级慢慢落定）。数越大，两头越拖、谷底越快 */
+  outPow: 1.5,
+  inPow: 1.5,
+  /** 视野（竖直，度）一路朝同一个方向走：从静止起步越来越快，交接那一刻最快，新世界带着这股速度出来、再慢慢停住
+      （三次曲线：起止两头速度、加速度都是 0）。交接那段视野也不停，新世界的视野从交接一开始就在走。
+      入梦：现实收窄（往里压），交接，梦从很宽收回正常——一直在往前沉。
+      醒来反过来：梦拉宽（往后退），交接，现实从很窄拉回正常。
+      格子是一级级跳的，视野是连续的，填满两级之间的空档 */
+  fovWide: 120,
+  fovNarrow: 30,
+};
+/** 视野的曲线：旧世界从静止加速冲向交接（三次），新世界从最快减速到静止 */
+const accel3 = (x: number) => THREE.MathUtils.clamp(x, 0, 1) ** 3;
+const decel3 = (x: number) => 1 - (1 - THREE.MathUtils.clamp(x, 0, 1)) ** 3;
+/** 新世界的视野：从交接开始算，走完交接与解析两段 */
+const fovIn = (tr: Travel, t: number) => {
+  const handT = tr.kind === 'sleep' ? SLEEP.hand : SLEEP.wakeHand;
+  const inT = tr.kind === 'sleep' ? SLEEP.in : SLEEP.wakeIn;
+  return THREE.MathUtils.lerp(fovEnds(tr.kind).in, FOV, decel3(t / (handT + inT)));
+};
+/** 旧世界的视野走向哪头、新世界的视野从哪头来 */
+const fovEnds = (kind: Travel['kind']) =>
+  kind === 'sleep' ? { out: SLEEP.fovNarrow, in: SLEEP.fovWide } : { out: SLEEP.fovWide, in: SLEEP.fovNarrow };
+/** 现实那一侧落进色板的程度（按粗细：4px 起、16px 落完）；交给管线的 uDream */
+const paletteAt = (k: number) => THREE.MathUtils.smoothstep(k, 0.45, 0.85);
+let travelDream = 0;
+let hand = -1;
+/** 这一帧的视野（竖直，度） */
+let travelFov = FOV;
 const fogSrgb = () => shared.uFogCol.value.clone().convertLinearToSRGB();
 
 function go(to: string, at = '', push = true, via = false, dream = false) {
@@ -250,7 +298,9 @@ function go(to: string, at = '', push = true, via = false, dream = false) {
     console.warn('[nexus] 去不了', to, err);
     return null;
   });
-  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb(), from: world, via, dream };
+  // 回到开场的标题（日记里点 NEXUS）落在梦的画面上，不算醒来
+  const kind = dream || isReality(world) === isReality(to) ? 'plain' : isReality(world) ? 'sleep' : 'wake';
+  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb(), from: world, via, dream, kind };
   map.closeNow();
   travel = tr;
   player.vel.set(0, 0, 0);
@@ -264,10 +314,16 @@ function go(to: string, at = '', push = true, via = false, dream = false) {
 function stepTravel(dt: number) {
   if (!travel) return;
   travel.t += dt;
+  const soft = travel.kind !== 'plain';
   if (travel.phase === 'out') {
-    dissolve = Math.min(1, travel.t / OUT);
+    const T = travel.kind === 'sleep' ? SLEEP.out : travel.kind === 'wake' ? SLEEP.wakeOut : OUT;
+    dissolve = soft ? Math.min(1, travel.t / T) ** SLEEP.outPow : Math.min(1, travel.t / T);
+    if (travel.kind === 'sleep') travelDream = paletteAt(dissolve);
+    // 视野一开始就动（格子还没开始跳的时候），越到最粗越慢
+    if (soft) travelFov = THREE.MathUtils.lerp(FOV, fovEnds(travel.kind).out, accel3(travel.t / T));
     veilCol.copy(travel.veilFrom);
-    if (dissolve < 1 || travel.ready === undefined) return;
+    // 入梦、醒来：粗到底以后再多停一帧，存下的那一帧才整屏都是 32px
+    if (travel.t < T + (soft ? 0.05 : 0) || travel.ready === undefined) return;
     const l = travel.ready;
     if (!l) {
       // 没去成：原路解析回来
@@ -275,6 +331,7 @@ function stepTravel(dt: number) {
       travel.t = 0;
       return;
     }
+    if (soft) pipe.holdFrame();
     disposeLevel(level);
     level = l;
     // 开场还没放完就走了（只有测试会这样）：收起来，别把人锁在新世界里
@@ -295,8 +352,33 @@ function stepTravel(dt: number) {
     prefetchNeighbours(level);
     if (travel.push) history.pushState({ world, at: travel.at }, '', `?world=${encodeURIComponent(world)}`);
     travel.veilTo = fogSrgb();
+    travel.phase = soft ? 'hand' : 'in';
+    travel.t = 0;
+    if (soft) {
+      hand = 0;
+      travelFov = fovEnds(travel.kind).in;
+      travelDream = isReality(world) ? 1 : 0;
+    }
+  } else if (travel.phase === 'hand') {
+    // 马赛克交接：两边都是 32px 的色块，一块块从旧世界换成新世界
+    hand = THREE.MathUtils.smoothstep(travel.t, 0, travel.kind === 'sleep' ? SLEEP.hand : SLEEP.wakeHand);
+    travelFov = fovIn(travel, travel.t);
+    if (hand < 1) return;
+    hand = -1;
     travel.phase = 'in';
     travel.t = 0;
+  } else if (soft) {
+    // 一级级解析出来；落在现实的，色板先一块块松开，格子再变细到连续
+    const k = Math.min(1, travel.t / (travel.kind === 'sleep' ? SLEEP.in : SLEEP.wakeIn));
+    dissolve = (1 - k) ** SLEEP.inPow;
+    travelFov = fovIn(travel, travel.t + (travel.kind === 'sleep' ? SLEEP.hand : SLEEP.wakeHand));
+    travelDream = isReality(world) ? paletteAt(dissolve) : 0;
+    if (k >= 1) {
+      travel = null;
+      dissolve = 0;
+      travelDream = 0;
+      travelFov = FOV;
+    }
   } else {
     const k = Math.min(1, travel.t / IN);
     dissolve = 1 - k;
@@ -714,7 +796,7 @@ function fieldOf(prompt: Promptable | null): Field {
   const near = nearest && !prompt ? 1 - THREE.MathUtils.smoothstep(nearestD, 4, 9) : 0;
   siteName.focus(near, near * (1 - resolve) * (1 - dissolve));
 
-  return { sources: sources.slice(0, MAX_FIELD), prox, resolve, dissolve, veilCol };
+  return { sources: sources.slice(0, MAX_FIELD), prox, resolve, dissolve, veilCol, bare: !!travel && travel.kind !== 'plain', hand: hand >= 0 ? hand : undefined };
 }
 
 // ── 主循环 ──
@@ -740,6 +822,11 @@ function frame(dt: number) {
     eye.copy(introView.pos);
     camera.position.copy(eye);
     camera.rotation.set(introView.pitch, introView.yaw, 0);
+  }
+  const fov = travelFov;
+  if (camera.fov !== fov) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
   }
   camera.updateMatrixWorld();
   stepGaze(dt);
@@ -775,7 +862,7 @@ function frame(dt: number) {
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
   // 开场：标题是梦的画面，滑向床边时醒过来
-  pipe.setDream(intro?.dream ?? 0);
+  pipe.setDream(Math.max(intro?.dream ?? 0, travelDream));
   pipe.render(level.scene, level.crystalScene, camera, field, items.hand);
   book.render(renderer);
   ui.clear();
@@ -842,6 +929,8 @@ updateHud();
   /** 开场：现在在哪一步（title / play / done）；wake() 等于点了一下 */
   intro: () => intro?.phase ?? 'done',
   wake: wakeIntro,
+  /** 入梦、醒来各段的秒数，可以现调 */
+  sleep: SLEEP,
   freeze(b: boolean) {
     frozen = b;
   },
@@ -854,6 +943,8 @@ updateHud();
     entering: !!entering,
     world,
     travelling: !!travel,
+    travelKind: travel?.kind,
+    travelPhase: travel?.phase,
     dissolve,
     portals: level.portals.map((p) => ({ to: p.to, at: p.at, mode: p.mode, title: p.title, pos: p.pos.toArray() })),
     arrivals: [...level.arrivals.keys()],

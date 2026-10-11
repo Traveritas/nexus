@@ -40,6 +40,10 @@ export interface Field {
   drowse?: number;
   /** 暗下来的一圈（罗盘的地图）：屏幕像素，原点在左下；圆里每一格暗两档，边缘按格子抖开。不变粗 */
   dim?: { x: number; y: number; r: number };
+  /** 转场不蒙色（入梦、醒来：只靠格子与色板，不化雾、不化白） */
+  bare?: boolean;
+  /** 马赛克交接：0..1，按 32px 的块、Bayer 名次，从存下的旧世界那一帧（holdFrame）换成新世界；不交接时省略 */
+  hand?: number;
   /** 星光（罗盘地图的星落到世界上）：屏幕像素，原点在左下，z 是半径；里圈亮两档、外圈一档，边缘按格子抖开 */
   glow?: THREE.Vector3[];
 }
@@ -399,12 +403,16 @@ void main() {
 
 const COMP_FRAG = /* glsl */ `
 precision highp float;
-uniform sampler2D tPix;
-uniform float uNear, uFar, uVeil;
+uniform sampler2D tPix, tHold;
+uniform float uNear, uFar, uVeil, uHand;
 uniform vec3 uVeilCol;
 out vec4 fragColor;
+${COMMON}
 void main() {
-  vec4 c = texelFetch(tPix, ivec2(gl_FragCoord.xy), 0);
+  ivec2 px = ivec2(gl_FragCoord.xy);
+  vec4 c = texelFetch(tPix, px, 0);
+  // 马赛克交接：两个世界都粗到 32px 一格时，按块的 Bayer 名次一块块从旧世界换成新世界
+  if (uHand >= 0.0 && bayer4(px / 32) >= uHand) c = texelFetch(tHold, px, 0);
   fragColor = vec4(mix(c.rgb, uVeilCol, uVeil), 1.0);
   float d = c.a;
   float ndc = (uFar + uNear) / (uFar - uNear) - 2.0 * uFar * uNear / ((uFar - uNear) * max(d, uNear));
@@ -416,6 +424,8 @@ export class Pipeline {
   readonly flags: Flags = { raw: false, palette: true, outline: 0, field: false, lock: -1 };
   rtWorld!: THREE.WebGLRenderTarget;
   rtPix!: THREE.WebGLRenderTarget;
+  /** 马赛克交接时存下的旧世界那一帧（与 rtPix 对调得来） */
+  private rtHold!: THREE.WebGLRenderTarget;
   private quadScene = new THREE.Scene();
   private quadCam = new THREE.Camera();
   private quad: THREE.Mesh;
@@ -486,6 +496,8 @@ export class Pipeline {
       depthFunc: THREE.AlwaysDepth,
       uniforms: {
         tPix: { value: null },
+        tHold: { value: null },
+        uHand: { value: -1 },
         uNear: { value: 0.1 },
         uFar: { value: 400 },
         uVeil: { value: 0 },
@@ -519,6 +531,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     this.h = h;
     this.rtWorld?.dispose();
     this.rtPix?.dispose();
+    this.rtHold?.dispose();
     this.rtQuant?.dispose();
     const ww = w >> this.shift;
     const wh = h >> this.shift;
@@ -544,6 +557,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
       magFilter: THREE.NearestFilter,
       depthBuffer: false,
     });
+    this.rtHold = this.rtPix.clone();
     this.pixMat.uniforms.uRes.value.set(w, h);
     this.pixMat.uniforms.uShift.value = this.shift;
 
@@ -595,6 +609,11 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     this.pixMat.uniforms.uDream.value = k;
   }
 
+  /** 把上一帧像素化的结果存下来，留给马赛克交接（下一帧起 rtPix 画新的） */
+  holdFrame() {
+    [this.rtPix, this.rtHold] = [this.rtHold, this.rtPix];
+  }
+
   get pixTexture() {
     return this.rtPix.texture;
   }
@@ -626,7 +645,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     for (let i = 0; i < ng; i++) u.uGlow.value[i].copy(gl[i]);
     u.uGlowCount.value = ng;
     const veilWhite = THREE.MathUtils.smoothstep(field.resolve, 0.55, 1);
-    const veilDream = THREE.MathUtils.smoothstep(dissolve, 0.6, 1);
+    const veilDream = field.bare ? 0 : THREE.MathUtils.smoothstep(dissolve, 0.6, 1);
     this.compMat.uniforms.uVeil.value = Math.max(veilWhite, veilDream);
     const vc = this.compMat.uniforms.uVeilCol.value as THREE.Vector3;
     if (veilDream > veilWhite && field.veilCol) vc.set(field.veilCol.r, field.veilCol.g, field.veilCol.b);
@@ -662,6 +681,8 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
 
     this.quad.material = this.compMat;
     this.compMat.uniforms.tPix.value = this.rtPix.texture;
+    this.compMat.uniforms.tHold.value = this.rtHold.texture;
+    this.compMat.uniforms.uHand.value = field.hand ?? -1;
     this.compMat.uniforms.uNear.value = camera.near;
     this.compMat.uniforms.uFar.value = camera.far;
     r.setRenderTarget(null);
