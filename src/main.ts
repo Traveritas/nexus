@@ -37,6 +37,9 @@ const VISITED_KEY = 'nexus:visited';
 /** 起点：现实的家（残片）。一开始在这里醒来，日记里「醒来」也回到这里，落在床边（到达点 home） */
 const START = 'wake_fragment';
 const START_AT = 'home';
+/** 彩蛋：醒来时有 1% 醒错地方，落进另两个没选上的现实原型之一（各半），也落在床边 */
+const ODD_WAKES = ['wake_white', 'wake_museum'];
+const wakeWorld = () => (Math.random() < 0.01 ? ODD_WAKES[Math.floor(Math.random() * ODD_WAKES.length)] : START);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1);
@@ -398,7 +401,7 @@ addEventListener('popstate', (e) => {
 
 // ── 日记 ──
 const book = new Diary(ui, {
-  wake: () => go(START, START_AT),
+  wake: () => go(wakeWorld(), START_AT),
   title: () => go(START, START_AT, true, false, true),
   apply: (s) => {
     player.sens = s.sens;
