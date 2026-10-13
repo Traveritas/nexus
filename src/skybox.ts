@@ -746,6 +746,29 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
     },
     glsl: NONE,
   },
+
+  // ── 自由 · 正午：家的室外，天压得很低的那一片。天本身几乎看不见（被六米高的云底盖着），
+  //    只从云洞里露出来：很亮的淡蓝，太阳在正头顶，一圈白晕（落色板后是几道环）。
+  //    天光亮而平、地面反光强（云底靠它照亮），雾近，远处的云和地在雾里合上 ──
+  noon: {
+    label: '正午',
+    light: {
+      fog: '#eef0f4',
+      zenith: '#c3d4ea',
+      sky: ['#e4ecf6', 0.46],
+      ground: ['#e6ecea', 0.4],
+      sun: ['#fffaf0', 1.25],
+      glow: ['#f6c6e2', 0.8],
+      fogNear: 10,
+      fogFar: 64,
+    },
+    glsl: /* glsl */ `
+void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
+  float s = dot(d, normalize(uSun));
+  col = mix(col, ${lin('#fbf9f7')}, smoothstep(0.9, 0.995, s) * 0.9);
+  if (s > 0.9988) col = ${lin('#fbf9f7')} * 1.2;
+}`,
+  },
 };
 
 export const SKY_NAMES = Object.keys(THEMES);

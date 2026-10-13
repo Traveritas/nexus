@@ -544,7 +544,8 @@ function checkWindow(limit: number): { p: Promptable; d: number } | null {
     const d = eye.distanceTo(pos);
     if (d > radius + 1.2 || d >= (best?.d ?? limit)) return;
     tmp.copy(pos).sub(eye).normalize();
-    if (tmp.dot(look) < 0.55 && d > radius) return;
+    // 不在眼前的只在贴得很近时才算：几扇门挨着时，按 E 开的是看着的那扇，不是身后更近的那扇
+    if (tmp.dot(look) < 0.55 && d > Math.min(radius, 0.7)) return;
     best = { p: p(), d, act };
   };
   const ol = level.outlooks[level.outlook];
@@ -810,6 +811,8 @@ let fps = 0;
 function frame(dt: number) {
   if (!frozen) t += dt;
   stepTravel(dt);
+  // 停住的门（开着或关着）挡人；转到一半时不挡
+  player.dynamic = level.blockers();
   player.update(dt, !!entering || !!gaze || !!travel || book.active || items.locked || !!intro);
   if (player.feet.y < -40) respawn();
   player.eyePosition(eye);
@@ -864,6 +867,8 @@ function frame(dt: number) {
   field.glow = map.layout(camera, { level, world, visited: dreamt(visited()), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
+  // 世界自己的格子粗细与色板子集（家的室外：8px、只用几枚冷色）
+  pipe.setLook(level.look.grid, level.look.mask);
   // 开场：标题是梦的画面，滑向床边时醒过来
   pipe.setDream(Math.max(intro?.dream ?? 0, travelDream));
   pipe.render(level.scene, level.crystalScene, camera, field, items.hand);

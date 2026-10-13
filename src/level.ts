@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { MeshBVH } from 'three-mesh-bvh';
+import { ExtendedTriangle, MeshBVH } from 'three-mesh-bvh';
 import { asset, clean, matte, pane, paper, throughPane, veil, shared, shadowVariant, newId, TEXEL, MAX_LAMPS } from './materials';
 import { makeSky, makeWindowSky, type SkyBox, type WindowSky } from './skybox';
 import { makeCrystal } from './crystal';
@@ -79,6 +79,14 @@ export interface Pose {
   /** 拨到另一个样子 ＝ 世界入夜（nx_pose_night，房间里的开关） */
   night: boolean;
   members: { obj: THREE.Object3D; p0: THREE.Vector3; q0: THREE.Quaternion; s0: THREE.Vector3; dp: THREE.Vector3; dq: THREE.Quaternion; ds: THREE.Vector3 }[];
+  /** 挡人（能开关的门）：原样与另一个样子两头各一份世界坐标的三角形；变到一半时不挡 */
+  block: [Blocker, Blocker];
+}
+
+/** 会动的东西在某一头挡人：三角形（世界坐标）与它们的包围盒 */
+export interface Blocker {
+  box: THREE.Box3;
+  tris: ExtendedTriangle[];
 }
 
 /** 物品摆在哪、怎么得到（物品本身的定义在 src/items/） */
@@ -122,10 +130,15 @@ export interface Level {
   intro: Intro | null;
   /** 画风：'pixel'（默认，解析度场像素化）或 'clean'（干净低模，不做后处理） */
   style: string;
+  /** 世界的样子（atmosphere 上写的）：grid 远处的格子是几级（2 ＝ 4px，3 ＝ 8px）、mask 只用哪几枚色板色（位）、
+      lamps 灯一直亮着（不等入夜） */
+  look: Look;
   /** 昼夜：0 白天 … 1 夜里（跟着 night 的 pose 慢慢变） */
   readonly night: number;
   /** 把这个世界的太阳、天色、雾、灯重新套到共享的 uniform 上（几个世界同时在内存里时，后加载的会改掉它们） */
   apply(): void;
+  /** 这一刻挡人的会动的东西（停在某一头的门） */
+  blockers(): Blocker[];
   update(dt: number, t: number, camera: THREE.Camera, frozen: boolean): void;
 }
 
@@ -196,6 +209,9 @@ export async function loadLevel(url: string): Promise<Level> {
     edge: number;
     /** 下口那一束照到多远为止（米，沿罩口方向） */
     reach: number;
+    /** 只照这只盒子里的东西（three 坐标）；没写就不限 */
+    lo: THREE.Vector3;
+    hi: THREE.Vector3;
   }[] = [];
 
   /** 网格带 nx_pose：归进那一组。转、缩放都绕物体自己的原点（Blender 里物体的原点放在铰链 / 帘子收拢的那一头） */
@@ -215,6 +231,7 @@ export async function loadLevel(url: string): Promise<Level> {
         k: 0,
         night: bool(u.nx_pose_night, false),
         members: [],
+        block: [{ box: new THREE.Box3(), tris: [] }, { box: new THREE.Box3(), tris: [] }],
       };
       poses.set(name, g);
     }
@@ -232,6 +249,26 @@ export async function loadLevel(url: string): Promise<Level> {
       dq,
       ds: new THREE.Vector3(sx || 1, sz || 1, sy || 1),
     });
+    // 能开关的门：nx_collide 没关掉的，两头各记一份三角形，停在哪头就挡在哪头（转到一半不挡）
+    const mesh = m as THREE.Mesh;
+    if (mesh.isMesh && bool(u.nx_collide, true)) {
+      const mb = g.members[g.members.length - 1];
+      const ends: [THREE.Matrix4, THREE.Matrix4] = [
+        new THREE.Matrix4().compose(mb.p0, mb.q0, mb.s0),
+        new THREE.Matrix4().compose(mb.p0.clone().add(mb.dp), mb.q0.clone().multiply(mb.dq), mb.s0.clone().multiply(mb.ds)),
+      ];
+      const pos = mesh.geometry.getAttribute('position');
+      const idx = mesh.geometry.index;
+      const n = idx ? idx.count : pos.count;
+      ends.forEach((mat, e) => {
+        const v = (i: number) => new THREE.Vector3().fromBufferAttribute(pos, idx ? idx.getX(i) : i).applyMatrix4(mat);
+        for (let i = 0; i + 2 < n; i += 3) {
+          const t = new ExtendedTriangle(v(i), v(i + 1), v(i + 2));
+          g!.block[e].tris.push(t);
+          g!.block[e].box.expandByPoint(t.a).expandByPoint(t.b).expandByPoint(t.c);
+        }
+      });
+    }
   }
 
   // 天
@@ -239,6 +276,7 @@ export async function loadLevel(url: string): Promise<Level> {
   scene.add(sky.mesh);
   let skyName = 'blank';
   let style = 'pixel';
+  const look: Look = { grid: 2, mask: 0xffff, lamps: false };
 
   const nodes: THREE.Object3D[] = [];
   root.traverse((o) => nodes.push(o));
@@ -326,8 +364,11 @@ export async function loadLevel(url: string): Promise<Level> {
     if (type === 'lamp') {
       // 灯罩的半角（度）→ 余弦；0 ＝ 那一头封着（余弦给 2，锥里什么也进不去）
       const cosOf = (deg: number) => (deg > 0 ? Math.cos(deg * (Math.PI / 180)) : 2);
-      if (lamps.length < MAX_LAMPS)
-        lamps.push({
+      // nx_box：Blender 坐标的 "x0,y0,z0,x1,y1,z1" → three（x, z, −y）
+      const bx = u.nx_box === undefined ? null : String(u.nx_box).split(',').map(Number);
+      const lo = bx ? new THREE.Vector3(Math.min(bx[0], bx[3]), Math.min(bx[2], bx[5]), -Math.max(bx[1], bx[4])) : new THREE.Vector3(-1e5, -1e5, -1e5);
+      const hi = bx ? new THREE.Vector3(Math.max(bx[0], bx[3]), Math.max(bx[2], bx[5]), -Math.min(bx[1], bx[4])) : new THREE.Vector3(1e5, 1e5, 1e5);
+      lamps.push({
           pos: wpos.clone(),
           radius: num(u.nx_radius, 4),
           color: new THREE.Color(String(u.nx_color ?? '#ffd2a0')).multiplyScalar(num(u.nx_power, 1)),
@@ -339,14 +380,18 @@ export async function loadLevel(url: string): Promise<Level> {
           upPower: num(u.nx_up_power, 1),
           edge: num(u.nx_edge, 4) * (Math.PI / 180),
           reach: num(u.nx_reach, 1e4),
+          lo,
+          hi,
         });
-      else console.warn('[nexus] 灯光最多', MAX_LAMPS, '盏，多出来的不亮：', o.name);
       continue;
     }
 
     if (type === 'atmosphere') {
       skyName = String(u.nx_sky ?? 'blank');
       style = String(u.nx_style ?? 'pixel');
+      look.grid = THREE.MathUtils.clamp(Math.round(num(u.nx_grid, 2)), 0, 4);
+      if (u.nx_palette !== undefined) look.mask = String(u.nx_palette).split(',').reduce((m, c) => m | (1 << (Number(c) & 15)), 0) || 0xffff;
+      look.lamps = bool(u.nx_lamps, false);
       continue;
     }
 
@@ -491,6 +536,7 @@ export async function loadLevel(url: string): Promise<Level> {
         top: u.nx_top === undefined ? undefined : num(u.nx_top, 0),
         yRange: [box.min.y, box.max.y],
         ramp: rampOf(u.nx_ramp),
+        emit: num(u.nx_emit, 0),
         id: u.nx_id as number | undefined,
       });
     }
@@ -556,25 +602,42 @@ export async function loadLevel(url: string): Promise<Level> {
   const nightPose = [...poses.values()].find((g) => g.night) ?? null;
   let nightK = 0;
   let night = 0;
+  // 灯可以比槽多：每帧取离人最近的 MAX_LAMPS 盏写进 uniform（远处房间的灯反正隔着墙）
+  let active = lamps.slice(0, MAX_LAMPS);
   const applyLamps = () => {
     shared.uLamps.value.forEach((v, i) => {
-      const l = lamps[i];
+      const l = active[i];
       if (l) v.set(l.pos.x, l.pos.y, l.pos.z, l.radius);
       else v.set(0, 0, 0, 0);
     });
-    shared.uLampCols.value.forEach((c, i) => c.copy(lamps[i]?.color ?? BLACK));
+    shared.uLampCols.value.forEach((c, i) => c.copy(active[i]?.color ?? BLACK));
     shared.uLampAxis.value.forEach((v, i) => {
-      const l = lamps[i];
+      const l = active[i];
       if (l) v.set(l.axis.x, l.axis.y, l.axis.z, l.cosDown);
     });
     shared.uLampShade.value.forEach((v, i) => {
-      const l = lamps[i];
+      const l = active[i];
       if (l) v.set(l.cosUp, l.leak, l.upPower, Math.max(l.edge, 1e-3));
     });
     const reach = shared.uLampReach.value;
-    for (let i = 0; i < reach.length; i++) reach[i] = lamps[i]?.reach ?? 1e4;
+    for (let i = 0; i < reach.length; i++) reach[i] = active[i]?.reach ?? 1e4;
+    shared.uLampLo.value.forEach((v, i) => v.copy(active[i]?.lo ?? FAR_LO));
+    shared.uLampHi.value.forEach((v, i) => v.copy(active[i]?.hi ?? FAR_HI));
   };
   applyLamps();
+  const pickLamps = (camera: THREE.Camera) => {
+    if (lamps.length <= MAX_LAMPS) return;
+    const c = camera.position;
+    const next = [...lamps].sort((p, q) => p.pos.distanceToSquared(c) - q.pos.distanceToSquared(c)).slice(0, MAX_LAMPS);
+    if (next.every((l) => active.includes(l))) return;
+    active = next;
+    applyLamps();
+  };
+  // 世界的样子（atmosphere 上写的）：格子多粗、只用哪几色、灯是不是一直亮着
+  const lampOn = () => {
+    shared.uLampOn.value = Math.max(look.lamps ? 1 : 0, night);
+  };
+  lampOn();
 
   function update(dt: number, t: number, camera: THREE.Camera, frozen: boolean) {
     const nt = nightPose?.target ?? 0;
@@ -582,7 +645,9 @@ export async function loadLevel(url: string): Promise<Level> {
       nightK = nt > nightK ? Math.min(nt, nightK + dt / NIGHT_TIME) : Math.max(nt, nightK - dt / NIGHT_TIME);
       night = smooth(nightK);
       sky.night(night);
+      lampOn();
     }
+    pickLamps(camera);
     sky.update(frozen ? 0 : t, camera);
     windowSky?.update(camera);
     for (const g of poses.values()) {
@@ -635,6 +700,7 @@ export async function loadLevel(url: string): Promise<Level> {
     shared.uSun.value.copy(sunDir);
     sky.set(sky.spec);
     applyLamps();
+    lampOn();
     // 窗里的天的底色与种子也是共用的一份
     showOutlook(outlook);
   };
@@ -646,12 +712,28 @@ export async function loadLevel(url: string): Promise<Level> {
     get night() {
       return night;
     },
-    showOutlook, poses, intro, style, apply, update,
+    showOutlook, poses, intro, style, look, apply, update,
+    blockers() {
+      const out: Blocker[] = [];
+      for (const g of poses.values()) {
+        if (g.k <= 0.001 && g.block[0].tris.length) out.push(g.block[0]);
+        else if (g.k >= 0.999 && g.block[1].tris.length) out.push(g.block[1]);
+      }
+      return out;
+    },
   };
 }
 
 const tq = new THREE.Quaternion();
 const BLACK = new THREE.Color(0, 0, 0);
+const FAR_LO = new THREE.Vector3(-1e5, -1e5, -1e5);
+const FAR_HI = new THREE.Vector3(1e5, 1e5, 1e5);
+
+export interface Look {
+  grid: number;
+  mask: number;
+  lamps: boolean;
+}
 /** 昼夜换一次要几秒 */
 const NIGHT_TIME = 1.6;
 

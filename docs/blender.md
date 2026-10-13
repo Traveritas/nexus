@@ -53,12 +53,13 @@
 | `nx_pattern` | 0 颗粒 · 1 一米方砖 · 2 横纹（每 0.5m） · 3 竖条 · 4 素面 | 0 | 除素面外都叠一层约 1.5m 的大色斑与成团颗粒；方砖、横纹、竖条每块/每条各有色偏，横纹在侧面按不等长断开成木板 |
 | `nx_ramp` | `"暗,中,亮"` 色板编号 | 无 | 三色明暗：三档受光直接取这三色（可跨色相，暗偏冷、亮偏暖），纹样往暗处挪半档（棋盘抖动）或一档；给了就不用 `nx_pal`。没给时，网页的「自动三色」按主色从 `palette.ts` 的 `AUTO_RAMP` 配一组，与主色乘光照按总强度混（键 6：0.3 → 0.5 → 1 → 0，默认 0.3；或 `?ramp=0..1`） |
 | `nx_top` | 色板编号 | 无 | 顶面色：朝上的面整片用它，并沿侧面上沿垂下 1–4 格参差的边（草皮、积雪、桌布） |
+| `nx_emit` | 0..1 | 0 | 自己发亮：不受光照，取色板原色（亮着的灯罩、电视屏、门缝里漏进来的光、一柱光）。`nx.matte(..., emit=1)`，`nx.box` 等直接写 `emit=1` |
 | `nx_collide` | 0 / 1 | 1 | |
 | `nx_shadow` | 0 / 1 | 1 | 是否投影（接收影子总是开的） |
 | `nx_spin` | 度/秒 | 0 | 绕竖轴自转；会动的物体不参与碰撞 |
 | `nx_bob` | 米 | 0 | 上下浮动幅度 |
 | `nx_face` | 0 / 1 | 0 | 永远正面朝人（只绕竖轴转） |
-| `nx_pose` | 组名 | 无 | 会动的东西：在原样与另一个样子之间来回，同组一起动（`nx.pose(obj, 组, on=…, …)`）。`nx_pose_on`：`near` 走近（离 `nx_pose_at` 水平 `nx_pose_radius` 米内）就变、走开变回 · `key` 走近按 E 来回切换（纸签 `nx_pose_title`，可写成「原样时|另一个样子时」，如 `开灯|关灯`）· `cue` 由别的东西叫它（推开窗时的窗扇）。另一个样子：`nx_pose_rot` 本地轴欧拉角（度）、`nx_pose_scale` 本地轴缩放、`nx_pose_move` 世界位移（米），转与缩放都**绕物体自己的原点**（原点放在铰链 / 收拢的那一头）；`nx_pose_time` 秒。`nx_pose_night=1`（`night=True`）：这一组拨到另一个样子＝世界入夜（见下「昼夜」）。不进静态碰撞；别和 `nx_spin` / `nx_bob` 同用 |
+| `nx_pose` | 组名 | 无 | 会动的东西：在原样与另一个样子之间来回，同组一起动（`nx.pose(obj, 组, on=…, …)`）。`nx_pose_on`：`near` 走近（离 `nx_pose_at` 水平 `nx_pose_radius` 米内）就变、走开变回 · `key` 走近按 E 来回切换（纸签 `nx_pose_title`，可写成「原样时|另一个样子时」，如 `开灯|关灯`）· `cue` 由别的东西叫它（推开窗时的窗扇）。另一个样子：`nx_pose_rot` 本地轴欧拉角（度）、`nx_pose_scale` 本地轴缩放、`nx_pose_move` 世界位移（米），转与缩放都**绕物体自己的原点**（原点放在铰链 / 收拢的那一头）；`nx_pose_time` 秒。`nx_pose_night=1`（`night=True`）：这一组拨到另一个样子＝世界入夜（见下「昼夜」）。不进静态碰撞；没关掉 `nx_collide` 的停在原样或另一个样子那一头时挡人（能开关的门，`level.blockers()`），变到一半不挡。按 E 只认眼前的那个（离得 0.7m 以内的才不用看着）；别和 `nx_spin` / `nx_bob` 同用 |
 
 描边按「物体」区分：分开的物体之间有轮廓线；想让几块零件之间也勾线就分开建，不想要就 Join。
 
@@ -94,8 +95,8 @@
 | `item` | `nx_item` 物品名（`src/items/` 里的 id）、`nx_get` `pick`/`reach`/`custom`、`nx_radius`（默认 1.2） | 物品放在哪、怎么得到：`pick` 走近按 E 拾起（位置是物品浮着的地方，约齐胸高），`reach` 走进半径内就得到，`custom` 条件由物品自己判断、这里只标演出的位置。物品的样子、效果、演出都在网页里定义。一个世界最多一件。`nx.item(...)` |
 | `outlook` | `nx_url` 站点、`nx_title` 站名、`nx_desc` 一句话、`nx_sky` 窗里的天（主题，可带种子）、`nx_radius`（默认 1.2）、`nx_view` 推开窗以后眼睛的位置（"x,y,z"）与 `nx_view_yaw` / `nx_view_pitch`（度，朝向同 spawn） | 窗景：窗外是哪一个站点——不是一处具体的景，是那个站点的审美（先是一只天空盒，需要时加 `nx_outlook` 的点缀）。位置是纸签系的地方（窗前，约齐胸高）。走近按 E「推开窗」：`cue` 的 pose（窗扇）往外开，眼睛凑到 `nx_view` 往外看，站点卡片浮出来（见 docs/ui.md「窗前的站点卡片」）；在窗口 A / D 换一处、E 进入（化白，当前标签页，后退回到窗前）、S / Esc 退回屋里（窗扇关上）。一扇窗可以有几处，按名字排序，眼睛的位置取第一处的。`nx.outlook(...)` |
 | `arrive` | `nx_name` 名字 | 到达点：别的世界传送过来落在这里，位置是脚底、朝向 +Y。别放在走进型传送物的范围里（站在里面也不会被立刻带走，但要先走出来）。`nx.arrive(...)` |
-| `atmosphere` | `nx_sky` 主题名，可带种子 `名字:种子`（默认 `blank`） | 天空主题，连带雾色与天光一起换；位置无所谓，一个场景放一个。主题见 [sky.md](sky.md)，`nx.atmosphere("halo")`、`nx.atmosphere("dye", seed=7)` |
-| `lamp` | `nx_color`、`nx_radius` 照多远（米，默认 4）、`nx_power` 强度（默认 1）、灯罩 `nx_down` / `nx_up`（下口 / 上口的半角，度；0 ＝ 封着）、`nx_up_power`（往上那一束的倍数）、`nx_edge`（光圈边上软的一圈，度）、`nx_reach`（下口那一束沿罩口方向照到多远就停，米）与 `nx_leak`（别的方向透出多少） | 灯光：入夜时亮起的点光，位置是光心（灯泡在哪）；只照干净低模、不投影。光只从罩口出去（空物体本地 −Z 是下，挂在歪着的东西下面跟着歪），半角按罩的尺寸算（`wake_fragment.py` 的 `cone`）：罩把光拢住，罩口里亮、罩外暗（近似平方反比衰减）。吊灯垂直挂在床心正上方（不跟着歪的天花板歪），深锥罩只有下口，光圈落在床面正中、边是软的，整个在床里；台灯上下都开口，下口亮（柜面、地上一片），上口 0.4 倍，在墙上打出一道淡些的弧。灯光不投影，所以用 `reach` 让下口那一束停在被照的面上（吊灯停在床面），不穿过去在床底下的地上落一圈光。一个世界最多 4 盏，`nx.lamp(...)`（可挂在灯所在的物体下）。见下「昼夜」 |
+| `atmosphere` | `nx_sky` 主题名，可带种子 `名字:种子`（默认 `blank`）；`nx_grid` 远处的格子是几级（默认 2 ＝ 4px，3 ＝ 8px）；`nx_palette` 只落到这几枚色板色上（"7,6,13"）；`nx_lamps=1` 灯一直亮着 | 天空主题，连带雾色与天光一起换；位置无所谓，一个场景放一个。主题见 [sky.md](sky.md)，`nx.atmosphere("halo")`、`nx.atmosphere("dye", seed=7)`。格子、色板子集、常亮的灯是这个世界自己的样子（家的门外：`nx.atmosphere("noon", grid=3, palette=[…])`；家里：`nx.atmosphere("night", lamps=True)`）；色板子集里暗一档 / 亮一档（犯困、星光）也收进这几色 |
+| `lamp` | `nx_color`、`nx_radius` 照多远（米，默认 4）、`nx_power` 强度（默认 1）、灯罩 `nx_down` / `nx_up`（下口 / 上口的半角，度；0 ＝ 封着）、`nx_up_power`（往上那一束的倍数）、`nx_edge`（光圈边上软的一圈，度）、`nx_reach`（下口那一束沿罩口方向照到多远就停，米）与 `nx_leak`（别的方向透出多少）、`nx_box`（"x0,y0,z0,x1,y1,z1"：只照这只盒子里的东西） | 灯光：入夜时亮起的点光，位置是光心（灯泡在哪）；不投影。照干净低模；`atmosphere` 写了 `nx_lamps=1` 的世界里一直亮着，也照像素哑光（按纹素中心、法线分三档，总亮度再落成四档——灯下是一圈圈的光）。灯光不投影，隔墙会漏：用 `nx_box` 给它一间房的盒子（比墙面往外让 10cm，墙面的纹素才照得到，又不到墙的另一面；`house.py` 的 `inner`）。一个世界的灯不限盏数，同时亮着离人最近的 8 盏。光只从罩口出去（空物体本地 −Z 是下，挂在歪着的东西下面跟着歪），半角按罩的尺寸算（`wake_fragment.py` 的 `cone`）：罩把光拢住，罩口里亮、罩外暗（近似平方反比衰减）。吊灯垂直挂在床心正上方（不跟着歪的天花板歪），深锥罩只有下口，光圈落在床面正中、边是软的，整个在床里；台灯上下都开口，下口亮（柜面、地上一片），上口 0.4 倍，在墙上打出一道淡些的弧。灯光不投影，所以用 `reach` 让下口那一束停在被照的面上（吊灯停在床面），不穿过去在床底下的地上落一圈光。`nx.lamp(...)`（可挂在灯所在的物体下）。见下「昼夜」 |
 | `intro` | `nx_pitch` 俯仰（度，抬头为正） | 开场的机位：位置是脚底（眼睛高 1.6m），朝向同 spawn。一个场景放一个，`nx.intro(...)`。见下「开场」 |
 
 ### 开场
@@ -117,7 +118,7 @@
 世界默认是白天。一组 `nx.pose(..., on="key", night=True)` 的东西（残片里是断墙口吊着的开关，纸签「开灯 / 关灯」）拨过去就入夜，拨回来天亮，约 1.6 秒变过去（`src/level.ts` 的 `NIGHT_TIME`）：
 
 - **天**：天光、地面反光、太阳（剩一点冷的月光）、雾色在主题的昼与夜之间插值（主题的 `night`，没写的项取 `skybox.ts` 的 `NIGHT_LIGHT`）；天球读 `uNight` 自己换夜色（`flux` 沉成深紫、夜蓝，暗纹变成浅的亮丝），没读的主题整体压暗偏冷。窗里的天是站点自己的，不跟着变。
-- **灯**：`nx_lit` 的灯罩、灯泡亮起；`lamp` 空物体的点光照亮周围（干净低模，不投影）。
+- **灯**：`nx_lit` 的灯罩、灯泡亮起；`lamp` 空物体的点光照亮周围（干净低模，不投影）。`atmosphere(lamps=True)` 的世界不等入夜：灯一直亮着，也照像素哑光（梦里的家的原型 `house`：天是星纸，屋里永远是夜）。
 - 不存档：换世界、刷新都回到白天。测试：`__nexus.night(true / false)` 拨开关，`__nexus.night()` 读此刻的值。
 
 ## 世界（world）
@@ -163,6 +164,10 @@ NEXUS 是一组世界，像《梦日记》：**现实的家**（`wake_fragment`�
 | 下沉 | 井口的路灯 → 家 · ★ 螺旋梯顶 → GitHub |
 | 无墙之屋 | 楼板上的纸吊灯 → 家 |
 
+### 梦里的家的原型
+
+`house`（核心＋家家家）与 `house_out`（门外）：照 [home.md](home.md) 重做的家，和现在的 `home` 并存，传送都接上以后换掉它。还没接进网里（没有传送物、到达点），只能 `?world=house` / `?world=house_out` 进去。屋里永远是夜（`night` + 常亮的灯），门外是正午（`noon`，8px，只用几枚冷色）。
+
 ### 现实的家
 
 现在的家以后是「梦里的家」；另做一个「现实的家」，它是起点：一开始在这里醒来；床 E「睡」通往梦里的家（落在那边床边的 `wake`），日记的「醒来」从梦里回来，落在床边（到达点 `home`）。梦里的世界没有通回现实的传送物，只有醒来。
@@ -201,7 +206,8 @@ NEXUS 是一组世界，像《梦日记》：**现实的家**（`wake_fragment`�
 | 碑与塔 | `monolith`、`tower_broken`、`plate_stack` | 方碑、断开错位的塔、一摞错开的薄板（可当台阶） |
 | 台 | `island`、`pad`、`plinth` | 下面收尖的浮岛、缺口圆台、低矮方台 |
 | 器 | `vessel(lying=…)` | 横躺（走得进去，返回杯里的站立点）/ 立着的杯 |
-| 世界之间 | `gate_home` `gate_book` `gate_bed` `gate_wardrobe` `gate_vase` `gate_glass` `gate_vessel` `gate_window`、`wardrobe` | 通往各个世界的东西，连同传送物与回来的到达点（见「世界」） |
+| 世界之间 | `gate_home` `gate_book` `gate_bed` `gate_wardrobe` `gate_vase` `gate_glass` `gate_vessel` `gate_window`、`wardrobe` | 通往各个世界的东西，连同传送物与回来的到达点（见「世界」）。`wardrobe(..., to=None)` 只是一只衣柜（没有膜、不传送），`open_deg` 柜门开多大（负数往外半开，0 关着），`parent` 挂在别的东西下面（歪着、倒着放），`interactive=True` 柜门关着、走近按 E 开关 |
+| 门 | `door` | 一扇能开关的门：门扇与把手的原点都在铰链上，`nx.pose(on="key")` 绕铰链转，纸签「开门 / 关门」；`closed_deg` 关着时朝哪、`swing` 开多少度、`start_open`、`group`（几扇一起开关：衣柜、落地窗）、`kind="glass"` 窗扇。门扇停在开着或关着的那一头时挡人，转到一半不挡。墙上的门用 `house.py` 的 `door_in`（门洞、门套、门槛、门扇一起放） |
 | 纸片撒布 | `paper_scatter`、`paper_ring` | 环带里随机撒（可避让）、沿圆固定朝向排开（朝里/朝外） |
 
 基本形 `plate`（两头尖的板）和 `shapes.py` 里的 `tube`（管/扇/缺口环）、`spiral_stair` 也可以直接用。
@@ -221,10 +227,13 @@ NEXUS 是一组世界，像《梦日记》：**现实的家**（`wake_fragment`�
 | 椅 | `chair(kind=…, fabric=…)` | `dining` 餐椅 · `arm` 扶手沙发椅 · `lounge` 低躺椅 · `rocking` 摇椅；`fabric` 取 `blue` `pink` `lilac` `rose` `white` |
 | 凳 | `bench` | 厚板 + 板腿 |
 | 架与书 | `bookshelf(seed=…)`、`books_row`、`notebook` | 书随种子排：偶尔斜靠、偶尔平放一摞，相邻不同色 |
-| 灯 | `pendant`、`desk_lamp`、`table_lamp`、`street_lamp` | 吊灯的 `loc` 是天花板挂点 |
+| 灯 | `pendant`、`desk_lamp`、`table_lamp`、`floor_lamp`、`street_lamp` | 吊灯的 `loc` 是天花板挂点；`lit=True` 灯罩 / 亮面发亮（光另放一盏 `nx.lamp`） |
 | 钟 | `grandfather_clock`、`wall_clock`、`alarm_clock` | 挂钟的 `loc` 是钟心，背贴墙 |
 | 器 | `vase(kind=…, flowers=n)` | `round` `tall` `bottle` `bowl`；`flowers` 插几枝杯形花（瓶子大于 0.4m 时花杆、花头跟着放大） |
 | 床 | `bed` | 床头朝本地 +Y；家里的床和各世界去下沉的床都是它 |
+| 柜与桌 | `nightstand`、`desk`、`table`、`tv_stand(lit=…)`、`shoe_cabinet`、`crate` | 床头柜、书桌（一侧挂抽屉）、餐桌、电视柜（屏幕 `lit` 时发亮）、鞋柜、纸箱 / 收纳箱 |
+| 沙发 | `sofa(fabric=…)` | 敦实的座、靠背、扶手，两块垫子、一只靠枕 |
+| 浴室 | `tub`、`sink`、`toilet` | 浴缸（一圈缸沿，半缸水）、洗手池、马桶 |
 | 草木 | `plant(kind=…)`、`planter` | `potted` 一蓬叶 · `tall` 直茎互生叶 · `tuft` 矮丛（槽里用） |
 
 书桌、嵌在墙里的落地窗这些和场景绑得紧的，仍写在场景脚本里（见 `home.py`），用同样的规则；衣柜在 `prefabs.wardrobe`（它是传送物）。

@@ -12,7 +12,8 @@ import { PALETTE, AUTO_RAMP } from './palette';
 
 export const TEXEL = 16;
 export const MAX_GLOWS = 4;
-export const MAX_LAMPS = 4;
+/** 同时亮着的灯（uniform 的槽数）；世界里可以更多，每帧取离人最近的这么多盏 */
+export const MAX_LAMPS = 8;
 
 const lin = (hex: string) => new THREE.Color(hex);
 /** 色板编号 → 线性色 */
@@ -41,8 +42,13 @@ export const shared = {
   uTime: { value: 0 },
   /** 昼夜：0 白天 … 1 夜里（开关拨过去）。夜里 nx_lit 的灯才发光、灯光（uLamps）才亮 */
   uNight: { value: 0 },
-  /** 灯光：xyz 位置，w 照到多远（0 ＝ 空位）；颜色已乘强度。只照干净低模，不投影 */
+  /** 像素哑光上的灯光亮着多少：max(入夜, 世界常亮)。干净低模仍只看 uNight */
+  uLampOn: { value: 0 },
+  /** 灯光：xyz 位置，w 照到多远（0 ＝ 空位）；颜色已乘强度。不投影 */
   uLamps: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Vector4()) },
+  /** 灯只照这只盒子里的东西（three 坐标，最低角 / 最高角）：灯光不投影，用房间的盒子挡住隔壁。很大 ＝ 不限 */
+  uLampLo: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Vector3(-1e5, -1e5, -1e5)) },
+  uLampHi: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Vector3(1e5, 1e5, 1e5)) },
   uLampCols: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Color(0, 0, 0)) },
   /** 灯罩：xyz 罩口朝下的方向，w 下口半角的余弦（2 ＝ 封着）；
       下一组 x 上口半角的余弦、y 别处透出多少、z 往上那一束的倍数、w 光圈边上软的那一圈（弧度） */
@@ -118,18 +124,62 @@ export interface MatteOpts {
   /** 三色明暗：暗、中、亮三个色板编号。给了就由受光档直接查这三色（可以跨色相，暗偏冷、亮偏暖），
       纹样把它往暗处挪半档或一档；主副色不再参与。不给就是主色乘光照 */
   ramp?: [number, number, number];
+  /** 自己发亮（0..1）：不受光照，取色板原色（亮着的灯罩、窗缝里漏进来的光） */
+  emit?: number;
   id?: number;
 }
 
-const lum = (c: THREE.Color) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+const lum =(c: THREE.Color) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
 /** 默认天色下「中档」的照度：三色明暗按它归一，默认天色里看到的就是色板原色，换天时跟着明暗与冷暖走 */
 const RAMP_REF = lum(shared.uGroundCol.value.clone().lerp(shared.uSkyCol.value, 0.5).add(shared.uSunCol.value.clone().multiplyScalar(0.6)));
 
-export function matte({ a, b, pattern = 0, top, yRange = [0, 0], ramp, id = newId() }: MatteOpts) {
+/** 像素哑光上的灯光：和干净低模同一套灯罩（下口、上口、透出、reach），另外只照灯自己那只盒子里的东西；
+    受光按纹素中心取、按法线分三档，总亮度再落成四档——灯下是一圈圈的光，不是平滑的渐变 */
+const LAMP_GLSL = /* glsl */ `
+uniform float uLampOn;
+uniform vec4 uLamps[${MAX_LAMPS}];
+uniform vec3 uLampCols[${MAX_LAMPS}];
+uniform vec4 uLampAxis[${MAX_LAMPS}], uLampShade[${MAX_LAMPS}];
+uniform float uLampReach[${MAX_LAMPS}];
+uniform vec3 uLampLo[${MAX_LAMPS}], uLampHi[${MAX_LAMPS}];
+vec3 lampLight(vec3 p, vec3 n) {
+  vec3 sum = vec3(0.0);
+  for (int i = 0; i < ${MAX_LAMPS}; i++) {
+    vec4 L = uLamps[i];
+    if (L.w <= 0.0) continue;
+    if (any(lessThan(p, uLampLo[i])) || any(greaterThan(p, uLampHi[i]))) continue;
+    vec3 dv = L.xyz - p;
+    float d = length(dv);
+    if (d >= L.w) continue;
+    vec3 l = dv / max(d, 1e-4);
+    float ndl = dot(n, l);
+    if (ndl <= 0.0) continue;
+    float win = 1.0 - d * d / (L.w * L.w);
+    float att = win * win / (1.0 + 0.6 * d * d);
+    vec4 S = uLampShade[i];
+    float a = acos(clamp(dot(-l, uLampAxis[i].xyz), -1.0, 1.0));
+    float aDown = uLampAxis[i].w > 1.0 ? -1.0 : acos(uLampAxis[i].w);
+    float aUp = S.x > 1.0 ? -1.0 : acos(S.x);
+    float down = aDown < 0.0 ? 0.0 : smoothstep(-S.w, S.w, aDown - a);
+    down *= 1.0 - smoothstep(uLampReach[i], uLampReach[i] + 0.04, dot(-dv, uLampAxis[i].xyz));
+    float up = aUp < 0.0 ? 0.0 : S.z * smoothstep(-S.w, S.w, aUp - (3.14159265 - a));
+    float shade = max(S.y, max(down, up));
+    float band = ndl > 0.55 ? 1.0 : (ndl > 0.2 ? 0.62 : 0.3);
+    sum += uLampCols[i] * att * shade * band;
+  }
+  float I = max(sum.r, max(sum.g, sum.b));
+  if (I <= 0.0) return sum;
+  float q = min(floor(I * 4.0 + 0.3) / 4.0, 1.5);
+  return sum * (q / I);
+}
+`;
+
+export function matte({ a, b, pattern = 0, top, yRange = [0, 0], ramp, emit = 0, id = newId() }: MatteOpts) {
   return new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     uniforms: {
       ...shared,
+      uEmit: { value: emit },
       uA: { value: pal(a) },
       uB: { value: pal(b) },
       uPattern: { value: pattern },
@@ -148,10 +198,11 @@ ${OUTS}
 ${LIGHT_UNIFORMS}
 uniform vec3 uA, uB, uTop;
 uniform vec3 uRamp[3];
-uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId;
+uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId, uEmit;
 uniform vec2 uYRange;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
+${LAMP_GLSL}
 void main() {
   vec3 n = normalize(vNormal);
   vec3 an = abs(n);
@@ -258,6 +309,9 @@ void main() {
     float g = floor(4.0 / (1.0 + gd * gd * 0.35)) / 4.0;
     col += base * uGlowCol * g * gl.w * (0.6 + 0.4 * max(dot(n, normalize(gl.xyz - tp)), 0.0));
   }
+
+  if (uLampOn > 0.0) col += base * lampLight(tp, n) * uLampOn;
+  if (uEmit > 0.0) col = mix(col, base * 1.08, uEmit);
 
   col = mix(col, uFogCol, smoothstep(uFogNear, uFogFar, vDepth));
   oColor = vec4(col, 1.0);

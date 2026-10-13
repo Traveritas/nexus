@@ -101,6 +101,8 @@ uniform sampler2D tColor;
 uniform vec3 uPal[16];
 uniform ivec4 uQLevel[${MAX_QLEVEL}];
 uniform int uQFirst;
+// 这个世界只用哪几枚色板色（第 i 位 ＝ 第 i 色）
+uniform int uPalMask;
 out vec4 fragColor;
 ${COMMON}
 void main() {
@@ -118,6 +120,7 @@ void main() {
   int i1 = 0, i2 = 1;
   float d1 = 1e9, d2 = 1e9;
   for (int i = 0; i < 16; i++) {
+    if ((uPalMask & (1 << i)) == 0) continue;
     vec3 e = lab - uPal[i];
     float d = dot(e, e);
     if (d < d1) { d2 = d1; i2 = i1; d1 = d; i1 = i; }
@@ -154,6 +157,8 @@ uniform vec3 uGlow[${MAX_GLOW}];
 uniform int uGlowCount;
 uniform mat3 uView;
 uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse, uClean, uDream;
+// 远处（没有源时）的格子是几级：2 ＝ 4px（默认），3 ＝ 8px
+uniform float uBase;
 out vec4 fragColor;
 ${COMMON}
 vec3 toSrgb(vec3 c) {
@@ -193,7 +198,7 @@ vec3 octDecode(vec2 e) {
 float srcLevel(ivec2 px) {
   ivec2 blk = px / 8;
   vec2 bc = vec2(blk * 8) + 4.0;
-  float lc = 2.0;
+  float lc = uBase;
   for (int i = 0; i < ${MAX_FIELD}; i++) {
     if (i >= uCrystalCount) break;
     vec3 c = uCrystals[i];
@@ -208,9 +213,9 @@ int levelAt(ivec2 px) {
   ivec2 blk = px / 8;
   float lc = srcLevel(px);
   lc -= 1.7 * uProx + 3.0 * uResolve;
-  lc = clamp(lc, 0.0, 2.0);
+  lc = clamp(lc, 0.0, uBase);
   // 级别交界处按块抖开一窄条：不画出一道圆，也不满屏碎块
-  return int(clamp(floor(lc + 0.5 + (bayer4(blk) - 0.5) * 0.7), 0.0, 2.0));
+  return int(clamp(floor(lc + 0.5 + (bayer4(blk) - 0.5) * 0.7), 0.0, uBase));
 }
 
 void main() {
@@ -439,6 +444,7 @@ export class Pipeline {
   private shift = 0;
   private clean = false;
   private dream = 0;
+  private mask = 0xffff;
 
   constructor(private renderer: THREE.WebGLRenderer) {
     this.pixMat = new THREE.ShaderMaterial({
@@ -467,6 +473,7 @@ export class Pipeline {
         uDrowse: { value: 0 },
         uClean: { value: 0 },
         uDream: { value: 0 },
+        uBase: { value: 2 },
         uDim: { value: new THREE.Vector3() },
         uGlow: { value: Array.from({ length: MAX_GLOW }, () => new THREE.Vector3()) },
         uGlowCount: { value: 0 },
@@ -485,6 +492,7 @@ export class Pipeline {
         uPal: { value: paletteLab },
         uQLevel: this.pixMat.uniforms.uQLevel,
         uQFirst: { value: 1 },
+        uPalMask: { value: 0xffff },
       },
       vertexShader: QUAD_VERT,
       fragmentShader: QUANT_FRAG,
@@ -601,6 +609,24 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     if (b === this.clean) return;
     this.clean = b;
     this.pixMat.uniforms.uClean.value = b ? 1 : 0;
+  }
+
+  /** 世界的样子：grid 远处的格子是几级（2 ＝ 4px，3 ＝ 8px）；mask 只落到哪几枚色板色上（第 i 位 ＝ 第 i 色）。
+      换世界时按 level.look 设。暗一档 / 亮一档（犯困、星光、描边用）也跟着收进这几色里 */
+  setLook(grid: number, mask: number) {
+    this.pixMat.uniforms.uBase.value = grid;
+    if (mask === this.mask) return;
+    this.mask = mask;
+    this.quantMat.uniforms.uPalMask.value = mask;
+    const ok = (i: number) => (mask & (1 << i)) !== 0;
+    // 顺着自动三色的暗档 / 亮档一路走，走到这个世界有的颜色为止；走不到就留在自己
+    const step = (i: number, k: 0 | 2) => {
+      let j = AUTO_RAMP[i][k];
+      for (let n = 0; n < 6 && !ok(j); n++) j = AUTO_RAMP[j][k];
+      return ok(j) ? j : i;
+    };
+    this.pixMat.uniforms.uDark.value = AUTO_RAMP.map((_, i) => step(i, 0));
+    this.pixMat.uniforms.uLight.value = AUTO_RAMP.map((_, i) => step(i, 2));
   }
 
   /** 干净的世界里做梦的程度（开场）：1 整屏走梦的管线，0 干净；中间按块、按格子大小抖开 */

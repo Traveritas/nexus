@@ -313,17 +313,23 @@ def notebook(name, loc, yaw=0.0, cover="blue", parent=None):
 
 # ── 灯 ───────────────────────────────────────────
 
-def pendant(name, loc, drop=0.5, shade="white", parent=None):
-    """吊灯：loc 是天花板上的挂点；一根吊线、一只钟形罩、罩口一圈亮面"""
+def _lit(style, lit):
+    """亮着的灯罩、亮面：像素哑光自己发亮（atmosphere(lamps=True) 的世界里，或入夜时配一盏 nx.lamp）"""
+    return dict(style, emit=1.0) if lit else style
+
+
+def pendant(name, loc, drop=0.5, shade="white", lit=False, parent=None):
+    """吊灯：loc 是天花板上的挂点；一根吊线、一只钟形罩、罩口一圈亮面。lit：亮面（和罩）发亮"""
     p = Piece(name, loc, 0, parent)
     p["cord"].box((0.03, 0.03, drop), (0, 0, -drop))
     p["shade"].lathe([(0.0, -drop + 0.02), (0.05, -drop + 0.02), (0.07, -drop - 0.04), (0.16, -drop - 0.15),
                       (0.22, -drop - 0.24)], seg=10)
     p["glow"].cyl(0.19, 0.01, (0, 0, -drop - 0.235), seg=10)
-    return p.done({"cord": INK, "shade": dict(a=shade, b="mist", pattern="plain"), "glow": GLOW}, collide=False, shadow=False)
+    return p.done({"cord": INK, "shade": dict(a=shade, b="mist", pattern="plain"), "glow": _lit(GLOW, lit)},
+                  collide=False, shadow=False)
 
 
-def desk_lamp(name, loc, yaw=0.0, parent=None):
+def desk_lamp(name, loc, yaw=0.0, lit=False, parent=None):
     """台灯：圆座、两节折臂、斜着朝前下方的灯罩"""
     p = Piece(name, loc, yaw, parent)
     p["metal"].cyl(0.09, 0.03, seg=10)
@@ -331,17 +337,27 @@ def desk_lamp(name, loc, yaw=0.0, parent=None):
     p["metal"].box((0.03, 0.03, 0.3), (0, 0, 0.03), rot=(-20, 0, 0))
     p["metal"].box((0.03, 0.03, 0.25), (0, 0.103, 0.312), rot=(-70, 0, 0))
     p["shade"].lathe([(0.0, 0.0), (0.04, 0.0), (0.05, -0.05), (0.1, -0.14)], (0, 0.33, 0.4), rot=(30, 0, 0), seg=8)
-    return p.done({"metal": dict(a="violet", b="violet_deep", pattern="plain"), "shade": dict(a="pink", b="pink_pale", pattern="plain")}, collide=False)
+    return p.done({"metal": dict(a="violet", b="violet_deep", pattern="plain"),
+                   "shade": _lit(dict(a="pink", b="pink_pale", pattern="plain"), lit)}, collide=False)
 
 
-def table_lamp(name, loc, yaw=0.0, height=0.45, shade="pink_pale", parent=None):
+def table_lamp(name, loc, yaw=0.0, height=0.45, shade="pink_pale", lit=False, parent=None):
     """小台灯：鼓肚的座、圆台形的罩"""
     p = Piece(name, loc, yaw, parent)
     s = height / 0.45
     p["base"].lathe([(0.06 * s, 0), (0.09 * s, 0.06 * s), (0.08 * s, 0.14 * s), (0.03 * s, 0.22 * s), (0.015 * s, 0.26 * s)], seg=8)
     p["shade"].lathe([(0.15 * s, 0.22 * s), (0.09 * s, 0.45 * s)], seg=8)
-    return p.done({"base": dict(a="blue_pale", b="blue", pattern="plain"), "shade": dict(a=shade, b="white", pattern="plain")},
+    return p.done({"base": dict(a="blue_pale", b="blue", pattern="plain"), "shade": _lit(dict(a=shade, b="white", pattern="plain"), lit)},
                   collide=False)
+
+
+def floor_lamp(name, loc, yaw=0.0, height=1.55, shade="pink_pale", lit=False, parent=None):
+    """落地灯：圆座、一根杆、鼓形的罩（上下都开口）"""
+    p = Piece(name, loc, yaw, parent)
+    p["metal"].lathe([(0.17, 0), (0.17, 0.03), (0.06, 0.06), (0.025, 0.08), (0.025, height - 0.3)], seg=10)
+    p["shade"].lathe([(0.24, height - 0.36), (0.17, height)], seg=10)
+    return p.done({"metal": dict(a="violet", b="violet_deep", pattern="plain"),
+                   "shade": _lit(dict(a=shade, b="white", pattern="plain"), lit)}, shade=dict(collide=False))
 
 
 def street_lamp(name, loc, yaw=0.0, height=3.4, parent=None):
@@ -522,3 +538,152 @@ def bed(name, loc, yaw=0.0, parent=None):
     b("throw", (W + 0.1, 0.55, 0.05), (0, y0 + 0.4, m + 0.1), collide=False, **blanket)
     b("throw_drop", (W + 0.1, 0.05, 0.28), (0, y0 + 0.1, m - 0.2), collide=False, **blanket)
     return g
+
+
+# ── 柜、桌 ───────────────────────────────────────
+
+def nightstand(name, loc, yaw=0.0, wood=WOOD, parent=None):
+    """床头柜：一只方柜、一格抽屉、一颗把手"""
+    p = Piece(name, loc, yaw, parent)
+    p["wood"].box((0.46, 0.4, 0.5), (0, 0, 0.04), bevel=0.015)
+    p["wood"].box((0.5, 0.44, 0.04), (0, 0, 0.54), bevel=0.012)
+    p["foot"].box((0.4, 0.34, 0.04), (0, 0, 0))
+    p["drawer"].box((0.38, 0.02, 0.15), (0, 0.205, 0.33))
+    p["knob"].box((0.06, 0.03, 0.03), (0, 0.225, 0.39))
+    return p.done({"wood": wood, "foot": WOOD_DARK, "drawer": WOOD_PALE, "knob": BRASS},
+                  drawer=dict(collide=False), knob=dict(collide=False))
+
+
+def desk(name, loc, yaw=0.0, w=1.0, d=0.55, wood=WOOD, parent=None):
+    """书桌：桌面、四条腿，一侧挂一只抽屉柜（正面 +Y 是坐人的一边）"""
+    p = Piece(name, loc, yaw, parent)
+    h = 0.74
+    p["wood"].box((w, d, 0.04), (0, 0, h - 0.04), bevel=0.012)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            p["leg"].box((0.05, 0.05, h - 0.04), (sx * (w / 2 - 0.05), sy * (d / 2 - 0.05), 0))
+    p["wood"].box((0.32, d - 0.08, 0.19), (w / 2 - 0.22, 0, h - 0.24), bevel=0.01)
+    p["drawer"].box((0.27, 0.02, 0.13), (w / 2 - 0.22, d / 2 - 0.04 + 0.01, h - 0.205))
+    return p.done({"wood": wood, "leg": WOOD_DARK, "drawer": WOOD_PALE}, drawer=dict(collide=False))
+
+
+def table(name, loc, yaw=0.0, w=1.2, d=0.8, wood=WOOD, parent=None):
+    """餐桌：厚桌面、桌裙、四条方腿"""
+    p = Piece(name, loc, yaw, parent)
+    h = 0.74
+    p["wood"].box((w, d, 0.05), (0, 0, h - 0.05), bevel=0.015)
+    p["wood"].box((w - 0.16, d - 0.16, 0.075), (0, 0, h - 0.13))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            p["leg"].box((0.06, 0.06, h - 0.05), (sx * (w / 2 - 0.08), sy * (d / 2 - 0.08), 0), bevel=0.008)
+    return p.done({"wood": wood, "leg": WOOD_DARK})
+
+
+def sofa(name, loc, yaw=0.0, w=1.9, fabric="pink", parent=None):
+    """沙发：敦实的座、靠背、两边扶手，座上两块垫子、一只靠枕；正面 +Y"""
+    p = Piece(name, loc, yaw, parent)
+    fab = FABRICS[fabric] if isinstance(fabric, str) else fabric
+    d = 0.86
+    p["frame"].box((w, d, 0.3), (0, 0, 0.06), bevel=0.03)
+    p["frame"].box((w, 0.22, 0.48), (0, -d / 2 + 0.11, 0.36), bevel=0.05)
+    for sx in (-1, 1):
+        p["frame"].box((0.18, d, 0.28), (sx * (w / 2 - 0.09), 0, 0.36), bevel=0.04)
+    for sx in (-1, 1):
+        p["foot"].box((0.06, 0.06, 0.06), (sx * (w / 2 - 0.1), d / 2 - 0.1, 0))
+        p["foot"].box((0.06, 0.06, 0.06), (sx * (w / 2 - 0.1), -d / 2 + 0.1, 0))
+    cw = (w - 0.4) / 2
+    for sx in (-1, 1):
+        p["cushion"].box((cw - 0.02, d - 0.3, 0.12), (sx * cw / 2, 0.08, 0.36), bevel=0.035)
+    p["pillow"].box((0.4, 0.14, 0.34), (w / 2 - 0.42, -d / 2 + 0.3, 0.44), rot=(-16, 0, -12), bevel=0.05)
+    accent = dict(a="blue_pale", b="white", pattern="plain") if fabric != "blue" else dict(a="pink_pale", b="white", pattern="plain")
+    return p.done({"frame": fab, "foot": WOOD_DARK, "cushion": dict(fab, pattern="plain"), "pillow": accent},
+                  cushion=dict(collide=False), pillow=dict(collide=False))
+
+
+def tv_stand(name, loc, yaw=0.0, w=1.4, lit=False, parent=None):
+    """电视柜：矮长的柜、两扇柜门，上面立着一台电视（黑框，屏幕亮着时是一片淡蓝）"""
+    p = Piece(name, loc, yaw, parent)
+    p["wood"].box((w, 0.4, 0.42), (0, 0, 0.06), bevel=0.015)
+    p["foot"].box((w - 0.1, 0.34, 0.06), (0, 0, 0))
+    for sx in (-1, 1):
+        p["door"].box((w / 2 - 0.08, 0.02, 0.32), (sx * w / 4, 0.205, 0.11))
+    p["tv"].box((0.3, 0.18, 0.03), (0, -0.04, 0.48))
+    p["tv"].box((0.06, 0.04, 0.12), (0, -0.06, 0.51))
+    p["tv"].box((1.0, 0.06, 0.6), (0, -0.06, 0.6), bevel=0.012)
+    p["screen"].box((0.92, 0.01, 0.52), (0, -0.026, 0.64))
+    screen = dict(a="blue_pale", b="white", pattern="plain") if lit else dict(a="violet_deep", b="violet", pattern="plain")
+    return p.done({"wood": WOOD_PALE, "foot": WOOD_DARK, "door": WOOD, "tv": INK, "screen": _lit(screen, lit)},
+                  door=dict(collide=False), screen=dict(collide=False))
+
+
+def shoe_cabinet(name, loc, yaw=0.0, w=0.9, parent=None):
+    """鞋柜：窄深的柜、两扇翻门，柜顶放着一只托盘"""
+    p = Piece(name, loc, yaw, parent)
+    p["wood"].box((w, 0.32, 0.86), (0, 0, 0.04), bevel=0.012)
+    p["foot"].box((w - 0.06, 0.28, 0.04), (0, 0, 0))
+    for k in range(2):
+        p["door"].box((w - 0.08, 0.02, 0.36), (0, 0.165, 0.08 + k * 0.4))
+        p["knob"].box((0.12, 0.03, 0.025), (0, 0.18, 0.4 + k * 0.4))
+    p["tray"].box((0.32, 0.22, 0.03), (-w / 4, 0, 0.9), bevel=0.01)
+    return p.done({"wood": WHITE, "foot": WOOD_DARK, "door": dict(a="mist", b="white", pattern="plain"), "knob": BRASS,
+                   "tray": dict(a="rose", b="rose_deep", pattern="plain")},
+                  door=dict(collide=False), knob=dict(collide=False), tray=dict(collide=False))
+
+
+def crate(name, loc, yaw=0.0, size=(0.6, 0.45, 0.42), style=None, parent=None):
+    """纸箱 / 收纳箱：一只方箱，盖子比箱身宽一圈"""
+    p = Piece(name, loc, yaw, parent)
+    sx, sy, sz = size
+    p["body"].box((sx, sy, sz - 0.05), (0, 0, 0), bevel=0.01)
+    p["lid"].box((sx + 0.03, sy + 0.03, 0.06), (0, 0, sz - 0.06), bevel=0.012)
+    st = style or dict(a="pink_pale", b="rose", pattern="grain")
+    return p.done({"body": st, "lid": dict(st, pattern="plain")})
+
+
+# ── 浴室 ─────────────────────────────────────────
+
+def tub(name, loc, yaw=0.0, w=1.6, d=0.75, parent=None):
+    """浴缸：四面厚边围出一个缸，缸里半缸水（淡蓝的平面）；水龙头在本地 −X 那头"""
+    p = Piece(name, loc, yaw, parent)
+    h, t = 0.56, 0.1
+    p["shell"].box((w, d, 0.12), (0, 0, 0))
+    for sy in (-1, 1):
+        p["shell"].box((w, t, h - 0.12), (0, sy * (d / 2 - t / 2), 0.12))
+    for sx in (-1, 1):
+        p["shell"].box((t, d - 2 * t, h - 0.12), (sx * (w / 2 - t / 2), 0, 0.12))
+    # 缸沿：一圈四条（长边跑满，短边夹在中间，顶面接上而不叠）
+    for sy in (-1, 1):
+        p["rim"].box((w + 0.04, t + 0.04, 0.04), (0, sy * (d / 2 - t / 2), h), bevel=0.01)
+    for sx in (-1, 1):
+        p["rim"].box((t + 0.04, d - 2 * t - 0.04, 0.04), (sx * (w / 2 - t / 2), 0, h), bevel=0.01)
+    p["water"].box((w - 2 * t - 0.01, d - 2 * t - 0.01, 0.02), (0, 0, 0.36))
+    p["tap"].box((0.04, 0.04, 0.22), (-w / 2 + 0.06, 0, h + 0.04))
+    p["tap"].box((0.14, 0.035, 0.035), (-w / 2 + 0.12, 0, h + 0.22))
+    return p.done({"shell": WHITE, "rim": dict(a="white", b="blue_pale", pattern="plain"),
+                   "water": dict(a="blue_pale", b="blue", pattern="plain"), "tap": BRASS},
+                  water=dict(collide=False, shadow=False), tap=dict(collide=False))
+
+
+def sink(name, loc, yaw=0.0, parent=None):
+    """洗手池：一只白柜，台面上嵌着盆，盆后一只龙头；正面 +Y"""
+    p = Piece(name, loc, yaw, parent)
+    p["cab"].box((0.6, 0.44, 0.76), (0, 0, 0.06), bevel=0.012)
+    p["foot"].box((0.54, 0.38, 0.06), (0, 0, 0))
+    p["door"].box((0.5, 0.02, 0.5), (0, 0.225, 0.14))
+    p["top"].box((0.64, 0.48, 0.05), (0, 0, 0.82), bevel=0.012)
+    p["basin"].box((0.4, 0.28, 0.012), (0, 0.04, 0.866))
+    p["tap"].box((0.04, 0.04, 0.16), (0, -0.16, 0.87))
+    p["tap"].box((0.035, 0.12, 0.035), (0, -0.11, 1.0))
+    return p.done({"cab": WHITE, "foot": WOOD_DARK, "door": dict(a="mist", b="white", pattern="plain"),
+                   "top": dict(a="white", b="mist", pattern="plain"), "basin": dict(a="blue_pale", b="white", pattern="plain"),
+                   "tap": BRASS}, door=dict(collide=False), basin=dict(collide=False), tap=dict(collide=False))
+
+
+def toilet(name, loc, yaw=0.0, parent=None):
+    """马桶：座、圈、靠墙的水箱；正面 +Y，水箱在本地 −Y"""
+    p = Piece(name, loc, yaw, parent)
+    p["body"].lathe([(0.15, 0.0), (0.17, 0.2), (0.2, 0.36), (0.19, 0.4)], (0, 0.06, 0), seg=10)
+    p["body"].box((0.4, 0.2, 0.42), (0, -0.2, 0.36), bevel=0.02)
+    p["seat"].lathe([(0.2, 0.4), (0.2, 0.44), (0.0, 0.44)], (0, 0.06, 0), seg=10)
+    p["seat"].box((0.44, 0.22, 0.04), (0, -0.2, 0.78), bevel=0.012)
+    return p.done({"body": WHITE, "seat": dict(a="mist", b="white", pattern="plain")}, seat=dict(collide=False))

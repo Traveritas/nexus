@@ -472,11 +472,15 @@ def gate_bed(here, loc, yaw=0.0, **kw):
         nx.spawn(p, facing_deg=yaw - 90)
 
 
-def wardrobe(name, loc, yaw, to, here, land=2.2):
-    """衣柜：开着的两扇门，里面挂着衣服，衣服后面一层膜；走进去就走了。loc 是柜背中点，柜门朝本地 +Y"""
+def wardrobe(name, loc, yaw, to, here, land=2.2, open_deg=105, parent=None, interactive=False):
+    """衣柜：开着的两扇门，里面挂着衣服，衣服后面一层膜；走进去就走了。loc 是柜背中点，柜门朝本地 +Y。
+    to=None：只是一只衣柜（没有膜、不传送）；open_deg：柜门开多大（0 ＝ 关着）；parent：挂在别的东西下面（歪着、倒着放）。
+    interactive=True：柜门关着，走近按 E 打开 / 关上（door，两扇一组）；这时 open_deg 不用，loc 要是世界坐标（纸签系在柜门前）"""
     x, y, z = loc
     W, D, Ht = 1.8, 0.9, 2.35
     g = nx.group(name, loc, (0, 0, yaw))
+    if parent is not None:
+        g.parent = parent
     st = dict(a="lilac_pale", b="lilac", pattern="tiles")
     wood = dict(a="rose", b="rose_deep", pattern="bands")
     # 背板、侧板、顶板各接各的，不叠出共面
@@ -487,10 +491,19 @@ def wardrobe(name, loc, yaw, to, here, land=2.2):
     nx.box(f"{name}_crown", (W + 0.12, D + 0.08, 0.1), (0, D / 2, Ht), parent=g, **wood)
     nx.box(f"{name}_inside", (W - 0.12, 0.02, Ht - 0.2), (0, 0.07, 0.05), parent=g, collide=False,
            a="violet_deep", b="violet", pattern="plain")
-    a, b = VEIL[to]
-    nx.veil(f"{name}_veil", W - 0.2, Ht - 0.3, (0, 0.13, 0.06), 0, a=a, b=b, parent=g)  # 在衣服后面、柜里衬板前面
-    for s in (-1, 1):
-        h = nx.group(f"{name}_hinge{s}", (s * W / 2, D, 0), (0, 0, s * 105))
+    if to is not None:
+        a, b = VEIL[to]
+        nx.veil(f"{name}_veil", W - 0.2, Ht - 0.3, (0, 0.13, 0.06), 0, a=a, b=b, parent=g)  # 在衣服后面、柜里衬板前面
+    if interactive:
+        ya = math.radians(yaw)
+        at = (x - math.sin(ya) * (D + 0.3), y + math.cos(ya) * (D + 0.3), z + 1.2)
+        for s in (-1, 1):
+            # 关着时门扇从铰链（柜口两边）指向中间；往外开 100°，折到柜子两侧
+            door(f"{name}_door{s}", (s * W / 2, D + 0.025, 0.04), 180 if s > 0 else 0, -s * 100, w=W / 2 - 0.02, h=Ht - 0.1,
+                 thick=0.05, at=at, radius=1.0, parent=g, group=f"{name}_doors", title=("打开柜门", "关上柜门"),
+                 style=dict(a="lilac_pale", b="mist", pattern="tiles"), knob_at=(W / 2 - 0.14, 1.05))
+    for s in ((-1, 1) if not interactive else ()):
+        h = nx.group(f"{name}_hinge{s}", (s * W / 2, D, 0), (0, 0, s * open_deg))
         h.parent = g
         nx.box(f"{name}_door{s}", (W / 2 - 0.02, 0.05, Ht - 0.1), (-s * (W / 4), 0.025, 0.04), parent=h,
                a="lilac_pale", b="mist", pattern="tiles")
@@ -505,8 +518,45 @@ def wardrobe(name, loc, yaw, to, here, land=2.2):
         L = r.uniform(0.75, 1.3)
         nx.box(f"{name}_cloth{k}", (0.12, r.uniform(0.42, 0.55), L), (-W / 2 + 0.2 + k * 0.175, D * 0.5, Ht - 0.4 - L),
                parent=g, collide=False, a=cols[k % len(cols)], b="mist", pattern="stripes" if k % 3 == 0 else "plain")
-    _pair(name, here, to, loc, yaw, (*_ahead(loc, yaw, 0.45)[:2], z + 1.0), "walk", "", 0.5, land=land)
+    if to is not None:
+        _pair(name, here, to, loc, yaw, (*_ahead(loc, yaw, 0.45)[:2], z + 1.0), "walk", "", 0.5, land=land)
     return g
+
+
+# ── 能开关的门 ───────────────────────────────────
+
+def door(name, hinge, closed_deg, swing, w=0.86, h=2.06, thick=0.045, start_open=False, at=None, radius=1.2, style=None,
+         knob=None, parent=None, group=None, title=("开门", "关门"), kind="panel", time=0.7, knob_at=None):
+    """一扇能开关的门：门扇与把手各是一个物体，原点都在铰链上（nx.pose 绕物体自己的原点转），走近按 E 开 / 关。
+    hinge：铰链（门扇底边那一头）在哪；closed_deg：关着时门扇从铰链往哪个方向伸（0 ＝ 本地 +X，90 ＝ +Y）；
+    swing：开门时绕铰链转多少度（正 ＝ 逆时针）。start_open：一开始就开着（纸签先是「关门」）。
+    at：纸签系在哪（世界坐标，一般是门洞中间、齐胸高）；group：几扇门一起开关时写同一个组名（衣柜、落地窗）。
+    kind="glass"：窗扇（四边的框 + 十字棂，中间空着）。门扇挡人：停在开着或关着的那一头时挡，转到一半不挡"""
+    style = style or dict(a="blue_pale", b="mist", pattern="tiles")
+    knob = knob or dict(a="gold", b="white", pattern="plain")
+    yaw = closed_deg + (swing if start_open else 0)
+    leaf = fu.Kit()
+    if kind == "panel":
+        leaf.box((w, thick, h), (w / 2, 0, 0))
+    else:
+        t = 0.06
+        for x0 in (t / 2, w - t / 2):
+            leaf.box((t, thick, h), (x0, 0, 0))
+        leaf.box((w - 2 * t, thick, t), (w / 2, 0, 0))
+        leaf.box((w - 2 * t, thick, t), (w / 2, 0, h - t))
+        leaf.box((w - 2 * t, thick * 0.8, 0.04), (w / 2, 0, h * 0.55))
+        leaf.box((0.04, thick * 0.8, h - 2 * t), (w / 2, 0, t))
+    kn = fu.Kit()
+    kx, kz = knob_at or (w - 0.09, 1.0)
+    for sd in (-1, 1):
+        kn.box((0.05, 0.05, 0.05), (kx, sd * (thick / 2 + 0.025), kz))
+    objs = [leaf.build(f"{name}_leaf", parent=parent, loc=hinge, rot=(0, 0, yaw), smooth=0, **style),
+            kn.build(f"{name}_knob", parent=parent, loc=hinge, rot=(0, 0, yaw), smooth=0, collide=False, **knob)]
+    t0, t1 = title
+    for o in objs:
+        nx.pose(o, group or name, on="key", at=at, radius=radius, rot=(0, 0, -swing if start_open else swing), time=time,
+                title=f"{t1}|{t0}" if start_open else f"{t0}|{t1}")
+    return objs
 
 
 def gate_wardrobe(here, loc, yaw=0.0):

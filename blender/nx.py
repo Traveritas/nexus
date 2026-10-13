@@ -78,12 +78,15 @@ def _pal(v):
     return P[v] if isinstance(v, str) else int(v)
 
 
-def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=True, top=None, ramp=None):
+def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=True, top=None, ramp=None, emit=0.0):
     """像素哑光：主色 a、副色 b（色板名或编号），纹样见 PATTERN；
     top：顶面色，朝上的面整片换成它，并沿侧面上沿垂下参差的几格（草皮、积雪、桌布之类）；
-    ramp：(暗, 中, 亮) 三色明暗，受光档直接取这三色，可以跨色相（暗偏冷紫、亮偏暖粉/淡金）；给了就不用 a、b"""
+    ramp：(暗, 中, 亮) 三色明暗，受光档直接取这三色，可以跨色相（暗偏冷紫、亮偏暖粉/淡金）；给了就不用 a、b；
+    emit：自己发亮（0..1），不受光照、取色板原色——亮着的灯罩、门缝里漏进来的光"""
     if ramp is not None:
         obj["nx_ramp"] = ",".join(str(_pal(c)) for c in ramp)
+    if emit:
+        obj["nx_emit"] = float(emit)
     obj["nx_mat"] = "matte"
     obj["nx_pal"] = f"{_pal(a)},{_pal(b)}"
     obj["nx_pattern"] = PATTERN[pattern] if isinstance(pattern, str) else int(pattern)
@@ -339,11 +342,14 @@ def export(name):
 
 # ── 天空主题 ───────────────────────────────────────────
 
-def atmosphere(sky="blank", seed=None, style=None):
+def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamps=False):
     """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
-    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
+    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
     seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1。
-    style='clean'：这个世界是干净低模，管线不做像素化、落色板与描边（现实的世界）"""
+    style='clean'：这个世界是干净低模，管线不做像素化、落色板与描边（现实的世界）。
+    grid：远处（没有晶体时）的格子是几级，默认 2（4px），3 ＝ 8px。
+    palette：这个世界只落到这几枚色板色上（名字或编号的列表）；不给就是全部 16 色。
+    lamps=True：灯（lamp）一直亮着、照像素哑光，不等入夜"""
     if ATLAS:
         return None
     obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
@@ -351,6 +357,12 @@ def atmosphere(sky="blank", seed=None, style=None):
     obj["nx_sky"] = sky if seed is None else f"{sky}:{int(seed)}"
     if style:
         obj["nx_style"] = style
+    if grid is not None:
+        obj["nx_grid"] = int(grid)
+    if palette:
+        obj["nx_palette"] = ",".join(str(_pal(c)) for c in palette)
+    if lamps:
+        obj["nx_lamps"] = 1
     return obj
 
 
@@ -418,9 +430,11 @@ def outlook(name, loc, url, title="", sky="blank", radius=1.2, desc="", view=Non
 
 
 def lamp(name, loc, color="#ffd2a0", radius=4.0, power=1.0, parent=None, down=180.0, up=0.0, leak=1.0, up_power=1.0,
-         edge=4.0, reach=None):
-    """灯光：入夜（pose 的 night）时亮起的点光，照干净低模，不投影。loc 是光心（灯泡在哪），
-    radius 米外照不到，power 是罩口里的强度（随距离近似平方反比地暗下去）。一个世界最多 4 盏。灯罩、灯泡本身用 clean(..., lit=True)。
+         edge=4.0, reach=None, box=None):
+    """灯光：入夜（pose 的 night）时亮起的点光，不投影；atmosphere(lamps=True) 的世界里一直亮着、也照像素哑光
+    （受光落成几档，一圈圈的）。loc 是光心（灯泡在哪），radius 米外照不到，power 是罩口里的强度（随距离近似平方反比地暗下去）。
+    一个世界的灯不限盏数，同时亮着的是离人最近的 8 盏。干净低模的灯罩、灯泡用 clean(..., lit=True)，像素的用 matte(..., emit=1)。
+    box：(x0, y0, z0, x1, y1, z1) 世界坐标的盒子，灯只照盒子里的东西——灯光不投影，用房间的盒子挡住隔壁。
     灯罩把光拢在罩口里：down 是往下开口的半角（度，从灯泡看罩的下沿），up 是往上开口的半角（0 ＝ 顶上封着），
     往上的那一束只有 up_power 倍亮；别的方向只透出 leak（0..1）倍。edge 是光圈边上软的那一圈（度，±）。
     「下」是空物体本地的 −Z，挂在歪着的东西下面就跟着歪。不给灯罩就是四面八方一样亮。
@@ -440,6 +454,8 @@ def lamp(name, loc, color="#ffd2a0", radius=4.0, power=1.0, parent=None, down=18
     obj["nx_edge"] = float(edge)
     if reach is not None:
         obj["nx_reach"] = float(reach)
+    if box is not None:
+        obj["nx_box"] = ",".join(f"{v:g}" for v in box)
     return obj
 
 

@@ -5,9 +5,10 @@
    · 台阶：贴地走时遇到 ≤ 0.35m 的坎自动迈上去；更高的要跳。
    · 能站的面（坡度 ≤ ~56°，含棱边）只往正上推，站着不顺坡滑、站在小台子边上不被推下去；
      下坡时贴地吸附 snap 以内的落差，不会一路蹦着走。
-   · G 切到穿墙飞行（搭场景时用）：Space 上升、C 下降。 */
+   · G 切到穿墙飞行（搭场景时用）：Space 上升、C 下降。
+   · 会动的东西（能开关的门）不在静态网格里：停在某一头时由 level.blockers() 交过来，每帧一起推（dynamic）。 */
 import * as THREE from 'three';
-import { MeshBVH } from 'three-mesh-bvh';
+import { MeshBVH, type ExtendedTriangle } from 'three-mesh-bvh';
 
 export const PLAYER = {
   radius: 0.3,
@@ -37,6 +38,8 @@ export class Player {
   walked = 0;
   /** 视线高度的平滑：迈台阶时镜头不瞬间抬高 */
   private eyeY = 0;
+  /** 这一刻挡人的会动的东西（停住的门）：包围盒与三角形，每帧由外面换 */
+  dynamic: { box: THREE.Box3; tris: ExtendedTriangle[] }[] = [];
 
   private keys = new Set<string>();
   /** 这一帧想走的水平方向（单位向量或零） */
@@ -251,25 +254,32 @@ export class Player {
       this.box.min.addScalar(-R);
       this.box.max.addScalar(R);
       let moved = false;
+      const push = (tri: ExtendedTriangle) => {
+        const d = tri.closestPointToSegment(this.seg, this.triPt, this.capPt);
+        if (d < R) {
+          const dir = this.capPt.sub(this.triPt);
+          if (dir.lengthSq() < 1e-12) dir.copy(tri.getNormal(new THREE.Vector3()));
+          dir.normalize();
+          const depth = R - d;
+          if (dir.y > PLAYER.floorY) {
+            dir.set(0, depth / dir.y, 0);
+            grounded = true;
+          } else dir.multiplyScalar(depth);
+          this.seg.start.add(dir);
+          this.seg.end.add(dir);
+          moved = true;
+        }
+      };
       this.bvh.shapecast({
         intersectsBounds: (b) => b.intersectsBox(this.box),
         intersectsTriangle: (tri) => {
-          const d = tri.closestPointToSegment(this.seg, this.triPt, this.capPt);
-          if (d < R) {
-            const dir = this.capPt.sub(this.triPt);
-            if (dir.lengthSq() < 1e-12) dir.copy(tri.getNormal(new THREE.Vector3()));
-            dir.normalize();
-            const depth = R - d;
-            if (dir.y > PLAYER.floorY) {
-              dir.set(0, depth / dir.y, 0);
-              grounded = true;
-            } else dir.multiplyScalar(depth);
-            this.seg.start.add(dir);
-            this.seg.end.add(dir);
-            moved = true;
-          }
+          push(tri);
         },
       });
+      for (const d of this.dynamic) {
+        if (!d.box.intersectsBox(this.box)) continue;
+        for (const tri of d.tris) push(tri);
+      }
       pos.set(this.seg.start.x, this.seg.start.y - R, this.seg.start.z);
       if (!moved) break;
     }

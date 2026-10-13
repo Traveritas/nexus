@@ -12,6 +12,9 @@ export const WORLD_NAMES: Record<string, string> = {
   wake_fragment: '残片',
   wake_white: '白井',
   wake_museum: '陈列',
+  // 梦里的家的原型（docs/home.md）：传送都接上以后换掉 home
+  house: '家 · 原型',
+  house_out: '家 · 门外',
 };
 
 export const worldName = (w: string) => WORLD_NAMES[w] ?? w;
