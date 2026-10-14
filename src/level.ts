@@ -58,6 +58,8 @@ export interface Seam {
   h: number;
   /** 从那边透过这道缝看进来时，画到缝里面多深为止（米，nx_reach；0 ＝ 不限）：屋里看不见的房间不画 */
   reach: number;
+  /** 模板里那只往缝外伸的小盒子：只在眼睛贴着门槛时放出来（seam.ts 的 seamTube） */
+  tube: THREE.Object3D | null;
 }
 
 /** 窗景：窗外是哪一个站点的天。走近窗按 E 推开窗，视角凑到窗口（view）往外看，站点卡片浮出来；
@@ -359,11 +361,14 @@ export async function loadLevel(url: string): Promise<Level> {
     if (type === 'seam') {
       const [w, h] = String(u.nx_size ?? '').split(/[,\s]+/).map(Number);
       const yaw = Math.atan2(-fwd.x, -fwd.z);
-      seams.push({ to: String(u.nx_to ?? ''), pos: wpos.clone(), fwd: new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), yaw, w: w || 1, h: h || 2.1, reach: num(u.nx_reach, 0) });
       const m = seamMesh(w || 1, h || 2.1);
       m.position.copy(wpos);
       m.rotation.set(0, yaw, 0);
       scene.add(m);
+      seams.push({
+        to: String(u.nx_to ?? ''), pos: wpos.clone(), fwd: new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), yaw,
+        w: w || 1, h: h || 2.1, reach: num(u.nx_reach, 0), tube: m.userData.tube as THREE.Object3D,
+      });
       continue;
     }
 

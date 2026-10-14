@@ -3,12 +3,11 @@
    · 每道缝是门洞底边中点上的一个空物体，朝向（Blender 的 +Y）是「从这边看过去」的方向，nx_size 是门洞的宽、高。
      两边各放一道，to 互相写着对方；两道缝贴在一起：这一边缝前面的东西，对上那一边缝后面的东西。
    · 只有一面：从缝的背后看过去什么也没有（原野里绕到门背后，门洞里还是原野）；从背后走过去也不会过去。
-   · 画法（每帧，世界图里）：先照常画这个世界，缝那一处用模板记一笔（seamMesh，一只往缝外伸出去的开口小盒子，只画里面：
-     眼睛贴着门槛、近裁面切进缝里时也记得上）；再把深度改写成「记过的地方最远、别处最近」，把那个世界套上它自己的天、光、雾，
+   · 画法（每帧，世界图里）：先照常画这个世界，缝那一处用模板记一笔（seamMesh：门洞那一片，加上眼睛贴着门槛时才放出来的
+     一只往缝外伸的小盒子）；再把深度改写成「记过的地方最远、别处最近」，把那个世界套上它自己的天、光、雾，
      用对过去的镜头画一遍——只有记过的那一块画得进去。那个世界里，缝后面（对这一边来说是缝前面）的东西用切面切掉。
      像素化、落色板照常一起做：两边同一种格子。 */
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { OUTS, shared } from './materials';
 import type { Level, Seam } from './level';
 import type { SunShadow } from './shadow';
@@ -20,8 +19,9 @@ const DEPTH = 0.4;
 
 /** 缝的模板，只画朝着这边看的那一面，不写颜色与深度：
     · 门洞那一片（就在缝上）：门背后这个世界自己的东西（原野上门后的地）挡不住它；
-    · 往缝外伸出去的开口小盒子，四边往里让一点、底抬高一点（不和门套、门后的地贴在同一个面上）：
-      眼睛贴着门槛、近裁面切掉了门洞那一片时，靠它接着记 */
+    · 往缝外伸出去的开口小盒子（userData.tube），四边往里让一点、底抬高一点（不和门套、门后的地贴在同一个面上）：
+      眼睛贴着门槛、近裁面切掉了门洞那一片时，靠它接着记。平时藏着，只有眼睛在门洞里、贴着缝时才放出来（seamTube）——
+      不然从门旁边斜着看，透过它朝着这边的那面会看见对面那面的里侧，门后平白多出一块厚厚的「那边」 */
 export function seamMesh(w: number, h: number) {
   const face = new THREE.PlaneGeometry(w, h);
   face.rotateY(Math.PI);
@@ -34,28 +34,39 @@ export function seamMesh(w: number, h: number) {
   for (const gr of box.groups) if (gr.materialIndex !== 4) for (let i = gr.start; i < gr.start + gr.count; i++) keep.push(idx.getX(i));
   box.setIndex(keep);
   box.clearGroups();
-  const m = new THREE.Mesh(
-    mergeGeometries([face, box])!,
-    new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      side: THREE.BackSide,
-      colorWrite: false,
-      depthWrite: false,
-      stencilWrite: true,
-      stencilRef: REF,
-      stencilFunc: THREE.AlwaysStencilFunc,
-      stencilZPass: THREE.ReplaceStencilOp,
-      vertexShader: /* glsl */ `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: /* glsl */ `
+  const mat = new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    side: THREE.BackSide,
+    colorWrite: false,
+    depthWrite: false,
+    stencilWrite: true,
+    stencilRef: REF,
+    stencilFunc: THREE.AlwaysStencilFunc,
+    stencilZPass: THREE.ReplaceStencilOp,
+    vertexShader: /* glsl */ `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
 precision highp float;
 ${OUTS}
 void main() { oColor = vec4(0.0); oData = vec4(0.0); }`,
-    }),
-  );
-  // 世界里别的东西都画完了才记：被挡住的地方记不上
-  m.renderOrder = 1e5;
-  m.userData.seam = true;
-  return m;
+  });
+  const g = new THREE.Group();
+  const tube = new THREE.Mesh(box, mat);
+  tube.visible = false;
+  for (const m of [new THREE.Mesh(face, mat), tube]) {
+    // 世界里别的东西都画完了才记：被挡住的地方记不上
+    m.renderOrder = 1e5;
+    g.add(m);
+  }
+  g.userData.seam = true;
+  g.userData.tube = tube;
+  return g;
+}
+
+/** 眼睛在门洞里、贴着缝（近裁面快要切进门洞那一片）时才放出那只小盒子 */
+export function seamTube(s: Seam, eye: THREE.Vector3) {
+  if (!s.tube) return;
+  const p = seamSide(s, eye);
+  s.tube.visible = p.along > -0.35 && p.along <= 0.05 && Math.abs(p.lateral) < s.w / 2 && p.up > 0 && p.up < s.h;
 }
 
 /** 这一边的位置 → 那一边：贴着这道缝转半圈，对上那道缝 */

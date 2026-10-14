@@ -14,7 +14,7 @@ import { SiteCard } from './sitecard';
 import { dreamt, edges, isReality, recordEdge, recordSite, sites } from './worlds';
 import { RealName } from './realtext';
 import { IntroPlayer, introSeen, stripIntro } from './intro';
-import { Through, seamMatrix, seamSide, seamTurn } from './seam';
+import { Through, seamMatrix, seamSide, seamTube, seamTurn } from './seam';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 wake_fragment——现实的家，醒着的那一间）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来；
@@ -964,6 +964,7 @@ function frame(dt: number) {
   // 开场：标题是梦的画面，滑向床边时醒过来
   pipe.setDream(Math.max(intro?.dream ?? 0, travelDream));
   // 缝在眼前：世界画完以后，透过门洞把那边也画进同一张世界图
+  for (const s of level.seams) seamTube(s, camera.position);
   const pair = travel ? null : seamPair();
   const thru = pair && through.visible(pair.hs, camera)
     ? (r: THREE.WebGLRenderer) => through.draw(r, camera, level, pair.hs, pair.there, pair.ts, { here: shadow, there: farShadow }, dt, t, frozen)
