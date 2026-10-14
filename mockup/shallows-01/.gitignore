@@ -1,0 +1,6 @@
+# 生成物：`node tools/all.cjs all` 随时可重建，不入库（与仓库里 .shots/ 的处理一致）
+scenes/
+glb/
+renders/
+resolved/
+__pycache__/

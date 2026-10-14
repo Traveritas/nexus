@@ -1,0 +1,1493 @@
+{
+  "id": "glasshouse",
+  "title": "花房 · 中殿",
+  "en": "Glasshouse · Nave",
+  "role": "浅梦的花房：一座围合的温室中殿。两排高玻璃侧窗、一条中央走道，两侧一列列抬高的种植床；尽头一张巨大的工作台与水槽，东侧一只横躺的大杯通往浅滩。",
+  "extent": 82,
+  "ground": {
+    "a": "mist",
+    "b": "lilac_pale",
+    "pattern": "grain"
+  },
+  "sky": "silk",
+  "levels": [
+    {
+      "z": 0.3,
+      "label": "中殿地面"
+    },
+    {
+      "z": 0.6,
+      "label": "种植床 / 工作台"
+    },
+    {
+      "z": 9.2,
+      "label": "天窗拱顶"
+    }
+  ],
+  "spawn": {
+    "at": [
+      0,
+      -18,
+      0.3
+    ],
+    "face": 0
+  },
+  "prims": [
+    {
+      "kind": "box",
+      "name": "nave_floor",
+      "size": [
+        12,
+        50,
+        0.3
+      ],
+      "at": [
+        0,
+        9,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "entry_stoop",
+      "size": [
+        6,
+        4,
+        0.3
+      ],
+      "at": [
+        0,
+        -18,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "sill_w",
+      "size": [
+        0.3,
+        50,
+        0.25
+      ],
+      "at": [
+        -6,
+        9,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "sill_e",
+      "size": [
+        0.3,
+        50,
+        0.25
+      ],
+      "at": [
+        6,
+        9,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "frame",
+      "name": "win_w0",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        -6,
+        -12,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_w1",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        -6,
+        -6,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_w2",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        -6,
+        0,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_w3",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        -6,
+        6,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_w4",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        -6,
+        12,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_w5",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        -6,
+        24,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_w6",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        -6,
+        30,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_e0",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        6,
+        -12,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_e1",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        6,
+        -6,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_e2",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        6,
+        0,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_e3",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        6,
+        6,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_e4",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        6,
+        24,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "win_e5",
+      "w": 2.4,
+      "h": 6.4,
+      "t": 0.22,
+      "depth": 0.3,
+      "at": [
+        6,
+        30,
+        0.55
+      ],
+      "rot": 90,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault0",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        -12,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault1",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        -6,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault2",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        0,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault3",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        6,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault4",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        12,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault5",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        18,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault6",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        24,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "arch",
+      "name": "vault7",
+      "w": 12,
+      "h": 9.2,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        30,
+        0.3
+      ],
+      "rot": 0,
+      "style": "glass"
+    },
+    {
+      "kind": "box",
+      "name": "sky_ridge",
+      "size": [
+        0.3,
+        50,
+        0.3
+      ],
+      "at": [
+        0,
+        9,
+        9
+      ],
+      "style": "glass",
+      "collide": false
+    },
+    {
+      "kind": "box",
+      "name": "sky_rib_w",
+      "size": [
+        0.25,
+        50,
+        0.25
+      ],
+      "at": [
+        -3,
+        9,
+        8.5
+      ],
+      "style": "glass",
+      "collide": false
+    },
+    {
+      "kind": "box",
+      "name": "sky_rib_e",
+      "size": [
+        0.25,
+        50,
+        0.25
+      ],
+      "at": [
+        3,
+        9,
+        8.5
+      ],
+      "style": "glass",
+      "collide": false
+    },
+    {
+      "kind": "box",
+      "name": "bed_w0",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        -4,
+        -13,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_w1",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        -4,
+        -6,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_w2",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        -4,
+        1,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_w3",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        -4,
+        8,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_w4",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        -4,
+        15,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_e0",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        4,
+        -13,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_e1",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        4,
+        -6,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_e2",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        4,
+        1,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_e3",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        4,
+        8,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bed_e4",
+      "size": [
+        3.4,
+        5.6,
+        0.3
+      ],
+      "at": [
+        4,
+        15,
+        0.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w0a",
+      "sprite": "flower.cup:1",
+      "at": [
+        -4.7,
+        -14.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w0b",
+      "sprite": "grass.reed:1",
+      "at": [
+        -3.3,
+        -11.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w1a",
+      "sprite": "flower.bell:2",
+      "at": [
+        -4.7,
+        -7.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w1b",
+      "sprite": "grass.clump:2",
+      "at": [
+        -3.3,
+        -4.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w2a",
+      "sprite": "flower.cup:3",
+      "at": [
+        -4.7,
+        -0.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w2b",
+      "sprite": "grass.reed:3",
+      "at": [
+        -3.3,
+        2.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w3a",
+      "sprite": "flower.umbel:4",
+      "at": [
+        -4.7,
+        6.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w3b",
+      "sprite": "grass.clump:4",
+      "at": [
+        -3.3,
+        9.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w4a",
+      "sprite": "flower.bell:5",
+      "at": [
+        -4.7,
+        13.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_w4b",
+      "sprite": "grass.reed:5",
+      "at": [
+        -3.3,
+        16.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e0a",
+      "sprite": "flower.cup:6",
+      "at": [
+        4.7,
+        -14.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e0b",
+      "sprite": "grass.reed:6",
+      "at": [
+        3.3,
+        -11.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e1a",
+      "sprite": "flower.bell:7",
+      "at": [
+        4.7,
+        -7.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e1b",
+      "sprite": "grass.clump:7",
+      "at": [
+        3.3,
+        -4.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e2a",
+      "sprite": "flower.cup:8",
+      "at": [
+        4.7,
+        -0.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e2b",
+      "sprite": "grass.reed:8",
+      "at": [
+        3.3,
+        2.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e3a",
+      "sprite": "flower.umbel:9",
+      "at": [
+        4.7,
+        6.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e3b",
+      "sprite": "grass.clump:9",
+      "at": [
+        3.3,
+        9.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e4a",
+      "sprite": "flower.bell:10",
+      "at": [
+        4.7,
+        13.6,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pl_e4b",
+      "sprite": "grass.reed:10",
+      "at": [
+        3.3,
+        16.4,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "tree_w",
+      "sprite": "tree.tuft:3",
+      "at": [
+        -4,
+        -13,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "tree_e",
+      "sprite": "tree.round:4",
+      "at": [
+        4,
+        1,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "tree_w2",
+      "sprite": "tree.tuft:6",
+      "at": [
+        -4,
+        15,
+        0.6
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "box",
+      "name": "bench_plat",
+      "size": [
+        11,
+        5,
+        0.6
+      ],
+      "at": [
+        0,
+        30,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "bench_sink",
+      "size": [
+        4.5,
+        3,
+        0.25
+      ],
+      "at": [
+        0,
+        30,
+        0.6
+      ],
+      "style": "void"
+    },
+    {
+      "kind": "plane",
+      "name": "bench_water",
+      "size": [
+        4,
+        2.4
+      ],
+      "at": [
+        0,
+        30,
+        0.88
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "cylinder",
+      "name": "faucet_post",
+      "r": 0.22,
+      "h": 3,
+      "at": [
+        1.9,
+        30,
+        0.6
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "faucet_arm",
+      "size": [
+        1.8,
+        0.35,
+        0.35
+      ],
+      "at": [
+        1,
+        30,
+        3.4
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "bench_back",
+      "size": [
+        12,
+        0.4,
+        5
+      ],
+      "at": [
+        0,
+        32.8,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "cup_floor",
+      "size": [
+        7,
+        5.6,
+        0.3
+      ],
+      "at": [
+        9.5,
+        18,
+        0
+      ],
+      "style": "deck",
+      "label": "大杯"
+    },
+    {
+      "kind": "box",
+      "name": "cup_back",
+      "size": [
+        0.3,
+        5.6,
+        5.2
+      ],
+      "at": [
+        12.85,
+        18,
+        0
+      ],
+      "style": "glass"
+    },
+    {
+      "kind": "box",
+      "name": "cup_wall_n",
+      "size": [
+        7,
+        0.3,
+        5.2
+      ],
+      "at": [
+        9.5,
+        20.65,
+        0
+      ],
+      "style": "glass"
+    },
+    {
+      "kind": "box",
+      "name": "cup_wall_s",
+      "size": [
+        7,
+        0.3,
+        5.2
+      ],
+      "at": [
+        9.5,
+        15.35,
+        0
+      ],
+      "style": "glass"
+    },
+    {
+      "kind": "box",
+      "name": "cup_top",
+      "size": [
+        7,
+        5.6,
+        0.3
+      ],
+      "at": [
+        9.5,
+        18,
+        5.2
+      ],
+      "style": "glass"
+    },
+    {
+      "kind": "torus",
+      "name": "cup_mouth",
+      "major": 2.5,
+      "minor": 0.28,
+      "at": [
+        6,
+        18,
+        2.6
+      ],
+      "tilt": "stand",
+      "rot": 90,
+      "style": "glass",
+      "collide": false
+    },
+    {
+      "kind": "plane",
+      "name": "cup_water",
+      "size": [
+        6.4,
+        4.6
+      ],
+      "at": [
+        9.5,
+        18,
+        0.35
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "cylinder",
+      "name": "home_post",
+      "r": 0.09,
+      "h": 3.4,
+      "at": [
+        0,
+        -21,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "home_head",
+      "size": [
+        0.7,
+        0.7,
+        0.5
+      ],
+      "at": [
+        0,
+        -21,
+        3.7
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "can_body",
+      "r": 1,
+      "h": 1.6,
+      "at": [
+        -4,
+        26,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "torus",
+      "name": "can_handle",
+      "major": 0.85,
+      "minor": 0.12,
+      "at": [
+        -4,
+        26,
+        2.1
+      ],
+      "tilt": "stand",
+      "style": "prop",
+      "collide": false
+    },
+    {
+      "kind": "box",
+      "name": "can_spout",
+      "size": [
+        2.2,
+        0.3,
+        0.3
+      ],
+      "at": [
+        -2.7,
+        26,
+        1.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "pot_w",
+      "r": 0.9,
+      "r2": 0.7,
+      "h": 1.2,
+      "at": [
+        -4.5,
+        20,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "pot_e",
+      "r": 0.9,
+      "r2": 0.7,
+      "h": 1.2,
+      "at": [
+        4.5,
+        20,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "pot_w_f",
+      "sprite": "flower.cup:11",
+      "at": [
+        -4.5,
+        20,
+        1.5
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pot_e_f",
+      "sprite": "flower.umbel:12",
+      "at": [
+        4.5,
+        20,
+        1.5
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "pendant0",
+      "sprite": "pendant",
+      "at": [
+        0,
+        -9,
+        6.6
+      ],
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "pendant1",
+      "sprite": "pendant",
+      "at": [
+        0,
+        0,
+        6.6
+      ],
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "pendant2",
+      "sprite": "pendant",
+      "at": [
+        0,
+        9,
+        6.6
+      ],
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "pendant3",
+      "sprite": "pendant",
+      "at": [
+        0,
+        18,
+        6.6
+      ],
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "pendant4",
+      "sprite": "pendant",
+      "at": [
+        0,
+        27,
+        6.6
+      ],
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "far0",
+      "size": [
+        2,
+        1.4,
+        9
+      ],
+      "at": [
+        10,
+        37,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far1",
+      "size": [
+        2,
+        1.4,
+        12
+      ],
+      "at": [
+        -10,
+        39,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far2",
+      "size": [
+        2,
+        1.4,
+        8
+      ],
+      "at": [
+        11,
+        -6,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far3",
+      "size": [
+        2,
+        1.4,
+        11
+      ],
+      "at": [
+        -11,
+        28,
+        0
+      ],
+      "style": "mass"
+    }
+  ],
+  "regions": [
+    {
+      "label": "中殿走道",
+      "shape": "rect",
+      "at": [
+        0,
+        6
+      ],
+      "size": [
+        4.6,
+        46
+      ]
+    },
+    {
+      "label": "种植床",
+      "shape": "rect",
+      "at": [
+        -4,
+        1
+      ],
+      "size": [
+        3.4,
+        40
+      ]
+    },
+    {
+      "label": "种植床",
+      "shape": "rect",
+      "at": [
+        4,
+        1
+      ],
+      "size": [
+        3.4,
+        40
+      ]
+    },
+    {
+      "label": "工作台 / 水槽",
+      "shape": "rect",
+      "at": [
+        0,
+        30
+      ],
+      "size": [
+        11,
+        5
+      ]
+    },
+    {
+      "label": "大杯",
+      "shape": "circle",
+      "at": [
+        9.5,
+        18
+      ],
+      "r": 3.4
+    }
+  ],
+  "portals": [
+    {
+      "name": "gate_home",
+      "kind": "home",
+      "at": [
+        0,
+        -21,
+        2
+      ],
+      "to": "home",
+      "at_node": "glasshouse",
+      "mode": "key",
+      "title": "关灯",
+      "label": "→ 家",
+      "note": "南门外，出生点背后"
+    },
+    {
+      "name": "gate_shoal",
+      "kind": "world",
+      "at": [
+        8.5,
+        18,
+        1.6
+      ],
+      "to": "shoal",
+      "mode": "walk",
+      "rot": 90,
+      "veil_w": 2.4,
+      "veil_h": 2.8,
+      "label": "→ 浅滩",
+      "note": "东侧横躺的大杯，走进杯里"
+    },
+    {
+      "name": "gate_arcade",
+      "kind": "world",
+      "at": [
+        -4,
+        26,
+        1.9
+      ],
+      "to": "arcade",
+      "mode": "key",
+      "title": "浇一浇",
+      "label": "→ 回廊",
+      "note": "西侧床尾一只大喷壶"
+    }
+  ],
+  "arrives": [
+    {
+      "name": "home",
+      "at": [
+        0,
+        -18,
+        0.3
+      ],
+      "face": 0
+    }
+  ],
+  "views": [
+    {
+      "name": "bird",
+      "at": [
+        46,
+        -58,
+        46
+      ],
+      "look": [
+        0,
+        6,
+        2
+      ],
+      "fov": 52,
+      "res": [
+        1900,
+        1050
+      ]
+    },
+    {
+      "name": "eye",
+      "at": [
+        0,
+        -18,
+        1.9
+      ],
+      "look": [
+        0,
+        20,
+        2.4
+      ],
+      "fov": 70
+    },
+    {
+      "name": "nave",
+      "at": [
+        0,
+        -8,
+        1.9
+      ],
+      "look": [
+        0,
+        30,
+        2.6
+      ],
+      "fov": 64
+    },
+    {
+      "name": "bench",
+      "at": [
+        2,
+        21,
+        2.6
+      ],
+      "look": [
+        0,
+        31,
+        1.4
+      ],
+      "fov": 62
+    },
+    {
+      "name": "cup",
+      "at": [
+        -3,
+        18,
+        2.2
+      ],
+      "look": [
+        11,
+        18,
+        1.8
+      ],
+      "fov": 66
+    }
+  ],
+  "notes": [
+    "围合的温室中殿：一条 4.6m 宽的中央走道，两侧各五张抬高 0.3m 的种植床（可直接迈上）。",
+    "两侧各一排 6.4m 高的玻璃侧窗（frame + glass 做窗格），头顶八道玻璃拱作天窗，光从正中落下来。",
+    "尽头一张 0.6m 高的工作台与水槽：暗色槽体、槽里的水面、一具大龙头，台后一道北墙收住。",
+    "东侧一只横躺的大杯，圆口朝西接进中殿，走进杯里到浅滩（shoal）。",
+    "西侧床尾一只大喷壶（E 浇一浇 → 回廊）；南门外是回家的灯，出生点就在灯前。",
+    "门口两只大花盆，拱顶垂着纸吊灯——日常的浇水、花盆、水壶被放大到建筑的尺度。"
+  ]
+}

@@ -1,0 +1,1630 @@
+{
+  "id": "arcade-c",
+  "title": "回廊 · 长坡",
+  "en": "Arcade · Long Ramp",
+  "role": "浅梦的主干道之一：一条沿坡上下的长廊，一侧是连续的拱廊，另一侧敞向水面；坡道本身是主角——从南边一级级升上去，翻过脊再落回北头。",
+  "extent": 100,
+  "ground": {
+    "a": "lilac_pale",
+    "b": "lilac",
+    "pattern": "grain"
+  },
+  "sky": "halo",
+  "levels": [
+    {
+      "z": 0.3,
+      "label": "坡底 / 水台"
+    },
+    {
+      "z": 3.3,
+      "label": "坡脊"
+    }
+  ],
+  "spawn": {
+    "at": [
+      0,
+      -36,
+      0.3
+    ],
+    "face": 0
+  },
+  "prims": [
+    {
+      "kind": "box",
+      "name": "south_plaza",
+      "size": [
+        14,
+        10,
+        0.3
+      ],
+      "at": [
+        3,
+        -35,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "ramp_base",
+      "at": [
+        0,
+        2,
+        0
+      ],
+      "style": "mass",
+      "size": [
+        8,
+        64,
+        0.3
+      ]
+    },
+    {
+      "kind": "stairs",
+      "name": "ramp_up",
+      "w": 6,
+      "n": 10,
+      "rise": 0.3,
+      "run": 3,
+      "at": [
+        0,
+        -30,
+        0.3
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "stairs",
+      "name": "ramp_dn",
+      "w": 6,
+      "n": 10,
+      "rise": 0.3,
+      "run": 3,
+      "at": [
+        0,
+        34,
+        0.3
+      ],
+      "rot": 180,
+      "style": "stair"
+    },
+    {
+      "kind": "box",
+      "name": "crest",
+      "at": [
+        0,
+        2,
+        0.3
+      ],
+      "style": "deck",
+      "size": [
+        8,
+        4,
+        3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU0_l",
+      "at": [
+        -2.7,
+        -29.85,
+        0.5
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU0_r",
+      "at": [
+        -2.7,
+        -27.15,
+        0.5
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU0_t",
+      "at": [
+        -2.7,
+        -28.5,
+        4.5
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU1_l",
+      "at": [
+        -2.7,
+        -26.85,
+        0.8
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU1_r",
+      "at": [
+        -2.7,
+        -24.15,
+        0.8
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU1_t",
+      "at": [
+        -2.7,
+        -25.5,
+        4.8
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU2_l",
+      "at": [
+        -2.7,
+        -23.85,
+        1.0999999999999999
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU2_r",
+      "at": [
+        -2.7,
+        -21.15,
+        1.0999999999999999
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU2_t",
+      "at": [
+        -2.7,
+        -22.5,
+        5.1
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU3_l",
+      "at": [
+        -2.7,
+        -20.85,
+        1.4
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU3_r",
+      "at": [
+        -2.7,
+        -18.15,
+        1.4
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU3_t",
+      "at": [
+        -2.7,
+        -19.5,
+        5.4
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU4_l",
+      "at": [
+        -2.7,
+        -17.85,
+        1.7
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU4_r",
+      "at": [
+        -2.7,
+        -15.15,
+        1.7
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU4_t",
+      "at": [
+        -2.7,
+        -16.5,
+        5.7
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU5_l",
+      "at": [
+        -2.7,
+        -14.85,
+        1.9999999999999998
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU5_r",
+      "at": [
+        -2.7,
+        -12.15,
+        1.9999999999999998
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU5_t",
+      "at": [
+        -2.7,
+        -13.5,
+        6
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU6_l",
+      "at": [
+        -2.7,
+        -11.85,
+        2.3000000000000003
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU6_r",
+      "at": [
+        -2.7,
+        -9.15,
+        2.3000000000000003
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU6_t",
+      "at": [
+        -2.7,
+        -10.5,
+        6.300000000000001
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU7_l",
+      "at": [
+        -2.7,
+        -8.85,
+        2.6
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU7_r",
+      "at": [
+        -2.7,
+        -6.15,
+        2.6
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU7_t",
+      "at": [
+        -2.7,
+        -7.5,
+        6.6
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU8_l",
+      "at": [
+        -2.7,
+        -5.85,
+        2.9
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU8_r",
+      "at": [
+        -2.7,
+        -3.15,
+        2.9
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU8_t",
+      "at": [
+        -2.7,
+        -4.5,
+        6.9
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU9_l",
+      "at": [
+        -2.7,
+        -2.85,
+        3.2
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU9_r",
+      "at": [
+        -2.7,
+        -0.1499999999999999,
+        3.2
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcU9_t",
+      "at": [
+        -2.7,
+        -1.5,
+        7.2
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD0_l",
+      "at": [
+        -2.7,
+        31.15,
+        0.5
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD0_r",
+      "at": [
+        -2.7,
+        33.85,
+        0.5
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD0_t",
+      "at": [
+        -2.7,
+        32.5,
+        4.5
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD1_l",
+      "at": [
+        -2.7,
+        28.15,
+        0.8
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD1_r",
+      "at": [
+        -2.7,
+        30.85,
+        0.8
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD1_t",
+      "at": [
+        -2.7,
+        29.5,
+        4.8
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD2_l",
+      "at": [
+        -2.7,
+        25.15,
+        1.0999999999999999
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD2_r",
+      "at": [
+        -2.7,
+        27.85,
+        1.0999999999999999
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD2_t",
+      "at": [
+        -2.7,
+        26.5,
+        5.1
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD3_l",
+      "at": [
+        -2.7,
+        22.15,
+        1.4
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD3_r",
+      "at": [
+        -2.7,
+        24.85,
+        1.4
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD3_t",
+      "at": [
+        -2.7,
+        23.5,
+        5.4
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD4_l",
+      "at": [
+        -2.7,
+        19.15,
+        1.7
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD4_r",
+      "at": [
+        -2.7,
+        21.85,
+        1.7
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD4_t",
+      "at": [
+        -2.7,
+        20.5,
+        5.7
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD5_l",
+      "at": [
+        -2.7,
+        16.15,
+        1.9999999999999998
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD5_r",
+      "at": [
+        -2.7,
+        18.85,
+        1.9999999999999998
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD5_t",
+      "at": [
+        -2.7,
+        17.5,
+        6
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD6_l",
+      "at": [
+        -2.7,
+        13.15,
+        2.3000000000000003
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD6_r",
+      "at": [
+        -2.7,
+        15.85,
+        2.3000000000000003
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD6_t",
+      "at": [
+        -2.7,
+        14.5,
+        6.300000000000001
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD7_l",
+      "at": [
+        -2.7,
+        10.15,
+        2.6
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD7_r",
+      "at": [
+        -2.7,
+        12.85,
+        2.6
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD7_t",
+      "at": [
+        -2.7,
+        11.5,
+        6.6
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD8_l",
+      "at": [
+        -2.7,
+        7.15,
+        2.9
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD8_r",
+      "at": [
+        -2.7,
+        9.85,
+        2.9
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD8_t",
+      "at": [
+        -2.7,
+        8.5,
+        6.9
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD9_l",
+      "at": [
+        -2.7,
+        4.15,
+        3.2
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD9_r",
+      "at": [
+        -2.7,
+        6.85,
+        3.2
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcD9_t",
+      "at": [
+        -2.7,
+        5.5,
+        7.2
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcC_l",
+      "at": [
+        -2.7,
+        0.6499999999999999,
+        3.2
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcC_r",
+      "at": [
+        -2.7,
+        3.35,
+        3.2
+      ],
+      "style": "frame",
+      "size": [
+        0.5,
+        0.28,
+        4
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "arcC_t",
+      "at": [
+        -2.7,
+        2,
+        7.2
+      ],
+      "style": "frame",
+      "size": [
+        0.56,
+        3,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "north_plat",
+      "size": [
+        8,
+        10,
+        0.3
+      ],
+      "at": [
+        0,
+        39,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "quay",
+      "size": [
+        4,
+        50,
+        0.3
+      ],
+      "at": [
+        7,
+        -5,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "rail_crest_e",
+      "size": [
+        0.25,
+        4,
+        0.5
+      ],
+      "at": [
+        4,
+        2,
+        3.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_sp_e",
+      "size": [
+        0.25,
+        10,
+        0.5
+      ],
+      "at": [
+        10,
+        -35,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_sp_s",
+      "size": [
+        13.8,
+        0.25,
+        0.5
+      ],
+      "at": [
+        2.9,
+        -39.875,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_np_e",
+      "size": [
+        0.25,
+        10,
+        0.5
+      ],
+      "at": [
+        4,
+        39,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_np_n",
+      "size": [
+        7.8,
+        0.25,
+        0.5
+      ],
+      "at": [
+        -0.1,
+        43.875,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_quay_n",
+      "size": [
+        4,
+        0.25,
+        0.5
+      ],
+      "at": [
+        7,
+        20,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "frame",
+      "name": "crest_frame",
+      "w": 2.4,
+      "h": 3,
+      "t": 0.24,
+      "depth": 0.3,
+      "at": [
+        0,
+        3.6,
+        3.3
+      ],
+      "rot": 180,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "realm_door",
+      "w": 2.8,
+      "h": 4,
+      "t": 0.3,
+      "depth": 0.4,
+      "at": [
+        0,
+        43,
+        0.3
+      ],
+      "rot": 180,
+      "style": "frame"
+    },
+    {
+      "kind": "box",
+      "name": "leaf_realm",
+      "size": [
+        2.4,
+        0.12,
+        3.6
+      ],
+      "at": [
+        0,
+        42.9,
+        0.4
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "home_post",
+      "r": 0.09,
+      "h": 3.4,
+      "at": [
+        0,
+        -38,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "home_head",
+      "size": [
+        0.7,
+        0.7,
+        0.5
+      ],
+      "at": [
+        0,
+        -38,
+        3.7
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "plane",
+      "name": "water_w",
+      "size": [
+        18,
+        72
+      ],
+      "at": [
+        -12,
+        2,
+        0.12
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "plane",
+      "name": "water_e",
+      "size": [
+        36,
+        72
+      ],
+      "at": [
+        21,
+        2,
+        0.12
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "spriteRow",
+      "name": "reed_w",
+      "sprite": "grass.reed:1",
+      "from": [
+        -6,
+        -26
+      ],
+      "to": [
+        -6,
+        30
+      ],
+      "n": 6,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "reed_e",
+      "sprite": "grass.reed:2",
+      "from": [
+        4.6,
+        -26
+      ],
+      "to": [
+        4.6,
+        16
+      ],
+      "n": 5,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "tree_w",
+      "sprite": "tree.round:3",
+      "from": [
+        -18,
+        -26
+      ],
+      "to": [
+        -18,
+        30
+      ],
+      "n": 5,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "tree_e",
+      "sprite": "tree.tall:4",
+      "from": [
+        30,
+        -20
+      ],
+      "to": [
+        30,
+        24
+      ],
+      "n": 4,
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "crest_f0",
+      "sprite": "flower.cup:5",
+      "at": [
+        -3,
+        1,
+        3.3
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "crest_f1",
+      "sprite": "flower.cup:6",
+      "at": [
+        3,
+        1,
+        3.3
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "box",
+      "name": "far0",
+      "size": [
+        2,
+        1.4,
+        10
+      ],
+      "at": [
+        -36,
+        -20,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far1",
+      "size": [
+        2,
+        1.4,
+        13
+      ],
+      "at": [
+        40,
+        10,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far2",
+      "size": [
+        2,
+        1.4,
+        9
+      ],
+      "at": [
+        -32,
+        34,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far3",
+      "size": [
+        2,
+        1.4,
+        11
+      ],
+      "at": [
+        46,
+        -30,
+        0
+      ],
+      "style": "mass"
+    }
+  ],
+  "regions": [
+    {
+      "label": "上坡（十级宽踏步）",
+      "shape": "rect",
+      "at": [
+        0,
+        -15
+      ],
+      "size": [
+        6,
+        30
+      ]
+    },
+    {
+      "label": "坡脊",
+      "shape": "rect",
+      "at": [
+        0,
+        2
+      ],
+      "size": [
+        8,
+        4
+      ]
+    },
+    {
+      "label": "下坡",
+      "shape": "rect",
+      "at": [
+        0,
+        19
+      ],
+      "size": [
+        6,
+        30
+      ]
+    },
+    {
+      "label": "临水拱廊",
+      "shape": "rect",
+      "at": [
+        -3,
+        2
+      ],
+      "size": [
+        1,
+        64
+      ]
+    },
+    {
+      "label": "水台",
+      "shape": "rect",
+      "at": [
+        7,
+        -5
+      ],
+      "size": [
+        4,
+        50
+      ]
+    },
+    {
+      "label": "南台",
+      "shape": "rect",
+      "at": [
+        3,
+        -35
+      ],
+      "size": [
+        14,
+        10
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "name": "gate_home",
+      "kind": "home",
+      "at": [
+        0,
+        -38,
+        1.9
+      ],
+      "to": "home",
+      "at_node": "arcade-c",
+      "mode": "key",
+      "title": "关灯",
+      "label": "→ 家",
+      "note": "坡底南台上，出生点背后"
+    },
+    {
+      "name": "gate_site",
+      "kind": "site",
+      "at": [
+        0,
+        2,
+        4.9
+      ],
+      "url": "https://traveritas.github.io/",
+      "title": "AveritA的昼梦叙集",
+      "label": "→ 站点",
+      "note": "坡脊上的晶体，爬上来才够得到"
+    },
+    {
+      "name": "gate_realm",
+      "kind": "realm",
+      "at": [
+        0,
+        43,
+        1.9
+      ],
+      "to": "seeping",
+      "mode": "key",
+      "title": "推开",
+      "rot": 180,
+      "label": "→ 沁泫池",
+      "note": "坡北头一扇门，跨主域"
+    }
+  ],
+  "arrives": [
+    {
+      "name": "home",
+      "at": [
+        0,
+        -36,
+        0.3
+      ],
+      "face": 0
+    }
+  ],
+  "views": [
+    {
+      "name": "bird",
+      "at": [
+        40,
+        -44,
+        48
+      ],
+      "look": [
+        0,
+        2,
+        2
+      ],
+      "fov": 50,
+      "res": [
+        1900,
+        1050
+      ]
+    },
+    {
+      "name": "eye",
+      "at": [
+        0,
+        -36,
+        2.05
+      ],
+      "look": [
+        0,
+        10,
+        2.4
+      ],
+      "fov": 68
+    },
+    {
+      "name": "ramp",
+      "at": [
+        0,
+        -20,
+        3.4
+      ],
+      "look": [
+        0,
+        4,
+        3.6
+      ],
+      "fov": 62
+    },
+    {
+      "name": "crest",
+      "at": [
+        0,
+        2,
+        5.1
+      ],
+      "look": [
+        0,
+        -20,
+        3
+      ],
+      "fov": 62
+    },
+    {
+      "name": "quay",
+      "at": [
+        7,
+        -20,
+        2.2
+      ],
+      "look": [
+        0,
+        0,
+        3.2
+      ],
+      "fov": 62
+    }
+  ],
+  "notes": [
+    "一条 6m 宽的长廊沿坡上下：南边十级宽踏步（每级 0.3m、进深 3m，走起来像坡）升 3m 到坡脊，北边再十级落回 0.3m。",
+    "西侧是一列连续的拱廊（二十道 3m 宽的柱与楣，柱础落在各自的踏步上），东侧敞向水面，没有栏——坡道本身就是主角。",
+    "坡脊一方小台，台上立着晶体（→站点）；从南台上坡、翻过脊、下到北头，北头一扇门通往别的主域。",
+    "东侧水面上另伸出一条低水台（比坡面低），是看坡与拱廊最好的位置；南台把它和坡底连起来。",
+    "出入口三个：南台的路灯（回家）、坡脊的晶体（→站点）、北头的门（E 推开→沁泫池，跨主域）。"
+  ]
+}

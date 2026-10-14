@@ -7,3 +7,10 @@ dist-sky/
 
 # Poly Haven 原始模型：体积大、可用 scripts/fetch-asset.cjs 重新取；网页只用导出后的 GLB 与 public/sprites 里渲好的剪纸
 assets/polyhaven/
+
+# 样板（mockup）的产物：白模、渲染、地图都从 layouts/*.json 用 tools 重新生成，只提交源文件
+mockup/*/renders/
+mockup/*/plans/
+mockup/*/glb/
+mockup/*/resolved/
+mockup/*/scenes/

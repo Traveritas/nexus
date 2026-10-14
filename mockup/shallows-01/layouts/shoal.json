@@ -1,0 +1,837 @@
+{
+  "id": "shoal",
+  "title": "浅滩·洒水的桌",
+  "en": "Shoal · The Spilled Table",
+  "role": "浅梦的一处水平旷野：一张放大到建筑尺度的桌面就是地面，一杯打翻的水从桌心漫成只有几厘米深的浅滩，圆叶浮在水上，叶上立着一盏回家的灯。",
+  "extent": 48,
+  "ground": {
+    "a": "lilac_pale",
+    "b": "lilac",
+    "pattern": "grain"
+  },
+  "sky": "dye:7",
+  "levels": [
+    {
+      "z": 0,
+      "label": "桌下地板"
+    },
+    {
+      "z": 2.2,
+      "label": "桌面（走人面）"
+    },
+    {
+      "z": 2.16,
+      "label": "浅滩水面（没不过脚踝）"
+    }
+  ],
+  "spawn": {
+    "at": [
+      0,
+      -13,
+      2.2
+    ],
+    "face": 0
+  },
+  "prims": [
+    {
+      "kind": "box",
+      "name": "table_n",
+      "size": [
+        32,
+        9,
+        0.5
+      ],
+      "at": [
+        0,
+        11.5,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "table_s",
+      "size": [
+        32,
+        9,
+        0.5
+      ],
+      "at": [
+        0,
+        -11.5,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "table_w",
+      "size": [
+        9,
+        14,
+        0.5
+      ],
+      "at": [
+        -11.5,
+        0,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "table_e",
+      "size": [
+        9,
+        14,
+        0.5
+      ],
+      "at": [
+        11.5,
+        0,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "corner_ne",
+      "size": [
+        3,
+        3,
+        0.5
+      ],
+      "at": [
+        5.5,
+        5.5,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "corner_nw",
+      "size": [
+        3,
+        3,
+        0.5
+      ],
+      "at": [
+        -5.5,
+        5.5,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "corner_sw",
+      "size": [
+        3,
+        3,
+        0.5
+      ],
+      "at": [
+        -5.5,
+        -5.5,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "corner_se",
+      "size": [
+        3,
+        3,
+        0.5
+      ],
+      "at": [
+        5.5,
+        -5.5,
+        1.7
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "rim_n",
+      "size": [
+        32,
+        0.5,
+        0.3
+      ],
+      "at": [
+        0,
+        15.75,
+        2.2
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rim_s",
+      "size": [
+        32,
+        0.5,
+        0.3
+      ],
+      "at": [
+        0,
+        -15.75,
+        2.2
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rim_w",
+      "size": [
+        0.5,
+        31,
+        0.3
+      ],
+      "at": [
+        -15.75,
+        0,
+        2.2
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rim_e",
+      "size": [
+        0.5,
+        31,
+        0.3
+      ],
+      "at": [
+        15.75,
+        0,
+        2.2
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "leg_nw",
+      "size": [
+        3,
+        3,
+        1.7
+      ],
+      "at": [
+        -12,
+        12,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "leg_ne",
+      "size": [
+        3,
+        3,
+        1.7
+      ],
+      "at": [
+        12,
+        12,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "leg_sw",
+      "size": [
+        3,
+        3,
+        1.7
+      ],
+      "at": [
+        -12,
+        -12,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "leg_se",
+      "size": [
+        3,
+        3,
+        1.7
+      ],
+      "at": [
+        12,
+        -12,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "shoal_basin",
+      "size": [
+        14.6,
+        14.6,
+        0.4
+      ],
+      "at": [
+        0,
+        0,
+        1.73
+      ],
+      "style": "water",
+      "collide": true
+    },
+    {
+      "kind": "plane",
+      "name": "shoal_water",
+      "size": [
+        14,
+        14
+      ],
+      "at": [
+        0,
+        0,
+        2.16
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "cylinder",
+      "name": "lamp_leaf",
+      "r": 2.3,
+      "h": 0.08,
+      "at": [
+        -3,
+        1,
+        2.12
+      ],
+      "style": "plant",
+      "label": "灯叶"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf0",
+      "r": 1.4,
+      "h": 0.08,
+      "at": [
+        3.5,
+        1.5,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf1",
+      "r": 1.1,
+      "h": 0.08,
+      "at": [
+        0.5,
+        -4,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf2",
+      "r": 1.5,
+      "h": 0.08,
+      "at": [
+        4.5,
+        -1.5,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf3",
+      "r": 1.2,
+      "h": 0.08,
+      "at": [
+        -5,
+        1.5,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf4",
+      "r": 1.2,
+      "h": 0.08,
+      "at": [
+        -3,
+        -4,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf5",
+      "r": 1,
+      "h": 0.08,
+      "at": [
+        -1,
+        5,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf6",
+      "r": 1.3,
+      "h": 0.08,
+      "at": [
+        2,
+        -5.5,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "leaf7",
+      "r": 1.1,
+      "h": 0.08,
+      "at": [
+        -5.5,
+        -1,
+        2.12
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "coaster0",
+      "r": 0.7,
+      "h": 0.06,
+      "at": [
+        0.5,
+        5.5,
+        2.12
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "coaster1",
+      "r": 0.6,
+      "h": 0.06,
+      "at": [
+        -1.5,
+        6,
+        2.12
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "coaster2",
+      "r": 0.6,
+      "h": 0.06,
+      "at": [
+        3,
+        -6,
+        2.12
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "home_post",
+      "r": 0.1,
+      "h": 3.2,
+      "at": [
+        -3,
+        1,
+        2.2
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "home_head",
+      "size": [
+        0.8,
+        0.8,
+        0.5
+      ],
+      "at": [
+        -3,
+        1,
+        5.45
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "cup_body",
+      "r": 0.45,
+      "r2": 0.58,
+      "h": 1,
+      "at": [
+        8.5,
+        -1,
+        2.2
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "torus",
+      "name": "cup_rim",
+      "major": 0.5,
+      "minor": 0.06,
+      "at": [
+        8.5,
+        -1,
+        3.2
+      ],
+      "style": "prop",
+      "collide": false
+    },
+    {
+      "kind": "cylinder",
+      "name": "vase_plinth",
+      "r": 0.7,
+      "h": 0.5,
+      "at": [
+        9,
+        9,
+        2.2
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "cylinder",
+      "name": "vase_body",
+      "r": 0.42,
+      "r2": 0.28,
+      "h": 1.1,
+      "at": [
+        9,
+        9,
+        2.7
+      ],
+      "style": "prop",
+      "label": "水边花瓶"
+    },
+    {
+      "kind": "sprite",
+      "name": "vase_f0",
+      "sprite": "flower.cup:1",
+      "at": [
+        9,
+        9,
+        3.75
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "vase_f1",
+      "sprite": "flower.cup:4",
+      "at": [
+        9.4,
+        9.3,
+        3.65
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "cylinder",
+      "name": "site_plinth",
+      "r": 0.7,
+      "h": 0.7,
+      "at": [
+        -9,
+        -9,
+        2.2
+      ],
+      "style": "mass",
+      "label": "晶体"
+    },
+    {
+      "kind": "sprite",
+      "name": "edge_f0",
+      "sprite": "flower.cup:2",
+      "at": [
+        6,
+        -8,
+        2.2
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "edge_f1",
+      "sprite": "flower.cup:5",
+      "at": [
+        -8,
+        -6,
+        2.2
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "edge_g0",
+      "sprite": "grass.reed:1",
+      "at": [
+        10,
+        5,
+        2.2
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "edge_g1",
+      "sprite": "grass.reed:3",
+      "at": [
+        -10,
+        -3,
+        2.2
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "far_t0",
+      "sprite": "tree.round:3",
+      "at": [
+        -19,
+        5,
+        0
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "far_t1",
+      "sprite": "tree.tall:4",
+      "at": [
+        17,
+        -6,
+        0
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "far_t2",
+      "sprite": "tree.round:6",
+      "at": [
+        6,
+        20,
+        0
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "far_t3",
+      "sprite": "tree.tall:2",
+      "at": [
+        -16,
+        -16,
+        0
+      ],
+      "style": "plant"
+    }
+  ],
+  "regions": [
+    {
+      "label": "桌面",
+      "shape": "rect",
+      "at": [
+        0,
+        0
+      ],
+      "size": [
+        32,
+        32
+      ]
+    },
+    {
+      "label": "浅滩（洒出的水）",
+      "shape": "circle",
+      "at": [
+        0,
+        0
+      ],
+      "r": 9
+    },
+    {
+      "label": "灯叶",
+      "shape": "circle",
+      "at": [
+        -3,
+        1
+      ],
+      "r": 2.3
+    },
+    {
+      "label": "水边花瓶",
+      "shape": "circle",
+      "at": [
+        9,
+        9
+      ],
+      "r": 1.5
+    }
+  ],
+  "portals": [
+    {
+      "name": "gate_home",
+      "kind": "home",
+      "at": [
+        -3,
+        1,
+        3.8
+      ],
+      "to": "home",
+      "at_node": "shoal",
+      "mode": "key",
+      "title": "关灯",
+      "label": "→ 家",
+      "note": "浅滩里圆叶上的路灯"
+    },
+    {
+      "name": "gate_glasshouse",
+      "kind": "world",
+      "at": [
+        9,
+        9,
+        3.8
+      ],
+      "to": "glasshouse",
+      "mode": "key",
+      "title": "凑近",
+      "label": "→ 花房",
+      "note": "水边插着花的瓶"
+    },
+    {
+      "name": "gate_site",
+      "kind": "site",
+      "at": [
+        -9,
+        -9,
+        3.8
+      ],
+      "url": "https://traveritas.github.io/",
+      "title": "AveritA的昼梦叙集",
+      "label": "→ 站点",
+      "note": "桌角一枚浮着的晶体"
+    }
+  ],
+  "arrives": [
+    {
+      "name": "home",
+      "at": [
+        -3,
+        4.5,
+        2.13
+      ],
+      "face": 0
+    }
+  ],
+  "views": [
+    {
+      "name": "bird",
+      "at": [
+        36,
+        -42,
+        44
+      ],
+      "look": [
+        0,
+        0,
+        2.6
+      ],
+      "fov": 52,
+      "res": [
+        1900,
+        1050
+      ]
+    },
+    {
+      "name": "eye",
+      "at": [
+        0,
+        -13,
+        3.85
+      ],
+      "look": [
+        0,
+        3,
+        2.7
+      ],
+      "fov": 68
+    },
+    {
+      "name": "lamp",
+      "at": [
+        4,
+        6,
+        3.9
+      ],
+      "look": [
+        -3,
+        1,
+        3.4
+      ],
+      "fov": 60
+    },
+    {
+      "name": "vase",
+      "at": [
+        3,
+        3,
+        3.8
+      ],
+      "look": [
+        9,
+        9,
+        3.6
+      ],
+      "fov": 60
+    },
+    {
+      "name": "water",
+      "at": [
+        -8,
+        -8,
+        2.3
+      ],
+      "look": [
+        7,
+        7,
+        2.32
+      ],
+      "fov": 72
+    }
+  ],
+  "notes": [
+    "一句话：一张放大到建筑的桌面就是地面；一杯打翻的水从桌心漫开，成一片没不过脚踝的浅滩。",
+    "动线：出生在桌面南缘 → 往北走进浅滩，蹚水绕过浮着的圆叶 → 圆叶上的路灯（E「关灯」→ 家）。",
+    "桌面 32×32，是唯一真正的走人面（约 892㎡）；中央是浅滩，滩底是一层薄水（不算走人面），水面是一片薄 plane，不挡人。",
+    "浅滩不是方的：桌面四个内角各切去一块，滩面收成一个八边形；人可以踩在滩沿与切角上。",
+    "桌沿一圈矮栏，人可以走到沿边，往下看是 2.2m 下的地板。",
+    "浅滩里浮着大圆叶与几只杯垫；最大的一片叶上立着回家的路灯；滩边还立着一只打翻的杯。",
+    "东北角水边一只插满花的瓶（E「凑近」→ 花房）；西南桌角一枚浮着的晶体（→ 真实站点）。",
+    "正式场景里回家的灯用 prefabs.gate_home、花瓶用 prefabs.gate_vase；样板里为了地图画得出来，都用 prims 手搭。"
+  ]
+}

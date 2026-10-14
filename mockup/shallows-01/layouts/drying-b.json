@@ -1,0 +1,137 @@
+{
+  "id": "drying-b",
+  "title": "晾场 · 环形绳",
+  "en": "Drying Yard · Ring",
+  "role": "浅梦屋顶的晾台：一圈晾衣绳把屋顶中间的空地圈起来，床单围成一圈墙，南边一道缺口顺着台阶下到低 2.7m 的内院（院心一汪浅水），再从北边另一道缺口上来；绕过一整圈，从东北角一段长梯爬上 6m 的高晾台，尽头一张被风鼓起的床单把人送向云阶。",
+  "extent": 50,
+  "ground": { "a": "mist", "b": "lilac_pale", "pattern": "grain" },
+  "sky": "horizon",
+  "levels": [
+    { "z": 0, "label": "街面 / 楼下的路" },
+    { "z": 0.3, "label": "内院（屋顶中间的空地）" },
+    { "z": 3.0, "label": "屋顶晾场" },
+    { "z": 6.0, "label": "高晾台" }
+  ],
+  "spawn": { "at": [0, -11, 3.0], "face": 0 },
+  "prims": [
+    { "kind": "box", "name": "band_s", "size": [28, 8, 3.0], "at": [0, -10, 0], "style": "deck" },
+    { "kind": "box", "name": "band_n", "size": [28, 8, 3.0], "at": [0, 10, 0], "style": "deck" },
+    { "kind": "box", "name": "band_w", "size": [8, 12, 3.0], "at": [-10, 0, 0], "style": "deck" },
+    { "kind": "box", "name": "band_e", "size": [8, 12, 3.0], "at": [10, 0, 0], "style": "deck" },
+    { "kind": "box", "name": "yard", "size": [12, 12, 0.3], "at": [0, 0, 0], "style": "deck" },
+    { "kind": "cylinder", "name": "pool", "r": 1.4, "h": 0.06, "at": [0, 0, 0.3], "style": "water", "collide": false },
+    { "kind": "sprite", "name": "pool_lotus", "sprite": "flower.cup:5", "at": [0, 0, 0.36], "style": "plant" },
+
+    { "kind": "box", "name": "rail_s_w", "size": [11, 0.3, 0.5], "at": [-8.5, -13.85, 3.0], "style": "rail" },
+    { "kind": "box", "name": "rail_s_e", "size": [11, 0.3, 0.5], "at": [8.5, -13.85, 3.0], "style": "rail" },
+    { "kind": "box", "name": "rail_w", "size": [0.3, 28, 0.5], "at": [-13.85, 0, 3.0], "style": "rail" },
+    { "kind": "box", "name": "rail_e", "size": [0.3, 20, 0.5], "at": [13.85, -4, 3.0], "style": "rail" },
+    { "kind": "box", "name": "rail_n", "size": [18, 0.3, 0.5], "at": [-5, 13.85, 3.0], "style": "rail" },
+
+    { "kind": "stairs", "name": "stairs_street", "w": 3, "n": 10, "rise": 0.3, "run": 0.75, "at": [0, -21.5, 0], "rot": 0, "style": "stair" },
+
+    { "kind": "box", "name": "line_iN", "size": [14, 0.12, 0.12], "at": [0, 7, 7.2], "style": "rail" },
+    { "kind": "box", "name": "line_iS", "size": [14, 0.12, 0.12], "at": [0, -7, 7.2], "style": "rail" },
+    { "kind": "box", "name": "line_iW", "size": [0.12, 14, 0.12], "at": [-7, 0, 7.2], "style": "rail" },
+    { "kind": "box", "name": "line_iE", "size": [0.12, 14, 0.12], "at": [7, 0, 7.2], "style": "rail" },
+
+    { "kind": "box", "name": "line_oN", "size": [24, 0.12, 0.12], "at": [0, 12, 7.6], "style": "rail" },
+    { "kind": "box", "name": "line_oS", "size": [24, 0.12, 0.12], "at": [0, -12, 7.6], "style": "rail" },
+    { "kind": "box", "name": "line_oW", "size": [0.12, 24, 0.12], "at": [-12, 0, 7.6], "style": "rail" },
+    { "kind": "box", "name": "line_oE", "size": [0.12, 24, 0.12], "at": [12, 0, 7.6], "style": "rail" },
+
+    { "kind": "box", "name": "line_d0", "size": [30, 0.12, 0.12], "at": [0, 0, 8.0], "rot": 45, "style": "rail" },
+    { "kind": "box", "name": "line_d1", "size": [30, 0.12, 0.12], "at": [0, 0, 8.2], "rot": -45, "style": "rail" },
+
+    { "kind": "cylinder", "name": "post_i_sw", "r": 0.14, "h": 4.4, "at": [-7, -7, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_i_nw", "r": 0.14, "h": 4.4, "at": [-7, 7, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_i_se", "r": 0.14, "h": 4.4, "at": [7, -7, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_i_n", "r": 0.14, "h": 4.4, "at": [0, 7, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_i_s", "r": 0.14, "h": 4.4, "at": [0, -7, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_i_w", "r": 0.14, "h": 4.4, "at": [-7, 0, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_i_e", "r": 0.14, "h": 4.4, "at": [7, 0, 3.0], "style": "prop" },
+
+    { "kind": "cylinder", "name": "post_o_sw", "r": 0.14, "h": 4.8, "at": [-12, -12, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_o_nw", "r": 0.14, "h": 4.8, "at": [-12, 12, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_o_se", "r": 0.14, "h": 4.8, "at": [12, -12, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_o_n", "r": 0.14, "h": 4.8, "at": [0, 12, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_o_s", "r": 0.14, "h": 4.8, "at": [0, -12, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_o_w", "r": 0.14, "h": 4.8, "at": [-12, 0, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "post_o_e", "r": 0.14, "h": 4.8, "at": [12, 0, 3.0], "style": "prop" },
+
+    { "kind": "box", "name": "sheet_iW", "size": [0.18, 12, 4.6], "at": [-6.5, 0, 3.0], "rot": 2, "style": "rail" },
+    { "kind": "box", "name": "sheet_iE", "size": [0.18, 12, 4.6], "at": [6.5, 0, 3.0], "rot": -2, "style": "rail" },
+    { "kind": "box", "name": "sheet_iN_w", "size": [7.5, 0.18, 4.6], "at": [-2.25, 6.5, 3.0], "rot": -3, "style": "rail" },
+    { "kind": "box", "name": "sheet_iN_e", "size": [1.5, 0.18, 4.6], "at": [5.25, 6.5, 3.0], "rot": 3, "style": "prop" },
+    { "kind": "box", "name": "sheet_iS_w", "size": [1.5, 0.18, 4.6], "at": [-5.25, -6.5, 3.0], "rot": 3, "style": "prop" },
+    { "kind": "box", "name": "sheet_iS_e", "size": [7.5, 0.18, 4.6], "at": [2.25, -6.5, 3.0], "rot": -3, "style": "rail" },
+
+    { "kind": "box", "name": "sheet_oW_n", "size": [5, 0.18, 4.4], "at": [-11, 3, 3.0], "rot": 2, "style": "rail" },
+    { "kind": "box", "name": "sheet_oW_s", "size": [5, 0.18, 4.4], "at": [-11, -3, 3.0], "rot": -2, "style": "rail" },
+    { "kind": "box", "name": "sheet_oE_n", "size": [5, 0.18, 4.4], "at": [11, 3, 3.0], "rot": -2, "style": "prop" },
+    { "kind": "box", "name": "sheet_oE_s", "size": [5, 0.18, 4.4], "at": [11, -3, 3.0], "rot": 2, "style": "rail" },
+
+    { "kind": "stairs", "name": "stairs_down", "w": 3, "n": 9, "rise": 0.3, "run": 0.75, "at": [-3, 0.75, 0.3], "rot": 180, "style": "stair" },
+    { "kind": "stairs", "name": "stairs_up", "w": 3, "n": 9, "rise": 0.3, "run": 0.75, "at": [3, -0.75, 0.3], "rot": 0, "style": "stair" },
+
+    { "kind": "box", "name": "tower", "size": [8, 8, 3.0], "at": [10, 10, 3.0], "style": "deck" },
+    { "kind": "stairs", "name": "stairs_tower", "w": 2.6, "n": 10, "rise": 0.3, "run": 0.7, "at": [-1, 10, 3.0], "rot": -90, "style": "stair" },
+
+    { "kind": "box", "name": "exit_sheet_w", "size": [5, 0.2, 4.2], "at": [7.0, 12.9, 6.0], "rot": 22, "style": "rail" },
+    { "kind": "box", "name": "exit_sheet_e", "size": [5, 0.2, 4.2], "at": [13.0, 12.9, 6.0], "rot": -22, "style": "rail" },
+
+    { "kind": "box", "name": "pole_b", "size": [24, 0.16, 0.16], "at": [0, -9, 5.4], "style": "prop" },
+    { "kind": "cylinder", "name": "pole_b_w", "r": 0.12, "h": 2.6, "at": [-11, -9, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "pole_b_e", "r": 0.12, "h": 2.6, "at": [11, -9, 3.0], "style": "prop" },
+
+    { "kind": "cylinder", "name": "basket_b0", "r": 0.8, "h": 0.9, "at": [-10, 5, 3.0], "style": "prop" },
+    { "kind": "cylinder", "name": "basket_b1", "r": 0.7, "h": 0.8, "at": [10, -9, 3.0], "style": "prop" },
+
+    { "kind": "cylinder", "name": "home_post", "r": 0.09, "h": 3.4, "at": [-3.5, -11, 3.0], "style": "prop" },
+    { "kind": "box", "name": "home_head", "size": [0.7, 0.7, 0.5], "at": [-3.5, -11, 6.4], "style": "prop" },
+
+    { "kind": "box", "name": "far_b0", "size": [3, 3, 11], "at": [-17.75, -4, 0], "style": "mass" },
+    { "kind": "box", "name": "far_b1", "size": [3, 3, 15], "at": [-17.75, 12, 0], "style": "mass" },
+    { "kind": "box", "name": "far_b2", "size": [3, 3, 9], "at": [17.75, -8, 0], "style": "mass" },
+    { "kind": "box", "name": "far_b3", "size": [3, 3, 13], "at": [17.75, 8, 0], "style": "mass" },
+    { "kind": "box", "name": "far_b4", "size": [3, 3, 10], "at": [-12, -23, 0], "style": "mass" },
+    { "kind": "box", "name": "far_b5", "size": [3, 3, 12], "at": [12, -23, 0], "style": "mass" },
+
+    { "kind": "box", "name": "stall_b0", "size": [4, 3, 2.4], "at": [9, -18, 0], "style": "wall" },
+    { "kind": "box", "name": "stall_b1", "size": [3.5, 3, 2.0], "at": [-10, -19, 0], "style": "wall" },
+
+    { "kind": "spriteRow", "name": "lamp_w", "sprite": "lamp_street", "from": [-15, -12], "to": [-15, 6], "n": 4, "rot": 90, "face": false, "z": 0, "style": "prop" },
+    { "kind": "spriteRow", "name": "lamp_e", "sprite": "lamp_street", "from": [15, -12], "to": [15, 6], "n": 4, "rot": -90, "face": false, "z": 0, "style": "prop" },
+    { "kind": "spriteRow", "name": "lamp_s_w", "sprite": "lamp_street", "from": [-14, -15], "to": [-4, -15], "n": 3, "rot": 0, "face": false, "z": 0, "style": "prop" },
+    { "kind": "spriteRow", "name": "lamp_s_e", "sprite": "lamp_street", "from": [4, -15], "to": [14, -15], "n": 3, "rot": 0, "face": false, "z": 0, "style": "prop" },
+    { "kind": "spriteRow", "name": "tree_w", "sprite": "tree.round:3", "from": [-18, -14], "to": [-18, 4], "n": 3, "style": "plant" },
+    { "kind": "spriteRow", "name": "tree_e", "sprite": "tree.tall:4", "from": [18, -14], "to": [18, 4], "n": 3, "style": "plant" },
+    { "kind": "spriteRow", "name": "tree_s", "sprite": "tree.round:3", "from": [-15, -19], "to": [15, -19], "n": 4, "style": "plant" }
+  ],
+  "regions": [
+    { "label": "环形晾场", "shape": "rect", "at": [0, 0], "size": [28, 28] },
+    { "label": "内院（低 2.7m）", "shape": "rect", "at": [0, 0], "size": [12, 12] },
+    { "label": "高晾台", "shape": "rect", "at": [10, 10], "size": [8, 8] },
+    { "label": "街（南）", "shape": "rect", "at": [0, -18], "size": [24, 10] }
+  ],
+  "portals": [
+    { "name": "gate_home", "kind": "home", "at": [-3.5, -11, 4.5], "to": "home", "at_node": "drying-b", "mode": "key", "title": "关灯", "label": "→ 家", "note": "南端环形晾场角，出生点旁" },
+    { "name": "gate_isles", "kind": "world", "at": [10, 13.1, 7.3], "to": "isles", "mode": "walk", "rot": 180, "veil_w": 1.8, "veil_h": 2.4, "title": "钻过去", "label": "→ 云阶", "note": "高晾台北端，一张被风鼓起的床单" }
+  ],
+  "views": [
+    { "name": "bird", "at": [38, -40, 36], "look": [0, 0, 3], "fov": 50, "res": [1900, 1050] },
+    { "name": "eye", "at": [0, -11, 4.6], "look": [12, -8, 4.4], "fov": 74 },
+    { "name": "weave", "at": [-3, -7.2, 4.4], "look": [0, 2, 3.2], "fov": 76 },
+    { "name": "edge", "at": [4, -13, 4.6], "look": [9, -25, -4], "fov": 64 },
+    { "name": "yard", "at": [0, -3.2, 1.9], "look": [3, 4, 4.2], "fov": 76 }
+  ],
+  "notes": [
+    "一栋围成一圈的房子：中间是一块 12×12 的内院（低 2.7m），屋顶在 3m 绕着内院一圈。",
+    "南边一段十级的楼梯从街面（0m）上来；外圈一圈晾衣绳（高 7.6m）沿屋顶边缘绕，两条对角的气绳在中心上方交叉。",
+    "内圈一圈晾衣绳（高 7.2m）挂着床单，围成一圈墙，把内院围住：南墙西段留一道 3m 的缺口下院，北墙东段留一道缺口上来。",
+    "内院比屋顶低 2.7m，院心一汪浅水；南边下、北边上，要绕着走半圈。",
+    "东北角一段十级的长梯从屋顶（3m）爬上 6m 的高晾台，台上北端一张被风鼓起的床单（两片斜挂的布留一道缝），走进去飘向云阶。",
+    "站在屋顶的栏板边往下看：街面、路灯、摊位、几栋远处的楼。",
+    "正式场景里回家的灯用 prefabs.gate_home；样板里为了地图能画出它，手搭了一盏（灯柱 + 灯头）。"
+  ]
+}

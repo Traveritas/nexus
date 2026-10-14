@@ -1,0 +1,972 @@
+{
+  "id": "drying",
+  "title": "晾场 · 平行绳",
+  "en": "Drying Yard · Parallel Lines",
+  "role": "浅梦屋顶的晾台：一排平行的晾衣绳横过屋脊，被单一正一反地挂着，只在中段留出能钻过去的缝；穿过一道道布墙，再沿东侧的气绳爬坡上到第二层晾台，尽头一张鼓起来的床单把人送向云阶。",
+  "extent": 50,
+  "ground": {
+    "a": "mist",
+    "b": "lilac_pale",
+    "pattern": "grain"
+  },
+  "sky": "silk",
+  "levels": [
+    {
+      "z": 0,
+      "label": "街面 / 楼下的路"
+    },
+    {
+      "z": 3,
+      "label": "屋顶晾场"
+    },
+    {
+      "z": 6,
+      "label": "第二层晾台"
+    }
+  ],
+  "spawn": {
+    "at": [
+      0,
+      -10,
+      3
+    ],
+    "face": 0
+  },
+  "prims": [
+    {
+      "kind": "box",
+      "name": "deck_roof",
+      "size": [
+        30,
+        22,
+        3
+      ],
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "rail_n",
+      "size": [
+        30,
+        0.3,
+        0.5
+      ],
+      "at": [
+        0,
+        10.85,
+        3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_w",
+      "size": [
+        0.3,
+        22,
+        0.5
+      ],
+      "at": [
+        -14.85,
+        0,
+        3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_e",
+      "size": [
+        0.3,
+        22,
+        0.5
+      ],
+      "at": [
+        14.85,
+        0,
+        3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_s_w",
+      "size": [
+        13,
+        0.3,
+        0.5
+      ],
+      "at": [
+        -8.5,
+        -10.85,
+        3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_s_e",
+      "size": [
+        13,
+        0.3,
+        0.5
+      ],
+      "at": [
+        8.5,
+        -10.85,
+        3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "stairs",
+      "name": "stairs_street",
+      "w": 3,
+      "n": 10,
+      "rise": 0.3,
+      "run": 0.75,
+      "at": [
+        0,
+        -18.5,
+        0
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "box",
+      "name": "line_a0",
+      "size": [
+        26,
+        0.12,
+        0.12
+      ],
+      "at": [
+        0,
+        -7,
+        7.65
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "line_a1",
+      "size": [
+        26,
+        0.12,
+        0.12
+      ],
+      "at": [
+        0,
+        -3.5,
+        7.65
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "line_a2",
+      "size": [
+        26,
+        0.12,
+        0.12
+      ],
+      "at": [
+        0,
+        0,
+        7.65
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "line_a3",
+      "size": [
+        26,
+        0.12,
+        0.12
+      ],
+      "at": [
+        0,
+        3.5,
+        7.65
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a0_w",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        -13,
+        -7,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a0_e",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        13,
+        -7,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a1_w",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        -13,
+        -3.5,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a1_e",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        13,
+        -3.5,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a2_w",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        -13,
+        0,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a2_e",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        13,
+        0,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a3_w",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        -13,
+        3.5,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "post_a3_e",
+      "r": 0.14,
+      "h": 4.8,
+      "at": [
+        13,
+        3.5,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a0_w",
+      "size": [
+        10.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        -7.25,
+        -7,
+        3
+      ],
+      "rot": 3,
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a0_e",
+      "size": [
+        10.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        7.25,
+        -7,
+        3
+      ],
+      "rot": -3,
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a1_w",
+      "size": [
+        3.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        -10.75,
+        -3.5,
+        3
+      ],
+      "rot": -3,
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a1_e",
+      "size": [
+        17.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        3.75,
+        -3.5,
+        3
+      ],
+      "rot": 3,
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a2_w",
+      "size": [
+        10.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        -7.25,
+        0,
+        3
+      ],
+      "rot": 3,
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a2_e",
+      "size": [
+        10.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        7.25,
+        0,
+        3
+      ],
+      "rot": -3,
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a3_w",
+      "size": [
+        18.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        -3.25,
+        3.5,
+        3
+      ],
+      "rot": -2,
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "sheet_a3_e",
+      "size": [
+        2.5,
+        0.18,
+        4.4
+      ],
+      "at": [
+        11.25,
+        3.5,
+        3
+      ],
+      "rot": 2,
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "pole_s",
+      "size": [
+        24,
+        0.16,
+        0.16
+      ],
+      "at": [
+        0,
+        -10.6,
+        5.4
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "pole_s_w",
+      "r": 0.12,
+      "h": 2.6,
+      "at": [
+        -12,
+        -10.6,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "pole_s_e",
+      "r": 0.12,
+      "h": 2.6,
+      "at": [
+        12,
+        -10.6,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "basket_a",
+      "r": 0.9,
+      "h": 1,
+      "at": [
+        6,
+        -10.2,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "cylinder",
+      "name": "basket_b",
+      "r": 0.7,
+      "h": 0.8,
+      "at": [
+        -13.5,
+        0,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "deck_l2",
+      "size": [
+        30,
+        5.5,
+        3
+      ],
+      "at": [
+        0,
+        7.75,
+        3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "stairs",
+      "name": "stairs_l2",
+      "w": 2.2,
+      "n": 10,
+      "rise": 0.3,
+      "run": 0.7,
+      "at": [
+        13.6,
+        -2,
+        3
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "box",
+      "name": "exit_sheet_w",
+      "size": [
+        5,
+        0.2,
+        4.2
+      ],
+      "at": [
+        -3.4,
+        9.5,
+        6
+      ],
+      "rot": 22,
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "exit_sheet_e",
+      "size": [
+        5,
+        0.2,
+        4.2
+      ],
+      "at": [
+        3.4,
+        9.5,
+        6
+      ],
+      "rot": -22,
+      "style": "rail"
+    },
+    {
+      "kind": "cylinder",
+      "name": "home_post",
+      "r": 0.09,
+      "h": 3.4,
+      "at": [
+        -3.5,
+        -9.5,
+        3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "home_head",
+      "size": [
+        0.7,
+        0.7,
+        0.5
+      ],
+      "at": [
+        -3.5,
+        -9.5,
+        6.4
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "far_a0",
+      "size": [
+        3,
+        3,
+        11
+      ],
+      "at": [
+        -17.5,
+        -4,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far_a1",
+      "size": [
+        3,
+        3,
+        15
+      ],
+      "at": [
+        -17.5,
+        12,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far_a2",
+      "size": [
+        3,
+        3,
+        9
+      ],
+      "at": [
+        17.5,
+        -8,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far_a3",
+      "size": [
+        3,
+        3,
+        13
+      ],
+      "at": [
+        17.5,
+        8,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far_a4",
+      "size": [
+        3,
+        3,
+        10
+      ],
+      "at": [
+        -12,
+        -23,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far_a5",
+      "size": [
+        3,
+        3,
+        12
+      ],
+      "at": [
+        12,
+        -23,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "stall_a",
+      "size": [
+        4,
+        3,
+        2.4
+      ],
+      "at": [
+        9,
+        -18,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "stall_b",
+      "size": [
+        3.5,
+        3,
+        2
+      ],
+      "at": [
+        -10,
+        -19,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "lamp_w",
+      "sprite": "lamp_street",
+      "from": [
+        -15,
+        -12
+      ],
+      "to": [
+        -15,
+        6
+      ],
+      "n": 4,
+      "rot": 90,
+      "face": false,
+      "z": 0,
+      "style": "prop"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "lamp_e",
+      "sprite": "lamp_street",
+      "from": [
+        15,
+        -12
+      ],
+      "to": [
+        15,
+        6
+      ],
+      "n": 4,
+      "rot": -90,
+      "face": false,
+      "z": 0,
+      "style": "prop"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "lamp_s_w",
+      "sprite": "lamp_street",
+      "from": [
+        -14,
+        -15
+      ],
+      "to": [
+        -4,
+        -15
+      ],
+      "n": 3,
+      "rot": 0,
+      "face": false,
+      "z": 0,
+      "style": "prop"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "lamp_s_e",
+      "sprite": "lamp_street",
+      "from": [
+        4,
+        -15
+      ],
+      "to": [
+        14,
+        -15
+      ],
+      "n": 3,
+      "rot": 0,
+      "face": false,
+      "z": 0,
+      "style": "prop"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "tree_w",
+      "sprite": "tree.round:3",
+      "from": [
+        -18,
+        -14
+      ],
+      "to": [
+        -18,
+        4
+      ],
+      "n": 3,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "tree_e",
+      "sprite": "tree.tall:4",
+      "from": [
+        18,
+        -14
+      ],
+      "to": [
+        18,
+        4
+      ],
+      "n": 3,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "tree_s",
+      "sprite": "tree.round:3",
+      "from": [
+        -15,
+        -19
+      ],
+      "to": [
+        15,
+        -19
+      ],
+      "n": 4,
+      "style": "plant"
+    }
+  ],
+  "regions": [
+    {
+      "label": "屋顶晾场（平行绳）",
+      "shape": "rect",
+      "at": [
+        0,
+        -3.5
+      ],
+      "size": [
+        30,
+        15
+      ]
+    },
+    {
+      "label": "第二层晾台",
+      "shape": "rect",
+      "at": [
+        0,
+        7.75
+      ],
+      "size": [
+        30,
+        5.5
+      ]
+    },
+    {
+      "label": "街（南）",
+      "shape": "rect",
+      "at": [
+        0,
+        -18
+      ],
+      "size": [
+        24,
+        10
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "name": "gate_home",
+      "kind": "home",
+      "at": [
+        -3.5,
+        -9.5,
+        4.5
+      ],
+      "to": "home",
+      "at_node": "drying",
+      "mode": "key",
+      "title": "关灯",
+      "label": "→ 家",
+      "note": "南端晾场角，出生点旁"
+    },
+    {
+      "name": "gate_isles",
+      "kind": "world",
+      "at": [
+        0,
+        9.9,
+        7.3
+      ],
+      "to": "isles",
+      "mode": "walk",
+      "rot": 180,
+      "veil_w": 1.9,
+      "veil_h": 2.5,
+      "title": "钻过去",
+      "label": "→ 云阶",
+      "note": "第二层晾台北端，一张被风鼓起的床单"
+    }
+  ],
+  "views": [
+    {
+      "name": "bird",
+      "at": [
+        40,
+        -42,
+        38
+      ],
+      "look": [
+        0,
+        -1,
+        3
+      ],
+      "fov": 50,
+      "res": [
+        1900,
+        1050
+      ]
+    },
+    {
+      "name": "eye",
+      "at": [
+        0,
+        -10.5,
+        4.6
+      ],
+      "look": [
+        0,
+        10,
+        3.6
+      ],
+      "fov": 70
+    },
+    {
+      "name": "weave",
+      "at": [
+        14.5,
+        -7,
+        4.6
+      ],
+      "look": [
+        14.5,
+        16,
+        5.2
+      ],
+      "fov": 72
+    },
+    {
+      "name": "edge",
+      "at": [
+        4,
+        -11,
+        4.6
+      ],
+      "look": [
+        7,
+        -22,
+        -4
+      ],
+      "fov": 60
+    },
+    {
+      "name": "top",
+      "at": [
+        -9,
+        7.5,
+        7.6
+      ],
+      "look": [
+        4,
+        9.8,
+        6.9
+      ],
+      "fov": 66
+    }
+  ],
+  "notes": [
+    "一栋房子的屋顶：南边一段十级的楼梯从街面（0m）上来，屋顶晾场在 3m。",
+    "四条东西向的平行晾衣绳横过屋顶（绳高 7.65m），绳两端各一根夹子似的立柱。",
+    "每条绳上挂两片床单当墙，只在中间留 4m 的缝，缝的位置一条条错开，走过去要拐着弯。",
+    "东侧留一条 2m 的走道直通北端；沿一段十级的坡上到 6m 的第二层晾台。",
+    "第二层北端一张被风鼓起的床单（两片斜挂的布留一道缝），走进去飘向云阶。",
+    "站在屋顶的栏板边往下看：街面、路灯、几栋远处的楼。",
+    "正式场景里回家的灯用 prefabs.gate_home；样板里为了地图能画出它，手搭了一盏（灯柱 + 灯头）。"
+  ]
+}

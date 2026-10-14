@@ -1,0 +1,94 @@
+{
+  "id": "isles-b",
+  "title": "云阶 · 绕柱",
+  "en": "Shallows · Spiral",
+  "role": "一根从云里长出的柱子，六层浮台绕着它旋转而上，一层比一层高；走到顶台是一枚晶体，回身可以一层层走下来。",
+  "extent": 48,
+  "ground": { "a": "lilac_pale", "b": "mist", "pattern": "plain" },
+  "sky": "blank",
+  "levels": [
+    { "z": 0.3, "label": "出生岛" },
+    { "z": 8.7, "label": "第二层台" },
+    { "z": 17.1, "label": "第四层台" },
+    { "z": 25.5, "label": "顶台 · 晶体" }
+  ],
+  "spawn": { "at": [0, -16.5, 0.3], "face": 0 },
+  "prims": [
+    { "kind": "cylinder", "name": "spire", "r": 1.8, "h": 30, "at": [0, 0, 0], "style": "mass" },
+    { "kind": "box", "name": "spire_tip", "size": [1.2, 1.2, 5], "at": [0, 0, 26], "style": "mass" },
+    { "kind": "torus", "name": "spire_ring0", "major": 2.8, "minor": 0.25, "at": [0, 0, 28], "style": "rail", "spin": 5, "collide": false },
+    { "kind": "torus", "name": "spire_ring1", "major": 4.2, "minor": 0.2, "at": [0, 0, 32], "style": "rail", "spin": -4, "collide": false },
+
+    { "kind": "cylinder", "name": "home_isle", "r": 7.0, "h": 0.3, "at": [0, -12, 0], "style": "deck" },
+
+    { "kind": "cylinder", "name": "terrace_1", "r": 5.5, "h": 0.7, "at": [10.39, -6.0, 3.8], "style": "deck" },
+    { "kind": "cylinder", "name": "terrace_2", "r": 5.5, "h": 0.7, "at": [10.39, 6.0, 8.0], "style": "deck" },
+    { "kind": "cylinder", "name": "terrace_3", "r": 5.5, "h": 0.7, "at": [0, 12, 12.2], "style": "deck" },
+    { "kind": "cylinder", "name": "terrace_4", "r": 5.5, "h": 0.7, "at": [-10.39, 6.0, 16.4], "style": "deck" },
+    { "kind": "cylinder", "name": "terrace_5", "r": 5.5, "h": 0.7, "at": [-10.39, -6.0, 20.6], "style": "deck" },
+    { "kind": "cylinder", "name": "terrace_6", "r": 5.5, "h": 0.7, "at": [0, -12, 24.8], "style": "deck" },
+
+    { "kind": "stairs", "name": "ramp_1", "w": 3.0, "n": 14, "rise": 0.3, "run": 0.6, "at": [1.30, -11.25, 0.3], "rot": -60, "style": "stair" },
+    { "kind": "stairs", "name": "ramp_2", "w": 3.0, "n": 14, "rise": 0.3, "run": 0.6, "at": [10.39, -4.50, 4.5], "rot": 0, "style": "stair" },
+    { "kind": "stairs", "name": "ramp_3", "w": 3.0, "n": 14, "rise": 0.3, "run": 0.6, "at": [9.09, 6.75, 8.7], "rot": 60, "style": "stair" },
+    { "kind": "stairs", "name": "ramp_4", "w": 3.0, "n": 14, "rise": 0.3, "run": 0.6, "at": [-1.30, 11.25, 12.9], "rot": 120, "style": "stair" },
+    { "kind": "stairs", "name": "ramp_5", "w": 3.0, "n": 14, "rise": 0.3, "run": 0.6, "at": [-10.39, 4.50, 17.1], "rot": 180, "style": "stair" },
+    { "kind": "stairs", "name": "ramp_6", "w": 3.0, "n": 14, "rise": 0.3, "run": 0.6, "at": [-9.09, -6.75, 21.3], "rot": 240, "style": "stair" },
+
+    { "kind": "arch", "name": "gate_frame", "w": 2.4, "h": 3.0, "t": 0.24, "depth": 0.4, "at": [13.0, 6.0, 8.7], "rot": 180, "style": "frame" },
+    { "kind": "box", "name": "site_pedestal", "size": [1.4, 1.4, 1.0], "at": [0, -12, 25.5], "style": "mass" },
+
+    { "kind": "cylinder", "name": "home_post", "r": 0.09, "h": 3.4, "at": [0, -18, 0.3], "style": "prop" },
+    { "kind": "box", "name": "home_head", "size": [0.7, 0.7, 0.5], "at": [0, -18, 3.7], "style": "prop" },
+
+    { "kind": "sprite", "name": "lamp_a", "sprite": "lamp_street", "at": [-4.5, -6.0, 4.5], "rot": 90, "face": false, "style": "prop" },
+    { "kind": "sprite", "name": "lamp_b", "sprite": "lamp_street", "at": [4.5, 12, 12.9], "rot": -90, "face": false, "style": "prop" },
+    { "kind": "sprite", "name": "lamp_c", "sprite": "lamp_street", "at": [4.5, -6.0, 21.3], "rot": -90, "face": false, "style": "prop" },
+    { "kind": "sprite", "name": "tree_a", "sprite": "tree.round:5", "at": [5, -14, 0.3], "style": "plant" },
+    { "kind": "sprite", "name": "tree_b", "sprite": "tree.tuft:2", "at": [-5, -14, 0.3], "style": "plant" },
+    { "kind": "sprite", "name": "chair_a", "sprite": "chair", "at": [3.0, -9.5, 0.3], "rot": 210, "face": false, "style": "prop" },
+    { "kind": "spriteRow", "name": "home_grass", "sprite": "grass.flowered:3", "from": [-5.5, -16], "to": [-5.5, -8], "n": 4, "style": "plant" },
+
+    { "kind": "box", "name": "drift_a", "size": [6, 4, 0.6], "at": [-13, -6, 11], "rot": 14, "style": "deck" },
+    { "kind": "box", "name": "drift_b", "size": [5, 3.5, 0.6], "at": [13, 16, 19], "rot": -12, "style": "deck" },
+    { "kind": "box", "name": "chunk_s", "size": [6, 4, 1.2], "at": [-14, -20, 6], "style": "mass" },
+    { "kind": "box", "name": "chunk_n", "size": [5, 3, 1.0], "at": [14, 20.5, 15], "style": "mass" },
+    { "kind": "box", "name": "chunk_w", "size": [4, 6, 0.9], "at": [-20, -8, 11], "style": "mass" },
+    { "kind": "box", "name": "chunk_e", "size": [4, 6, 0.9], "at": [20, 8, 19], "style": "mass" },
+
+    { "kind": "sprite", "name": "cloud_0", "sprite": "cloud:2", "at": [-13, -19, 3], "style": "rail", "collide": false, "shadow": false },
+    { "kind": "sprite", "name": "cloud_1", "sprite": "cloud:4", "at": [14, -16, 6], "style": "rail", "collide": false, "shadow": false },
+    { "kind": "sprite", "name": "cloud_2", "sprite": "cloud:6", "at": [-15, 6, 10], "style": "rail", "collide": false, "shadow": false },
+    { "kind": "sprite", "name": "cloud_3", "sprite": "cloud:8", "at": [15, 4, 14], "style": "rail", "collide": false, "shadow": false },
+    { "kind": "sprite", "name": "cloud_4", "sprite": "cloud:1", "at": [-6, 18, 20], "style": "rail", "collide": false, "shadow": false },
+    { "kind": "sprite", "name": "cloud_5", "sprite": "cloud:5", "at": [8, -18, 24], "style": "rail", "collide": false, "shadow": false }
+  ],
+  "regions": [
+    { "label": "中心塔", "shape": "circle", "at": [0, 0], "r": 3.2 },
+    { "label": "绕柱的六层台", "shape": "circle", "at": [0, 0], "r": 18 },
+    { "label": "出生岛", "shape": "circle", "at": [0, -12], "r": 7 }
+  ],
+  "portals": [
+    { "name": "gate_home", "kind": "home", "at": [0, -18, 1.9], "to": "home", "at_node": "isles-b", "mode": "key", "title": "关灯", "label": "→ 家", "note": "出生岛南端，灯下" },
+    { "name": "gate_arcade", "kind": "world", "at": [13.0, 6.0, 10.3], "to": "arcade", "mode": "walk", "rot": 180, "veil_w": 1.9, "veil_h": 2.5, "label": "→ 回廊", "note": "第二层台上的一扇门" },
+    { "name": "gate_site", "kind": "site", "at": [0, -12, 27.1], "url": "https://traveritas.github.io/", "title": "AveritA的昼梦叙集", "label": "→ 站点", "note": "顶台上的晶体" }
+  ],
+  "arrives": [
+    { "name": "home", "at": [0, -16.5, 0.3], "face": 0 }
+  ],
+  "views": [
+    { "name": "bird", "at": [46, -54, 44], "look": [0, 0, 12], "fov": 56, "res": [1900, 1050] },
+    { "name": "eye", "at": [0, -16.5, 2.0], "look": [2, 3, 13], "fov": 76 },
+    { "name": "lookup", "at": [-7, -34, 2.5], "look": [0, 4, 24], "fov": 64 },
+    { "name": "lookdown", "at": [16, 12, 40], "look": [0, -6, 4], "fov": 62 },
+    { "name": "top", "at": [20, 2, 32], "look": [0, -11, 25.5], "fov": 54 }
+  ],
+  "notes": [
+    "一根 30m 高的柱子立在正中，六层圆台（每层直径 11m）绕着它排成一圈、每上一层抬 4.2m，走一圈正好回到起点上方 25.5m 的顶台。",
+    "层与层之间是一段 14 级的悬空踏步（每级抬 0.3m、走 0.6m），从下层台心斜搭到上层台心，跨过两米来宽的断口——是「旋转而上的坡道」。",
+    "动线上是环：绕柱转一圈到顶，也可以原路一层层走下来；顶台在出生岛正上方。",
+    "出生岛（0.3m）在南端，一盏灯（E「关灯」→ 家）；第二层台上一扇门走出去到回廊；顶台上一枚晶体（真实站点）。",
+    "四散的浮台残片（6~19m 高）与远处浮石围在外圈；柱顶一截断头、两圈转着的环。",
+    "天空空白（blank），台下压着纸云；整体从 0.3m 到 32m。"
+  ]
+}

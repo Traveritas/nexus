@@ -1,0 +1,726 @@
+{
+  "id": "room-a",
+  "title": "无墙之屋 · 缺",
+  "en": "Room, Unwalled",
+  "role": "浅梦的无墙之屋（一）：一间只被记住了一部分的房间——地板还在，墙与顶多半没了，家具一件件浮在虚空里。",
+  "extent": 56,
+  "ground": {
+    "a": "mist",
+    "b": "lilac_pale",
+    "pattern": "grain"
+  },
+  "sky": "pale",
+  "levels": [
+    {
+      "z": 0.3,
+      "label": "地板"
+    },
+    {
+      "z": 3.3,
+      "label": "半空的楼板"
+    }
+  ],
+  "spawn": {
+    "at": [
+      -0.3,
+      -14.3,
+      0.3
+    ],
+    "face": 0
+  },
+  "prims": [
+    {
+      "kind": "box",
+      "name": "floor",
+      "size": [
+        22,
+        34,
+        0.3
+      ],
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "style": "deck",
+      "label": "地板"
+    },
+    {
+      "kind": "box",
+      "name": "wall_s",
+      "size": [
+        10,
+        0.6,
+        7.5
+      ],
+      "at": [
+        -6,
+        -16.7,
+        0.3
+      ],
+      "style": "wall",
+      "label": "一角墙"
+    },
+    {
+      "kind": "box",
+      "name": "wall_w",
+      "size": [
+        0.6,
+        8,
+        7.5
+      ],
+      "at": [
+        -10.7,
+        -12.6,
+        0.3
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "skirting",
+      "size": [
+        9.2,
+        0.22,
+        0.5
+      ],
+      "at": [
+        -6,
+        -16.28,
+        0.3
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "ceil_a",
+      "size": [
+        13,
+        9,
+        0.4
+      ],
+      "at": [
+        -1,
+        8,
+        8.2
+      ],
+      "rot": 7,
+      "style": "wall",
+      "label": "悬着的天花板"
+    },
+    {
+      "kind": "box",
+      "name": "ceil_b",
+      "size": [
+        8,
+        6,
+        0.4
+      ],
+      "at": [
+        6,
+        -6,
+        9.6
+      ],
+      "rot": -16,
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "ceil_c",
+      "size": [
+        6,
+        5,
+        0.4
+      ],
+      "at": [
+        -7,
+        12,
+        6.8
+      ],
+      "rot": 24,
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "ceil_d",
+      "size": [
+        4.5,
+        3.5,
+        0.35
+      ],
+      "at": [
+        3,
+        20,
+        11.2
+      ],
+      "rot": -8,
+      "style": "wall"
+    },
+    {
+      "kind": "frame",
+      "name": "door_dead",
+      "w": 2.3,
+      "h": 4,
+      "t": 0.32,
+      "depth": 0.5,
+      "at": [
+        8,
+        -8,
+        0.3
+      ],
+      "rot": 40,
+      "style": "frame",
+      "label": "打不开的门"
+    },
+    {
+      "kind": "box",
+      "name": "door_dead_leaf",
+      "size": [
+        2,
+        0.14,
+        3.6
+      ],
+      "at": [
+        7.07,
+        -7.65,
+        2.1
+      ],
+      "rot": 100,
+      "style": "frame"
+    },
+    {
+      "kind": "stairs",
+      "name": "stair_loft",
+      "w": 3,
+      "n": 9,
+      "rise": 0.3,
+      "run": 0.75,
+      "at": [
+        5,
+        -3,
+        0.3
+      ],
+      "rot": 0,
+      "style": "stair",
+      "label": "楼梯"
+    },
+    {
+      "kind": "box",
+      "name": "loft",
+      "size": [
+        6,
+        5,
+        0.3
+      ],
+      "at": [
+        5,
+        6.25,
+        3
+      ],
+      "style": "deck",
+      "label": "半空的楼板"
+    },
+    {
+      "kind": "box",
+      "name": "ceil_loft",
+      "size": [
+        7,
+        6,
+        0.4
+      ],
+      "at": [
+        5,
+        6.5,
+        8.6
+      ],
+      "rot": 5,
+      "style": "wall"
+    },
+    {
+      "kind": "sprite",
+      "name": "loft_pendant",
+      "sprite": "pendant",
+      "at": [
+        5,
+        6.5,
+        6.4
+      ],
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "loft_chair",
+      "sprite": "chair_wood@64",
+      "at": [
+        3.6,
+        7.2,
+        3.3
+      ],
+      "rot": 20,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "loft_cup",
+      "sprite": "cup",
+      "at": [
+        6.4,
+        5,
+        3.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "bed",
+      "size": [
+        2.2,
+        3.4,
+        0.5
+      ],
+      "at": [
+        -6,
+        6,
+        0.3
+      ],
+      "rot": 12,
+      "style": "prop",
+      "label": "床"
+    },
+    {
+      "kind": "box",
+      "name": "table",
+      "size": [
+        1.8,
+        1,
+        0.78
+      ],
+      "at": [
+        -2,
+        -10,
+        0.3
+      ],
+      "rot": -18,
+      "style": "prop",
+      "label": "桌"
+    },
+    {
+      "kind": "sprite",
+      "name": "chair1",
+      "sprite": "chair_wood@64",
+      "at": [
+        -5,
+        1.5,
+        0.3
+      ],
+      "rot": 30,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "armchair",
+      "sprite": "armchair_real@64",
+      "at": [
+        3.5,
+        11,
+        0.3
+      ],
+      "rot": -40,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "lamp1",
+      "sprite": "lamp_floor",
+      "at": [
+        6.5,
+        -13,
+        0.3
+      ],
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "phone1",
+      "sprite": "phone",
+      "at": [
+        7,
+        2,
+        0.3
+      ],
+      "style": "prop",
+      "label": "电话"
+    },
+    {
+      "kind": "sprite",
+      "name": "cup1",
+      "sprite": "cup",
+      "at": [
+        -1.5,
+        -2,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "plant1",
+      "sprite": "plant_pot@40",
+      "at": [
+        -8,
+        13,
+        0.3
+      ],
+      "style": "plant",
+      "label": "盆栽"
+    },
+    {
+      "kind": "sprite",
+      "name": "clock1",
+      "sprite": "clock_real@64",
+      "at": [
+        -9.9,
+        -4,
+        0.3
+      ],
+      "rot": 90,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "frag0",
+      "size": [
+        2.2,
+        2.8,
+        0.3
+      ],
+      "at": [
+        -9,
+        20,
+        7.4
+      ],
+      "rot": 40,
+      "style": "prop",
+      "collide": false,
+      "spin": 6,
+      "bob": 0.4
+    },
+    {
+      "kind": "box",
+      "name": "frag1",
+      "size": [
+        2.6,
+        2.2,
+        0.3
+      ],
+      "at": [
+        9,
+        6,
+        9
+      ],
+      "rot": -25,
+      "style": "rail",
+      "collide": false,
+      "spin": -5,
+      "bob": 0.5
+    },
+    {
+      "kind": "box",
+      "name": "frag2",
+      "size": [
+        1.8,
+        2.4,
+        0.3
+      ],
+      "at": [
+        -9,
+        -14,
+        6.2
+      ],
+      "rot": 70,
+      "style": "glass",
+      "collide": false,
+      "spin": 4,
+      "bob": 0.3
+    },
+    {
+      "kind": "box",
+      "name": "frag3",
+      "size": [
+        2.4,
+        2,
+        0.3
+      ],
+      "at": [
+        6,
+        22,
+        12.5
+      ],
+      "rot": 15,
+      "style": "prop",
+      "collide": false,
+      "spin": -7,
+      "bob": 0.6
+    },
+    {
+      "kind": "box",
+      "name": "frag4",
+      "size": [
+        1.6,
+        2.6,
+        0.3
+      ],
+      "at": [
+        0,
+        -21,
+        8.8
+      ],
+      "rot": -50,
+      "style": "rail",
+      "collide": false,
+      "spin": 5,
+      "bob": 0.45
+    },
+    {
+      "kind": "sprite",
+      "name": "frag_cup",
+      "sprite": "cup",
+      "at": [
+        8,
+        16,
+        6
+      ],
+      "style": "prop",
+      "collide": false,
+      "bob": 0.4
+    },
+    {
+      "kind": "sprite",
+      "name": "tree_frag0",
+      "sprite": "tree.round:3",
+      "at": [
+        10,
+        -16,
+        5.5
+      ],
+      "style": "plant",
+      "collide": false,
+      "bob": 0.3
+    },
+    {
+      "kind": "sprite",
+      "name": "tree_frag1",
+      "sprite": "tree.bare:2",
+      "at": [
+        -9,
+        18,
+        4.8
+      ],
+      "style": "plant",
+      "collide": false,
+      "bob": 0.35
+    },
+    {
+      "kind": "cylinder",
+      "name": "home_post",
+      "r": 0.09,
+      "h": 3.4,
+      "at": [
+        -2,
+        -15,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "home_head",
+      "size": [
+        0.7,
+        0.7,
+        0.5
+      ],
+      "at": [
+        -2,
+        -15,
+        3.7
+      ],
+      "style": "prop"
+    }
+  ],
+  "regions": [
+    {
+      "label": "一大片地板",
+      "shape": "rect",
+      "at": [
+        0,
+        0
+      ],
+      "size": [
+        22,
+        34
+      ]
+    },
+    {
+      "label": "一角墙",
+      "shape": "circle",
+      "at": [
+        -8,
+        -14
+      ],
+      "r": 5
+    },
+    {
+      "label": "悬着的天花板",
+      "shape": "circle",
+      "at": [
+        0,
+        6
+      ],
+      "r": 9
+    },
+    {
+      "label": "半空的楼板",
+      "shape": "rect",
+      "at": [
+        5,
+        6.25
+      ],
+      "size": [
+        6,
+        5
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "name": "gate_home",
+      "kind": "home",
+      "at": [
+        -2,
+        -15,
+        2
+      ],
+      "to": "home",
+      "at_node": "room-a",
+      "mode": "key",
+      "title": "关灯",
+      "label": "→ 家",
+      "note": "南端墙根下，出生点旁"
+    },
+    {
+      "name": "gate_dead",
+      "kind": "dead",
+      "at": [
+        8,
+        -8,
+        1.9
+      ],
+      "label": "打不开的门",
+      "note": "门里什么也没有",
+      "title": "推不开"
+    }
+  ],
+  "arrives": [
+    {
+      "name": "home",
+      "at": [
+        -0.3,
+        -14.3,
+        0.3
+      ],
+      "face": 0
+    }
+  ],
+  "views": [
+    {
+      "name": "bird",
+      "at": [
+        28,
+        -30,
+        32
+      ],
+      "look": [
+        0,
+        2,
+        4
+      ],
+      "fov": 52,
+      "res": [
+        1900,
+        1050
+      ]
+    },
+    {
+      "name": "eye",
+      "at": [
+        -0.3,
+        -14.3,
+        1.9
+      ],
+      "look": [
+        0,
+        0,
+        1.8
+      ],
+      "fov": 70
+    },
+    {
+      "name": "drift",
+      "at": [
+        -25,
+        6,
+        3
+      ],
+      "look": [
+        4,
+        4,
+        10
+      ],
+      "fov": 66
+    },
+    {
+      "name": "door",
+      "at": [
+        13,
+        -1,
+        2.3
+      ],
+      "look": [
+        8,
+        -8,
+        2.2
+      ],
+      "fov": 56
+    },
+    {
+      "name": "loft",
+      "at": [
+        5,
+        7.5,
+        4.9
+      ],
+      "look": [
+        -3,
+        -2,
+        1.6
+      ],
+      "fov": 62
+    }
+  ],
+  "notes": [
+    "一间只被记住了一部分的房间：一大片地板（22×34）浮在虚空里，只剩西南一角的两面墙还立着。",
+    "四块天花板孤零零悬在 6.8~11.2m 高处，彼此错开，没有墙托着；另有一盏纸吊灯吊在半空楼板的上方。",
+    "床、桌、椅、灯、电话、盆栽一件件散在地板上，互不相干；床与桌是白模替身板，其余是纸片。",
+    "一扇门自己站着、半开着，门里什么也没有——地图上的空心记号（dead），Blender 里不生成东西。",
+    "九级台阶（每级 0.3m）走上去，是一块半空的楼板（顶面 3.3m），板上一把纸椅、一只杯。",
+    "四周漂着几块板、一只纸杯和两棵纸树，都没有依靠地浮着。",
+    "死胡同：只有南端墙根下的灯回家（E 关灯）。"
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "id": "shoal-b",
+  "title": "浅滩·退潮的梯田",
+  "en": "Shoal · Ebb Terraces",
+  "role": "浅梦的一处水平旷野：一片一层层退下去的浅水——干岸、齐踝、齐膝，最深处浮着一块孤洲，用踏石与浮叶连起来。",
+  "extent": 66,
+  "ground": { "a": "lilac_pale", "b": "lilac", "pattern": "grain" },
+  "sky": "dye:7",
+  "levels": [
+    { "z": 0, "label": "底板" },
+    { "z": 1.8, "label": "干岸 / 高台（走人面）" },
+    { "z": 1.5, "label": "齐踝的水" },
+    { "z": 1.2, "label": "齐膝的水" },
+    { "z": 1.6, "label": "孤洲" }
+  ],
+  "spawn": { "at": [0, -24, 1.8], "face": 0 },
+  "prims": [
+    { "kind": "box", "name": "bank", "size": [34, 18, 0.9], "at": [0, -20, 0.9], "style": "deck" },
+    { "kind": "box", "name": "bank_curb_w", "size": [0.5, 18, 0.5], "at": [-17.2, -20, 1.8], "style": "rail" },
+    { "kind": "box", "name": "bank_curb_e", "size": [0.5, 18, 0.5], "at": [17.2, -20, 1.8], "style": "rail" },
+
+    { "kind": "box", "name": "ankle_water", "size": [34, 12, 0.3], "at": [0, -5, 1.2], "style": "water", "collide": true },
+    { "kind": "plane", "name": "ankle_surface", "size": [34, 12], "at": [0, -5, 1.5], "style": "water", "collide": false },
+
+    { "kind": "box", "name": "knee_water", "size": [34, 24, 0.5], "at": [0, 13, 0.7], "style": "water", "collide": true },
+    { "kind": "plane", "name": "knee_surface", "size": [34, 24], "at": [0, 13, 1.2], "style": "water", "collide": false },
+
+    { "kind": "cylinder", "name": "isle", "r": 7, "h": 0.9, "at": [0, 18, 0.7], "style": "deck" },
+    { "kind": "stairs", "name": "isle_steps", "w": 3.4, "n": 2, "rise": 0.2, "run": 0.9, "at": [0, 10, 1.2], "rot": 0, "style": "stair" },
+    { "kind": "box", "name": "spit_w", "size": [6, 8, 0.68], "at": [-13, 8, 0.67], "style": "deck" },
+
+    { "kind": "cylinder", "name": "float_leaf0", "r": 1.6, "h": 0.1, "at": [-6, 4, 1.2], "style": "plant" },
+    { "kind": "cylinder", "name": "float_leaf1", "r": 1.3, "h": 0.1, "at": [5, 7, 1.2], "style": "plant" },
+    { "kind": "cylinder", "name": "float_leaf2", "r": 1.8, "h": 0.1, "at": [-3, 14, 1.2], "style": "plant" },
+    { "kind": "cylinder", "name": "float_leaf3", "r": 1.1, "h": 0.1, "at": [7, 14, 1.2], "style": "plant" },
+    { "kind": "cylinder", "name": "float_leaf4", "r": 1.4, "h": 0.1, "at": [-8, -4, 1.5], "style": "plant" },
+    { "kind": "cylinder", "name": "float_leaf5", "r": 1.2, "h": 0.1, "at": [8, -3, 1.5], "style": "plant" },
+    { "kind": "cylinder", "name": "float_leaf6", "r": 1.3, "h": 0.1, "at": [-2, -6, 1.5], "style": "plant" },
+    { "kind": "cylinder", "name": "float_leaf7", "r": 1.5, "h": 0.1, "at": [3, 3, 1.2], "style": "plant" },
+
+    { "kind": "cylinder", "name": "home_post", "r": 0.1, "h": 3.2, "at": [0, -27, 1.8], "style": "prop" },
+    { "kind": "box", "name": "home_head", "size": [0.8, 0.8, 0.5], "at": [0, -27, 5.0], "style": "prop" },
+
+    { "kind": "cylinder", "name": "vase_plinth", "r": 0.7, "h": 0.5, "at": [12, -14, 1.8], "style": "deck" },
+    { "kind": "cylinder", "name": "vase_body", "r": 0.42, "r2": 0.28, "h": 1.1, "at": [12, -14, 2.3], "style": "prop", "label": "水边花瓶" },
+    { "kind": "sprite", "name": "vase_f0", "sprite": "flower.cup:1", "at": [12, -14, 3.35], "style": "plant" },
+    { "kind": "sprite", "name": "vase_f1", "sprite": "flower.cup:3", "at": [12.4, -13.7, 3.25], "style": "plant" },
+
+    { "kind": "cylinder", "name": "site_plinth", "r": 0.7, "h": 0.7, "at": [0, 18, 1.6], "style": "mass", "label": "晶体" },
+
+    { "kind": "sprite", "name": "isle_f0", "sprite": "flower.cup:2", "at": [4, 16, 1.6], "style": "plant" },
+    { "kind": "sprite", "name": "isle_f1", "sprite": "flower.cup:5", "at": [-4, 21, 1.6], "style": "plant" },
+    { "kind": "sprite", "name": "isle_tree", "sprite": "tree.round:1", "at": [4, 21, 1.6], "style": "plant" },
+    { "kind": "sprite", "name": "bank_f0", "sprite": "grass.flowered:2", "at": [-9, -14, 1.8], "style": "plant" },
+    { "kind": "sprite", "name": "bank_f1", "sprite": "flower.cup:4", "at": [7, -22, 1.8], "style": "plant" },
+
+    { "kind": "spriteRow", "name": "reed_w", "sprite": "grass.reed:1", "from": [-16, -9], "to": [-16, 24], "n": 7, "style": "plant" },
+    { "kind": "spriteRow", "name": "reed_e", "sprite": "grass.reed:2", "from": [16, -9], "to": [16, 24], "n": 7, "style": "plant" },
+
+    { "kind": "sprite", "name": "far_t0", "sprite": "tree.tall:4", "at": [0, 34, 0], "style": "plant" },
+    { "kind": "sprite", "name": "far_t1", "sprite": "tree.round:3", "at": [-13, 30, 0], "style": "plant" },
+    { "kind": "sprite", "name": "far_t2", "sprite": "tree.tall:2", "at": [12, 32, 0], "style": "plant" },
+    { "kind": "sprite", "name": "far_t3", "sprite": "tree.round:6", "at": [-9, -35, 0], "style": "plant" }
+  ],
+  "regions": [
+    { "label": "干岸 / 高台", "shape": "rect", "at": [0, -20], "size": [34, 18] },
+    { "label": "齐踝的水", "shape": "rect", "at": [0, -5], "size": [34, 12] },
+    { "label": "齐膝的水", "shape": "rect", "at": [0, 13], "size": [34, 24] },
+    { "label": "孤洲", "shape": "circle", "at": [0, 18], "r": 7 }
+  ],
+  "portals": [
+    { "name": "gate_home", "kind": "home", "at": [0, -27, 3.4], "to": "home", "at_node": "shoal-b", "mode": "key", "title": "关灯", "label": "→ 家", "note": "干岸上、出生点背后" },
+    { "name": "gate_glasshouse", "kind": "world", "at": [12, -14, 3.4], "to": "glasshouse", "mode": "key", "title": "凑近", "label": "→ 花房", "note": "干岸水边插着花的瓶" },
+    { "name": "gate_site", "kind": "site", "at": [0, 18, 3.2], "url": "https://traveritas.github.io/", "title": "AveritA的昼梦叙集", "label": "→ 站点", "note": "孤洲上的一枚晶体" }
+  ],
+  "arrives": [
+    { "name": "home", "at": [0, -24, 1.8], "face": 0 }
+  ],
+  "views": [
+    { "name": "bird", "at": [40, -52, 48], "look": [0, -2, 1.8], "fov": 52, "res": [1900, 1050] },
+    { "name": "eye", "at": [0, -24, 3.4], "look": [0, 8, 1.6], "fov": 68 },
+    { "name": "isle", "at": [0, 2, 3.0], "look": [0, 20, 2.6], "fov": 60 },
+    { "name": "water", "at": [0, -3, 1.62], "look": [0, 22, 1.5], "fov": 72 },
+    { "name": "back", "at": [0, 24, 3.2], "look": [0, -14, 1.8], "fov": 62 }
+  ],
+  "notes": [
+    "一句话：水位分层的浅滩——干岸 → 齐踝 → 齐膝 → 一块孤洲，一层层退下去。",
+    "动线：出生在干岸 → 往北一步下到齐踝的水 → 再一步下到齐膝的水 → 蹚过浮叶、踏石上到孤洲。",
+    "干岸 34×18、孤洲 r=7 是两处真正的走人面（约 772㎡）；两级水面各是一层薄水，水面用 plane，不挡人。",
+    "水位：干岸 z=1.8 → 齐踝水面 z=1.5 → 齐膝水面 z=1.2；每级落差 0.3m，自动迈得上；孤洲高出齐膝水 0.4m，用两级踏石上去。",
+    "干岸西侧水边一只插满花的瓶（E「凑近」→ 花房）；孤洲上一枚浮着的晶体（→ 真实站点）；出生的灯在干岸南端。",
+    "正式场景里回家的灯用 prefabs.gate_home、花瓶用 prefabs.gate_vase；样板里为了地图画得出来，都用 prims 手搭。"
+  ]
+}

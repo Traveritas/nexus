@@ -1,0 +1,1614 @@
+{
+  "id": "arcade-b",
+  "title": "回廊 · 长走廊",
+  "en": "Arcade · Long Hall",
+  "role": "浅梦的主干道之一：一条被放大到建筑尺度的自家走廊，向北走、上五级台阶、再折向东；两侧是巨大的门框与画框，尽头开向水面。",
+  "extent": 86,
+  "ground": {
+    "a": "lilac_pale",
+    "b": "lilac",
+    "pattern": "grain"
+  },
+  "sky": "halo",
+  "levels": [
+    {
+      "z": 0.3,
+      "label": "走廊（南段）/ 水台"
+    },
+    {
+      "z": 1.8,
+      "label": "走廊（北段，半层高）"
+    }
+  ],
+  "spawn": {
+    "at": [
+      -17,
+      -24,
+      0.3
+    ],
+    "face": 0
+  },
+  "prims": [
+    {
+      "kind": "box",
+      "name": "hall",
+      "size": [
+        10,
+        6,
+        0.3
+      ],
+      "at": [
+        -17,
+        -23,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "leg_a",
+      "size": [
+        6,
+        20,
+        0.3
+      ],
+      "at": [
+        -17,
+        -10,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "leg_a2",
+      "size": [
+        6,
+        6,
+        0.3
+      ],
+      "at": [
+        -17,
+        7,
+        1.5
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "leg_b",
+      "size": [
+        26,
+        6,
+        0.3
+      ],
+      "at": [
+        -1,
+        7,
+        1.5
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "court",
+      "size": [
+        12,
+        18,
+        0.3
+      ],
+      "at": [
+        18,
+        10,
+        1.5
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "court_pier0",
+      "at": [
+        13,
+        3,
+        0
+      ],
+      "style": "mass",
+      "size": [
+        0.9,
+        0.9,
+        1.5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "court_pier1",
+      "at": [
+        23,
+        3,
+        0
+      ],
+      "style": "mass",
+      "size": [
+        0.9,
+        0.9,
+        1.5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "court_pier2",
+      "at": [
+        13,
+        17,
+        0
+      ],
+      "style": "mass",
+      "size": [
+        0.9,
+        0.9,
+        1.5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "court_pier3",
+      "at": [
+        23,
+        17,
+        0
+      ],
+      "style": "mass",
+      "size": [
+        0.9,
+        0.9,
+        1.5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "lower",
+      "size": [
+        10,
+        22,
+        0.3
+      ],
+      "at": [
+        19,
+        -10,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "stairs",
+      "name": "stair_up",
+      "w": 6,
+      "n": 5,
+      "rise": 0.3,
+      "run": 0.8,
+      "at": [
+        -17,
+        0,
+        0.3
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "stairs",
+      "name": "stair_dn",
+      "w": 4,
+      "n": 5,
+      "rise": 0.3,
+      "run": 0.8,
+      "at": [
+        16,
+        -3,
+        0.3
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "box",
+      "name": "hall_w",
+      "size": [
+        0.4,
+        6.4,
+        6.6
+      ],
+      "at": [
+        -22.2,
+        -23,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "hall_e",
+      "size": [
+        0.4,
+        6.4,
+        6.6
+      ],
+      "at": [
+        -11.8,
+        -23,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "hall_s",
+      "size": [
+        10,
+        0.4,
+        6.6
+      ],
+      "at": [
+        -17,
+        -26.2,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "hall_n_w",
+      "size": [
+        1.6,
+        0.4,
+        6.6
+      ],
+      "at": [
+        -21.2,
+        -19.8,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "hall_n_e",
+      "size": [
+        1.6,
+        0.4,
+        6.6
+      ],
+      "at": [
+        -12.8,
+        -19.8,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "wall_a_w",
+      "size": [
+        0.4,
+        30,
+        6.6
+      ],
+      "at": [
+        -20.2,
+        -5,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "wall_a_e",
+      "size": [
+        0.4,
+        24,
+        6.6
+      ],
+      "at": [
+        -13.8,
+        -8,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "wall_a2_n",
+      "size": [
+        6.8,
+        0.4,
+        6.6
+      ],
+      "at": [
+        -17,
+        10.2,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "wall_b_n",
+      "size": [
+        26,
+        0.4,
+        6.6
+      ],
+      "at": [
+        -0.6,
+        10.2,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "wall_b_s",
+      "size": [
+        25.6,
+        0.4,
+        6.6
+      ],
+      "at": [
+        -0.8,
+        3.8,
+        0
+      ],
+      "style": "wall"
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w0_L",
+      "at": [
+        -19.8,
+        -17.15,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w0_R",
+      "at": [
+        -19.8,
+        -14.85,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w0_top",
+      "at": [
+        -19.8,
+        -16,
+        5
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        2.6,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w1_L",
+      "at": [
+        -19.8,
+        -12.15,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w1_R",
+      "at": [
+        -19.8,
+        -9.85,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w1_top",
+      "at": [
+        -19.8,
+        -11,
+        5
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        2.6,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w2_L",
+      "at": [
+        -19.8,
+        -7.15,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w2_R",
+      "at": [
+        -19.8,
+        -4.85,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_w2_top",
+      "at": [
+        -19.8,
+        -6,
+        5
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        2.6,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e0_L",
+      "at": [
+        -14.2,
+        -17.15,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e0_R",
+      "at": [
+        -14.2,
+        -14.85,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e0_top",
+      "at": [
+        -14.2,
+        -16,
+        5
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        2.6,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e1_L",
+      "at": [
+        -14.2,
+        -12.15,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e1_R",
+      "at": [
+        -14.2,
+        -9.85,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e1_top",
+      "at": [
+        -14.2,
+        -11,
+        5
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        2.6,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e2_L",
+      "at": [
+        -14.2,
+        -7.15,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e2_R",
+      "at": [
+        -14.2,
+        -4.85,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "big_a_e2_top",
+      "at": [
+        -14.2,
+        -6,
+        5
+      ],
+      "style": "frame",
+      "size": [
+        0.35,
+        2.6,
+        0.3
+      ]
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_n0",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        -9,
+        9.8,
+        1.8
+      ],
+      "rot": 180,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_n1",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        -4,
+        9.8,
+        1.8
+      ],
+      "rot": 180,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_n2",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        1,
+        9.8,
+        1.8
+      ],
+      "rot": 180,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_n3",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        6,
+        9.8,
+        1.8
+      ],
+      "rot": 180,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_s0",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        -9,
+        4.2,
+        1.8
+      ],
+      "rot": 0,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_s1",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        -4,
+        4.2,
+        1.8
+      ],
+      "rot": 0,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_s2",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        1,
+        4.2,
+        1.8
+      ],
+      "rot": 0,
+      "style": "frame"
+    },
+    {
+      "kind": "frame",
+      "name": "big_b_s3",
+      "w": 2.6,
+      "h": 5,
+      "t": 0.3,
+      "depth": 0.35,
+      "at": [
+        6,
+        4.2,
+        1.8
+      ],
+      "rot": 0,
+      "style": "frame"
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_w0_L",
+      "at": [
+        -19.85,
+        -14.16,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_w0_R",
+      "at": [
+        -19.85,
+        -12.84,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_w0_top",
+      "at": [
+        -19.85,
+        -13.5,
+        4.0200000000000005
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        1.5,
+        0.18
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_w1_L",
+      "at": [
+        -19.85,
+        -9.16,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_w1_R",
+      "at": [
+        -19.85,
+        -7.84,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_w1_top",
+      "at": [
+        -19.85,
+        -8.5,
+        4.0200000000000005
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        1.5,
+        0.18
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_e0_L",
+      "at": [
+        -14.15,
+        -14.16,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_e0_R",
+      "at": [
+        -14.15,
+        -12.84,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_e0_top",
+      "at": [
+        -14.15,
+        -13.5,
+        4.0200000000000005
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        1.5,
+        0.18
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_e1_L",
+      "at": [
+        -14.15,
+        -9.16,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_e1_R",
+      "at": [
+        -14.15,
+        -7.84,
+        2.2
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        0.18,
+        2
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "pic_a_e1_top",
+      "at": [
+        -14.15,
+        -8.5,
+        4.0200000000000005
+      ],
+      "style": "glass",
+      "size": [
+        0.25,
+        1.5,
+        0.18
+      ]
+    },
+    {
+      "kind": "frame",
+      "name": "pic_b_n0",
+      "w": 1.5,
+      "h": 2,
+      "t": 0.18,
+      "depth": 0.25,
+      "at": [
+        -6.2,
+        9.85,
+        3.8
+      ],
+      "rot": 180,
+      "style": "glass"
+    },
+    {
+      "kind": "frame",
+      "name": "pic_b_n1",
+      "w": 1.5,
+      "h": 2,
+      "t": 0.18,
+      "depth": 0.25,
+      "at": [
+        3.3,
+        9.85,
+        3.8
+      ],
+      "rot": 180,
+      "style": "glass"
+    },
+    {
+      "kind": "box",
+      "name": "leaf_a0",
+      "size": [
+        0.12,
+        1.9,
+        4.6
+      ],
+      "at": [
+        -19.9,
+        -16,
+        0.4
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "leaf_realm",
+      "size": [
+        0.12,
+        1.9,
+        4.6
+      ],
+      "at": [
+        -19.9,
+        -11,
+        0.4
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "leaf_b0",
+      "size": [
+        1.9,
+        0.12,
+        4.6
+      ],
+      "at": [
+        -9,
+        9.85,
+        1.9
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "mouth_arch_L",
+      "at": [
+        23.5,
+        8.15,
+        1.8
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "mouth_arch_R",
+      "at": [
+        23.5,
+        11.85,
+        1.8
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.3,
+        5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "mouth_arch_top",
+      "at": [
+        23.5,
+        10,
+        6.5
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        4,
+        0.3
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "mouth_arch_cL",
+      "at": [
+        23.5,
+        8.254999999999999,
+        5.99
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.51,
+        0.51
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "mouth_arch_cR",
+      "at": [
+        23.5,
+        11.745000000000001,
+        5.99
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.51,
+        0.51
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "rail_c_e",
+      "size": [
+        0.25,
+        18,
+        0.55
+      ],
+      "at": [
+        24,
+        10,
+        1.8
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "rail_c_n",
+      "size": [
+        11.8,
+        0.25,
+        0.55
+      ],
+      "at": [
+        17.9,
+        19,
+        1.8
+      ],
+      "style": "rail"
+    },
+    {
+      "kind": "box",
+      "name": "water_gate_L",
+      "at": [
+        23.2,
+        -13.46,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.28,
+        4.5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "water_gate_R",
+      "at": [
+        23.2,
+        -10.54,
+        0.3
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.28,
+        4.5
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "water_gate_top",
+      "at": [
+        23.2,
+        -12,
+        4.52
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        3.2,
+        0.28
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "water_gate_cL",
+      "at": [
+        23.2,
+        -13.362,
+        4.044
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.47600000000000003,
+        0.47600000000000003
+      ]
+    },
+    {
+      "kind": "box",
+      "name": "water_gate_cR",
+      "at": [
+        23.2,
+        -10.638,
+        4.044
+      ],
+      "style": "frame",
+      "size": [
+        0.4,
+        0.47600000000000003,
+        0.47600000000000003
+      ]
+    },
+    {
+      "kind": "cylinder",
+      "name": "home_post",
+      "r": 0.09,
+      "h": 3.4,
+      "at": [
+        -17,
+        -25.2,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "home_head",
+      "size": [
+        0.7,
+        0.7,
+        0.5
+      ],
+      "at": [
+        -17,
+        -25.2,
+        3.7
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "plane",
+      "name": "water_w",
+      "size": [
+        10,
+        24
+      ],
+      "at": [
+        -26,
+        -9,
+        0.12
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "plane",
+      "name": "water_mid",
+      "size": [
+        16,
+        26
+      ],
+      "at": [
+        -5,
+        -8,
+        0.12
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "plane",
+      "name": "water_e",
+      "size": [
+        26,
+        54
+      ],
+      "at": [
+        28,
+        -4,
+        0.12
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "plane",
+      "name": "water_n",
+      "size": [
+        46,
+        20
+      ],
+      "at": [
+        0,
+        21,
+        0.12
+      ],
+      "style": "water",
+      "collide": false
+    },
+    {
+      "kind": "spriteRow",
+      "name": "reed_w",
+      "sprite": "grass.reed:1",
+      "from": [
+        -24,
+        -18
+      ],
+      "to": [
+        -24,
+        0
+      ],
+      "n": 4,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "reed_e",
+      "sprite": "grass.reed:2",
+      "from": [
+        -9,
+        -18
+      ],
+      "to": [
+        -9,
+        0
+      ],
+      "n": 4,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "reed_n",
+      "sprite": "grass.reed:3",
+      "from": [
+        -12,
+        18
+      ],
+      "to": [
+        16,
+        18
+      ],
+      "n": 5,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "tree_n",
+      "sprite": "tree.round:3",
+      "from": [
+        -6,
+        26
+      ],
+      "to": [
+        20,
+        26
+      ],
+      "n": 4,
+      "style": "plant"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "tree_s",
+      "sprite": "tree.tall:4",
+      "from": [
+        -30,
+        -35
+      ],
+      "to": [
+        -4,
+        -35
+      ],
+      "n": 4,
+      "style": "plant"
+    },
+    {
+      "kind": "box",
+      "name": "far0",
+      "size": [
+        2,
+        1.4,
+        9
+      ],
+      "at": [
+        -30,
+        4,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far1",
+      "size": [
+        2,
+        1.4,
+        13
+      ],
+      "at": [
+        -2,
+        35.3,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far2",
+      "size": [
+        2,
+        1.4,
+        10
+      ],
+      "at": [
+        40,
+        -20,
+        0
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far3",
+      "size": [
+        2,
+        1.4,
+        12
+      ],
+      "at": [
+        30,
+        34,
+        0
+      ],
+      "style": "mass"
+    }
+  ],
+  "regions": [
+    {
+      "label": "走廊（南段）",
+      "shape": "rect",
+      "at": [
+        -17,
+        -10
+      ],
+      "size": [
+        6,
+        20
+      ]
+    },
+    {
+      "label": "拐弯（上五级）",
+      "shape": "rect",
+      "at": [
+        -17,
+        5
+      ],
+      "size": [
+        12,
+        12
+      ]
+    },
+    {
+      "label": "走廊（北段，半层高）",
+      "shape": "rect",
+      "at": [
+        -1,
+        7
+      ],
+      "size": [
+        26,
+        6
+      ]
+    },
+    {
+      "label": "临水口",
+      "shape": "rect",
+      "at": [
+        18,
+        10
+      ],
+      "size": [
+        12,
+        18
+      ]
+    },
+    {
+      "label": "水台",
+      "shape": "rect",
+      "at": [
+        19,
+        -12
+      ],
+      "size": [
+        10,
+        18
+      ]
+    }
+  ],
+  "portals": [
+    {
+      "name": "gate_home",
+      "kind": "home",
+      "at": [
+        -17,
+        -25.2,
+        1.9
+      ],
+      "to": "home",
+      "at_node": "arcade-b",
+      "mode": "key",
+      "title": "关灯",
+      "label": "→ 家",
+      "note": "走廊南头的门厅，出生点背后"
+    },
+    {
+      "name": "gate_realm",
+      "kind": "realm",
+      "at": [
+        -19.9,
+        -11,
+        1.9
+      ],
+      "to": "seeping",
+      "mode": "key",
+      "title": "推开",
+      "rot": -90,
+      "label": "→ 沁泫池",
+      "note": "走廊西墙上一扇巨门，跨主域"
+    },
+    {
+      "name": "gate_shoal",
+      "kind": "world",
+      "at": [
+        23.4,
+        -12,
+        1.9
+      ],
+      "to": "shoal",
+      "mode": "walk",
+      "rot": 90,
+      "veil_w": 1.8,
+      "veil_h": 2.6,
+      "label": "→ 浅滩",
+      "note": "水台尽头临水的拱口"
+    }
+  ],
+  "arrives": [
+    {
+      "name": "home",
+      "at": [
+        -17,
+        -24,
+        0.3
+      ],
+      "face": 0
+    }
+  ],
+  "views": [
+    {
+      "name": "bird",
+      "at": [
+        30,
+        -40,
+        42
+      ],
+      "look": [
+        -4,
+        2,
+        2
+      ],
+      "fov": 50,
+      "res": [
+        1900,
+        1050
+      ]
+    },
+    {
+      "name": "eye",
+      "at": [
+        -17,
+        -24,
+        2.05
+      ],
+      "look": [
+        -17,
+        6,
+        2.2
+      ],
+      "fov": 68
+    },
+    {
+      "name": "frames",
+      "at": [
+        -17,
+        -2,
+        2.3
+      ],
+      "look": [
+        -17,
+        -20,
+        2.6
+      ],
+      "fov": 62
+    },
+    {
+      "name": "turn",
+      "at": [
+        -17,
+        7,
+        3.9
+      ],
+      "look": [
+        8,
+        7,
+        2.6
+      ],
+      "fov": 62
+    },
+    {
+      "name": "water",
+      "at": [
+        36,
+        6,
+        4.5
+      ],
+      "look": [
+        14,
+        9,
+        1.5
+      ],
+      "fov": 60
+    }
+  ],
+  "notes": [
+    "把自家那条走廊放大：宽 6m、高 6.6m，向南进门厅（有一盏路灯），一路向北。",
+    "两侧各三道巨大的门框（2.6×5m）与两扇画框（玻璃），门框里嵌着门扇；这是走廊的全部立面。",
+    "走到北头，五级台阶抬升 1.5m（半层），拐向东——走廊折了一个 L。",
+    "东段尽头是一个临水的口：大拱框住水面，矮栏之外就是水；向南下五级台阶到水台。",
+    "出入口三个：门厅的灯（回家）、西墙上一扇巨门（E 推开→沁泫池，跨主域）、水台临水的拱口（走进→浅滩）。"
+  ]
+}

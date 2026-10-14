@@ -1,0 +1,1952 @@
+{
+ "id": "home-core",
+ "title": "家 · 核心",
+ "en": "Home · Core",
+ "role": "比记忆里更小、更窄的家：卧室、走廊、小客厅、餐桌一角、浴室、储物间、玄关。墙离人近，天花板 2.5m；浅梦的六个世界从这里出发。",
+ "extent": 16,
+ "sky": "blank",
+ "spawn": {
+  "at": [
+   -2.6,
+   1.6,
+   0.3
+  ],
+  "face": 180
+ },
+ "levels": [
+  {
+   "z": 0.3,
+   "label": "地板"
+  },
+  {
+   "z": 2.8,
+   "label": "天花板（样板里不盖）"
+  }
+ ],
+ "prims": [
+  {
+   "kind": "box",
+   "name": "floor_bed_1",
+   "at": [
+    -2.6,
+    2.35,
+    0
+   ],
+   "size": [
+    4,
+    3.6,
+    0.3
+   ],
+   "style": "deck",
+   "label": "卧室"
+  },
+  {
+   "kind": "box",
+   "name": "floor_hall_1",
+   "at": [
+    -0.6,
+    0,
+    0
+   ],
+   "size": [
+    8,
+    1.1,
+    0.3
+   ],
+   "style": "deck",
+   "label": "走廊"
+  },
+  {
+   "kind": "box",
+   "name": "floor_bath_1",
+   "at": [
+    0.5,
+    1.65,
+    0
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.3
+   ],
+   "style": "deck",
+   "label": "浴室"
+  },
+  {
+   "kind": "box",
+   "name": "floor_store_1",
+   "at": [
+    2.5,
+    1.35,
+    0
+   ],
+   "size": [
+    1.8,
+    1.6,
+    0.3
+   ],
+   "style": "deck",
+   "label": "储物间"
+  },
+  {
+   "kind": "box",
+   "name": "floor_living_1",
+   "at": [
+    -2.2,
+    -2.55,
+    0
+   ],
+   "size": [
+    4.8,
+    4,
+    0.3
+   ],
+   "style": "deck",
+   "label": "小客厅"
+  },
+  {
+   "kind": "box",
+   "name": "floor_dining_1",
+   "at": [
+    1.6,
+    -2.05,
+    0
+   ],
+   "size": [
+    2.8,
+    3,
+    0.3
+   ],
+   "style": "deck",
+   "label": "餐桌一角"
+  },
+  {
+   "kind": "box",
+   "name": "floor_porch_1",
+   "at": [
+    -0.7,
+    -5.05,
+    0
+   ],
+   "size": [
+    1.8,
+    1,
+    0.3
+   ],
+   "style": "deck",
+   "label": "玄关"
+  },
+  {
+   "kind": "box",
+   "name": "wall_1",
+   "at": [
+    -2.635,
+    4.15,
+    0.3
+   ],
+   "size": [
+    4.07,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_2",
+   "at": [
+    0.5,
+    2.75,
+    0.3
+   ],
+   "size": [
+    2.2,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_3",
+   "at": [
+    2.535,
+    2.15,
+    0.3
+   ],
+   "size": [
+    1.87,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_4",
+   "at": [
+    -4.6,
+    -4.125,
+    0.3
+   ],
+   "size": [
+    0.14,
+    0.85,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_5",
+   "at": [
+    -4.6,
+    -2.6,
+    2.6
+   ],
+   "size": [
+    0.14,
+    2.2,
+    0.2
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_6",
+   "at": [
+    -4.6,
+    1.325,
+    0.3
+   ],
+   "size": [
+    0.14,
+    5.65,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_7",
+   "at": [
+    -0.6,
+    3.45,
+    0.3
+   ],
+   "size": [
+    0.14,
+    1.4,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_8",
+   "at": [
+    1.6,
+    2.45,
+    0.3
+   ],
+   "size": [
+    0.14,
+    0.6,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_9",
+   "at": [
+    3.4,
+    -0.5,
+    0.3
+   ],
+   "size": [
+    0.14,
+    0.1,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_10",
+   "at": [
+    3.4,
+    0,
+    2.35
+   ],
+   "size": [
+    0.14,
+    0.9,
+    0.45
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_11",
+   "at": [
+    3.4,
+    1.3,
+    0.3
+   ],
+   "size": [
+    0.14,
+    1.7,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_12",
+   "at": [
+    3,
+    -2.05,
+    0.3
+   ],
+   "size": [
+    0.14,
+    3,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_13",
+   "at": [
+    1.635,
+    -3.55,
+    0.3
+   ],
+   "size": [
+    2.87,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_14",
+   "at": [
+    -3.135,
+    -4.55,
+    0.3
+   ],
+   "size": [
+    3.07,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_15",
+   "at": [
+    0.2,
+    -4.05,
+    0.3
+   ],
+   "size": [
+    0.14,
+    1,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_16",
+   "at": [
+    -1.6,
+    -5.05,
+    0.3
+   ],
+   "size": [
+    0.14,
+    1,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_17",
+   "at": [
+    0.2,
+    -5.05,
+    0.3
+   ],
+   "size": [
+    0.14,
+    1,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_18",
+   "at": [
+    -1.435,
+    -5.55,
+    0.3
+   ],
+   "size": [
+    0.47,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_19",
+   "at": [
+    -0.7,
+    -5.55,
+    2.4
+   ],
+   "size": [
+    1,
+    0.14,
+    0.4
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_20",
+   "at": [
+    0.035,
+    -5.55,
+    0.3
+   ],
+   "size": [
+    0.47,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_21",
+   "at": [
+    -3.225,
+    0.55,
+    0.3
+   ],
+   "size": [
+    2.75,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_22",
+   "at": [
+    -1.4,
+    0.55,
+    2.35
+   ],
+   "size": [
+    0.9,
+    0.14,
+    0.45
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_23",
+   "at": [
+    -0.45,
+    0.55,
+    0.3
+   ],
+   "size": [
+    1,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_24",
+   "at": [
+    0.5,
+    0.55,
+    2.35
+   ],
+   "size": [
+    0.9,
+    0.14,
+    0.45
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_25",
+   "at": [
+    1.525,
+    0.55,
+    0.3
+   ],
+   "size": [
+    1.15,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_26",
+   "at": [
+    2.5,
+    0.55,
+    2.35
+   ],
+   "size": [
+    0.8,
+    0.14,
+    0.45
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_27",
+   "at": [
+    3.15,
+    0.55,
+    0.3
+   ],
+   "size": [
+    0.5,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_28",
+   "at": [
+    -3.3,
+    -0.55,
+    0.3
+   ],
+   "size": [
+    2.6,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_29",
+   "at": [
+    -1.2,
+    -0.55,
+    2.5
+   ],
+   "size": [
+    1.6,
+    0.14,
+    0.3
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_30",
+   "at": [
+    0.1,
+    -0.55,
+    0.3
+   ],
+   "size": [
+    1,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_31",
+   "at": [
+    1.6,
+    -0.55,
+    2.5
+   ],
+   "size": [
+    2,
+    0.14,
+    0.3
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_32",
+   "at": [
+    2.8,
+    -0.55,
+    0.3
+   ],
+   "size": [
+    0.4,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_33",
+   "at": [
+    0.2,
+    -3.375,
+    0.3
+   ],
+   "size": [
+    0.14,
+    0.35,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_34",
+   "at": [
+    0.2,
+    -2.1,
+    2.5
+   ],
+   "size": [
+    0.14,
+    2.2,
+    0.3
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_35",
+   "at": [
+    0.2,
+    -0.775,
+    0.3
+   ],
+   "size": [
+    0.14,
+    0.45,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_36",
+   "at": [
+    -0.6,
+    1.65,
+    0.3
+   ],
+   "size": [
+    0.14,
+    2.2,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_37",
+   "at": [
+    1.6,
+    1.35,
+    0.3
+   ],
+   "size": [
+    0.14,
+    1.6,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_38",
+   "at": [
+    -1.45,
+    -4.55,
+    0.3
+   ],
+   "size": [
+    0.3,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "wall_39",
+   "at": [
+    -0.7,
+    -4.55,
+    2.5
+   ],
+   "size": [
+    1.2,
+    0.14,
+    0.3
+   ],
+   "style": "wall",
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "wall_40",
+   "at": [
+    0.05,
+    -4.55,
+    0.3
+   ],
+   "size": [
+    0.3,
+    0.14,
+    2.5
+   ],
+   "style": "wall"
+  },
+  {
+   "kind": "box",
+   "name": "window_glass_1",
+   "at": [
+    -4.6,
+    -2.6,
+    0.3
+   ],
+   "size": [
+    0.04,
+    2.2,
+    2.3
+   ],
+   "style": "glass",
+   "collide": false,
+   "label": "落地窗"
+  },
+  {
+   "kind": "box",
+   "name": "bed_1",
+   "at": [
+    -3.6,
+    3.1,
+    0.3
+   ],
+   "size": [
+    1.4,
+    2,
+    0.3
+   ],
+   "style": "prop",
+   "rot": 180,
+   "label": "床"
+  },
+  {
+   "kind": "box",
+   "name": "bed_2",
+   "at": [
+    -3.6,
+    3.05,
+    0.6
+   ],
+   "size": [
+    1.36,
+    1.85,
+    0.18
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "bed_3",
+   "at": [
+    -3.6,
+    3.82,
+    0.78
+   ],
+   "size": [
+    0.9,
+    0.36,
+    0.12
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "bed_4",
+   "at": [
+    -3.6,
+    4.07,
+    0.3
+   ],
+   "size": [
+    1.4,
+    0.08,
+    1
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "nightstand_1",
+   "at": [
+    -2.6,
+    3.85,
+    0.3
+   ],
+   "size": [
+    0.45,
+    0.4,
+    0.55
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "wardrobe_1",
+   "at": [
+    -0.95,
+    3.2,
+    0.3
+   ],
+   "size": [
+    1.2,
+    0.6,
+    2.1
+   ],
+   "style": "prop",
+   "rot": 90,
+   "label": "衣柜"
+  },
+  {
+   "kind": "box",
+   "name": "desk_1",
+   "at": [
+    -4.3,
+    1.35,
+    1.01
+   ],
+   "size": [
+    1.1,
+    0.55,
+    0.04
+   ],
+   "style": "prop",
+   "rot": -90,
+   "label": "书桌"
+  },
+  {
+   "kind": "box",
+   "name": "desk_2",
+   "at": [
+    -4.52,
+    1.85,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": -90
+  },
+  {
+   "kind": "box",
+   "name": "desk_3",
+   "at": [
+    -4.52,
+    0.85,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": -90
+  },
+  {
+   "kind": "box",
+   "name": "desk_4",
+   "at": [
+    -4.08,
+    1.85,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": -90
+  },
+  {
+   "kind": "box",
+   "name": "desk_5",
+   "at": [
+    -4.08,
+    0.85,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": -90
+  },
+  {
+   "kind": "box",
+   "name": "chair_1",
+   "at": [
+    -3.75,
+    1.35,
+    0.72
+   ],
+   "size": [
+    0.42,
+    0.42,
+    0.05
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "chair_2",
+   "at": [
+    -3.57,
+    1.17,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "chair_3",
+   "at": [
+    -3.57,
+    1.53,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "chair_4",
+   "at": [
+    -3.93,
+    1.17,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "chair_5",
+   "at": [
+    -3.93,
+    1.53,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "chair_6",
+   "at": [
+    -3.56,
+    1.35,
+    0.77
+   ],
+   "size": [
+    0.42,
+    0.04,
+    0.45
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "book_1",
+   "at": [
+    -4.3,
+    1.35,
+    1.05
+   ],
+   "size": [
+    0.32,
+    0.24,
+    0.04
+   ],
+   "style": "prop",
+   "rot": -90
+  },
+  {
+   "kind": "box",
+   "name": "shelf_1",
+   "at": [
+    -2.2,
+    0.8,
+    0.3
+   ],
+   "size": [
+    0.9,
+    0.32,
+    1.8
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "tub_1",
+   "at": [
+    0.5,
+    2.3,
+    0.3
+   ],
+   "size": [
+    1.6,
+    0.75,
+    0.55
+   ],
+   "style": "prop",
+   "rot": 180,
+   "label": "浴缸"
+  },
+  {
+   "kind": "box",
+   "name": "sink_1",
+   "at": [
+    1.25,
+    1.2,
+    0.3
+   ],
+   "size": [
+    0.6,
+    0.45,
+    0.85
+   ],
+   "style": "prop",
+   "rot": -90
+  },
+  {
+   "kind": "box",
+   "name": "toilet_1",
+   "at": [
+    -0.35,
+    1.1,
+    0.3
+   ],
+   "size": [
+    0.4,
+    0.55,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "toilet_2",
+   "at": [
+    -0.08,
+    1.1,
+    0.72
+   ],
+   "size": [
+    0.4,
+    0.16,
+    0.4
+   ],
+   "style": "prop",
+   "rot": 90
+  },
+  {
+   "kind": "box",
+   "name": "crate_1",
+   "at": [
+    2.1,
+    1.7,
+    0.3
+   ],
+   "size": [
+    0.6,
+    0.5,
+    0.5
+   ],
+   "style": "prop"
+  },
+  {
+   "kind": "box",
+   "name": "crate_2",
+   "at": [
+    2.1,
+    1.7,
+    0.8
+   ],
+   "size": [
+    0.5,
+    0.45,
+    0.4
+   ],
+   "style": "prop"
+  },
+  {
+   "kind": "box",
+   "name": "crate_3",
+   "at": [
+    3,
+    1.2,
+    0.3
+   ],
+   "size": [
+    0.5,
+    0.6,
+    1.2
+   ],
+   "style": "prop"
+  },
+  {
+   "kind": "box",
+   "name": "tvstand_1",
+   "at": [
+    -2.6,
+    -0.85,
+    0.3
+   ],
+   "size": [
+    1.6,
+    0.4,
+    0.5
+   ],
+   "style": "prop",
+   "rot": 180,
+   "label": "电视柜"
+  },
+  {
+   "kind": "box",
+   "name": "tvstand_2",
+   "at": [
+    -2.6,
+    -0.8,
+    0.8
+   ],
+   "size": [
+    1.1,
+    0.06,
+    0.62
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "sofa_1",
+   "at": [
+    -2.4,
+    -3.95,
+    0.3
+   ],
+   "size": [
+    1.9,
+    0.85,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 0,
+   "label": "沙发"
+  },
+  {
+   "kind": "box",
+   "name": "sofa_2",
+   "at": [
+    -2.4,
+    -4.28,
+    0.72
+   ],
+   "size": [
+    1.9,
+    0.2,
+    0.4
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "sofa_3",
+   "at": [
+    -3.27,
+    -3.95,
+    0.72
+   ],
+   "size": [
+    0.16,
+    0.85,
+    0.2
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "sofa_4",
+   "at": [
+    -1.53,
+    -3.95,
+    0.72
+   ],
+   "size": [
+    0.16,
+    0.85,
+    0.2
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "lowtable_1",
+   "at": [
+    -2.4,
+    -2.5,
+    0.3
+   ],
+   "size": [
+    1,
+    0.55,
+    0.38
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "sidetable_1",
+   "at": [
+    -3.85,
+    -4.1,
+    0.3
+   ],
+   "size": [
+    0.45,
+    0.45,
+    0.6
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "vase_1",
+   "at": [
+    -3.85,
+    -4.1,
+    0.9
+   ],
+   "size": [
+    0.14,
+    0.14,
+    0.3
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "lamp_1",
+   "at": [
+    -0.5,
+    -4.1,
+    0.3
+   ],
+   "size": [
+    0.3,
+    0.3,
+    0.04
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "lamp_2",
+   "at": [
+    -0.5,
+    -4.1,
+    0.34
+   ],
+   "size": [
+    0.04,
+    0.04,
+    1.35
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "lamp_3",
+   "at": [
+    -0.5,
+    -4.1,
+    1.6
+   ],
+   "size": [
+    0.42,
+    0.42,
+    0.3
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "table_1",
+   "at": [
+    1.6,
+    -2,
+    1.01
+   ],
+   "size": [
+    1.2,
+    0.8,
+    0.04
+   ],
+   "style": "prop",
+   "rot": 0,
+   "label": "餐桌"
+  },
+  {
+   "kind": "box",
+   "name": "table_2",
+   "at": [
+    1.05,
+    -2.35,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "table_3",
+   "at": [
+    2.15,
+    -2.35,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "table_4",
+   "at": [
+    1.05,
+    -1.65,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "table_5",
+   "at": [
+    2.15,
+    -1.65,
+    0.3
+   ],
+   "size": [
+    0.05,
+    0.05,
+    0.71
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "chair_7",
+   "at": [
+    1.6,
+    -2.75,
+    0.72
+   ],
+   "size": [
+    0.42,
+    0.42,
+    0.05
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "chair_8",
+   "at": [
+    1.42,
+    -2.93,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "chair_9",
+   "at": [
+    1.78,
+    -2.93,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "chair_10",
+   "at": [
+    1.42,
+    -2.57,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "chair_11",
+   "at": [
+    1.78,
+    -2.57,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "chair_12",
+   "at": [
+    1.6,
+    -2.94,
+    0.77
+   ],
+   "size": [
+    0.42,
+    0.04,
+    0.45
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "chair_13",
+   "at": [
+    1.6,
+    -1.25,
+    0.72
+   ],
+   "size": [
+    0.42,
+    0.42,
+    0.05
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "chair_14",
+   "at": [
+    1.78,
+    -1.07,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "chair_15",
+   "at": [
+    1.42,
+    -1.07,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "chair_16",
+   "at": [
+    1.78,
+    -1.43,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "chair_17",
+   "at": [
+    1.42,
+    -1.43,
+    0.3
+   ],
+   "size": [
+    0.04,
+    0.04,
+    0.42
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "chair_18",
+   "at": [
+    1.6,
+    -1.06,
+    0.77
+   ],
+   "size": [
+    0.42,
+    0.04,
+    0.45
+   ],
+   "style": "prop",
+   "rot": 180
+  },
+  {
+   "kind": "box",
+   "name": "glass_1",
+   "at": [
+    1.85,
+    -2,
+    1.05
+   ],
+   "size": [
+    0.08,
+    0.08,
+    0.12
+   ],
+   "style": "prop",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "shoes_1",
+   "at": [
+    -1.3,
+    -5.05,
+    0.3
+   ],
+   "size": [
+    0.9,
+    0.35,
+    0.9
+   ],
+   "style": "prop",
+   "rot": -90
+  }
+ ],
+ "portals": [
+  {
+   "pair": false,
+   "name": "p_bed",
+   "kind": "world",
+   "to": "descent",
+   "mode": "key",
+   "title": "睡",
+   "at": [
+    -3.6,
+    2.6,
+    1
+   ],
+   "label": "→ 下沉"
+  },
+  {
+   "pair": false,
+   "name": "p_wardrobe",
+   "kind": "world",
+   "to": "room",
+   "mode": "walk",
+   "at": [
+    -0.95,
+    3.2,
+    1.3
+   ],
+   "rot": 90,
+   "label": "→ 无墙之屋",
+   "note": "走进衣柜"
+  },
+  {
+   "pair": false,
+   "name": "p_book",
+   "kind": "world",
+   "to": "arcade",
+   "mode": "key",
+   "title": "翻开",
+   "at": [
+    -4.3,
+    1.35,
+    1.2
+   ],
+   "label": "→ 回廊"
+  },
+  {
+   "pair": false,
+   "name": "p_window",
+   "kind": "world",
+   "to": "isles",
+   "mode": "walk",
+   "at": [
+    -4.6,
+    -2.6,
+    1.4
+   ],
+   "rot": 90,
+   "label": "→ 云阶",
+   "note": "走出落地窗"
+  },
+  {
+   "pair": false,
+   "name": "p_vase",
+   "kind": "world",
+   "to": "glasshouse",
+   "mode": "key",
+   "title": "凑近",
+   "at": [
+    -3.85,
+    -4.1,
+    1.3
+   ],
+   "label": "→ 花房"
+  },
+  {
+   "pair": false,
+   "name": "p_glass",
+   "kind": "world",
+   "to": "shoal",
+   "mode": "key",
+   "title": "一杯水",
+   "at": [
+    1.85,
+    -2,
+    1.3
+   ],
+   "label": "→ 浅滩"
+  },
+  {
+   "pair": false,
+   "name": "p_out",
+   "kind": "world",
+   "to": "home-outside",
+   "at_node": "home-core",
+   "mode": "walk",
+   "at": [
+    -0.7,
+    -5.55,
+    1.3
+   ],
+   "rot": 180,
+   "label": "→ 室外",
+   "note": "推开玄关的门"
+  },
+  {
+   "pair": false,
+   "name": "p_rooms",
+   "kind": "world",
+   "to": "home-rooms",
+   "at_node": "home-core",
+   "mode": "walk",
+   "at": [
+    3.4,
+    0,
+    1.3
+   ],
+   "rot": -90,
+   "label": "→ 家家家",
+   "note": "走廊尽头那扇门"
+  }
+ ],
+ "arrives": [
+  {
+   "name": "descent",
+   "at": [
+    -3.6,
+    1.4,
+    0.3
+   ],
+   "face": 180
+  },
+  {
+   "name": "room",
+   "at": [
+    -1.9,
+    3.2,
+    0.3
+   ],
+   "face": -90
+  },
+  {
+   "name": "arcade",
+   "at": [
+    -3.2,
+    1.35,
+    0.3
+   ],
+   "face": 90
+  },
+  {
+   "name": "isles",
+   "at": [
+    -3.6,
+    -2.6,
+    0.3
+   ],
+   "face": -90
+  },
+  {
+   "name": "glasshouse",
+   "at": [
+    -3.85,
+    -3.2,
+    0.3
+   ],
+   "face": 180
+  },
+  {
+   "name": "shoal",
+   "at": [
+    1.85,
+    -1.1,
+    0.3
+   ],
+   "face": 180
+  },
+  {
+   "name": "home-outside",
+   "at": [
+    -0.7,
+    -4.9,
+    0.3
+   ],
+   "face": 0
+  },
+  {
+   "name": "home-rooms",
+   "at": [
+    2.6,
+    0,
+    0.3
+   ],
+   "face": 90
+  },
+  {
+   "name": "home-rooms-bed",
+   "at": [
+    -2.6,
+    1.6,
+    0.3
+   ],
+   "face": 180
+  }
+ ],
+ "regions": [],
+ "views": [
+  {
+   "name": "bird",
+   "at": [
+    9,
+    -12,
+    13
+   ],
+   "look": [
+    -0.6,
+    -0.4,
+    0.5
+   ],
+   "fov": 50
+  },
+  {
+   "name": "bedroom",
+   "at": [
+    -1.2,
+    1,
+    1.9
+   ],
+   "look": [
+    -4,
+    3.8,
+    1
+   ],
+   "fov": 78
+  },
+  {
+   "name": "hall",
+   "at": [
+    -4.2,
+    0,
+    1.9
+   ],
+   "look": [
+    3.4,
+    0,
+    1.4
+   ],
+   "fov": 70
+  },
+  {
+   "name": "living",
+   "at": [
+    0.6,
+    -1,
+    1.9
+   ],
+   "look": [
+    -4.2,
+    -3.6,
+    0.8
+   ],
+   "fov": 78
+  }
+ ],
+ "notes": [
+  "比现在的家（室内 18×10m）小一半左右：卧室 4×3.6m，走廊宽 1.1m，客厅 4.8×4m。包裹感来自墙近、天花板低、灯暖、家具挤。",
+  "走廊是脊：卧室、浴室、储物间、客厅都开在它上面；尽头那扇门平时不开，后面是家家家。",
+  "六个通往浅梦世界的传送物仍在核心里，各在各的房间：床、衣柜、书在卧室，落地窗、花瓶在客厅，一杯水在餐桌。",
+  "玄关的门通往室外：走出去回头，只有一扇门立在草地上。",
+  "家不需要回家的灯。天花板在样板里不盖，只按 2.5m 砌墙。"
+ ]
+}

@@ -1,0 +1,597 @@
+{
+ "id": "home-outside",
+ "title": "家 · 室外",
+ "en": "Home · Outside",
+ "role": "推开夜里的家门，外面是正午。一大片空地，天压得很低，像一块无限大的天花板；回头只有一扇门立着，门里还是黑的。",
+ "extent": 110,
+ "ground": {
+  "a": "white",
+  "b": "green",
+  "pattern": "grain"
+ },
+ "sky": "pale",
+ "sun": [
+  0.03,
+  -0.05,
+  1
+ ],
+ "shade": "FLAT",
+ "look": {
+  "time": "noon",
+  "grid": 8,
+  "palette": [
+   "white",
+   "mist",
+   "blue_pale",
+   "blue",
+   "green"
+  ]
+ },
+ "spawn": {
+  "at": [
+   0,
+   -1.4,
+   0
+  ],
+  "face": 180
+ },
+ "prims": [
+  {
+   "kind": "box",
+   "name": "threshold_1",
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "size": [
+    1.4,
+    0.6,
+    0.12
+   ],
+   "style": "stair"
+  },
+  {
+   "kind": "frame",
+   "name": "door_frame",
+   "w": 1.2,
+   "h": 2.25,
+   "t": 0.12,
+   "depth": 0.22,
+   "at": [
+    0,
+    0,
+    0.12
+   ],
+   "rot": 0,
+   "style": "frame",
+   "label": "一扇门"
+  },
+  {
+   "kind": "box",
+   "name": "door_leaf_1",
+   "at": [
+    0.42,
+    -0.42,
+    0.12
+   ],
+   "size": [
+    0.05,
+    0.92,
+    2.05
+   ],
+   "style": "frame",
+   "rot": 0
+  },
+  {
+   "kind": "box",
+   "name": "cloud_1",
+   "at": [
+    0,
+    -31.3,
+    6
+   ],
+   "size": [
+    68,
+    5.4,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "cloud_2",
+   "at": [
+    0,
+    5.3,
+    6
+   ],
+   "size": [
+    68,
+    57.4,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost",
+   "label": "云底 · 离地 6m"
+  },
+  {
+   "kind": "box",
+   "name": "cloud_3",
+   "at": [
+    -23.3,
+    -26,
+    6
+   ],
+   "size": [
+    21.4,
+    5.2,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "cloud_4",
+   "at": [
+    13.3,
+    -26,
+    6
+   ],
+   "size": [
+    41.4,
+    5.2,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "box",
+   "name": "cloud_edge_1",
+   "at": [
+    0,
+    41,
+    3
+   ],
+   "size": [
+    96,
+    15.232,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost",
+   "rx": -23.199
+  },
+  {
+   "kind": "box",
+   "name": "cloud_edge_2",
+   "at": [
+    0,
+    -41,
+    3
+   ],
+   "size": [
+    96,
+    15.232,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost",
+   "rx": 23.199
+  },
+  {
+   "kind": "box",
+   "name": "cloud_edge_3",
+   "at": [
+    41,
+    0,
+    3
+   ],
+   "size": [
+    96,
+    15.232,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost",
+   "rot": 90,
+   "rx": 23.199
+  },
+  {
+   "kind": "box",
+   "name": "cloud_edge_4",
+   "at": [
+    -41,
+    0,
+    3
+   ],
+   "size": [
+    96,
+    15.232,
+    0.4
+   ],
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost",
+   "rot": 90,
+   "rx": -23.199
+  },
+  {
+   "kind": "cylinder",
+   "name": "sunshaft",
+   "at": [
+    -10,
+    -26,
+    0
+   ],
+   "r": 2.2,
+   "h": 6,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "label": "云上一个洞，一柱光"
+  },
+  {
+   "kind": "cylinder",
+   "name": "sunlit",
+   "at": [
+    -10,
+    -26,
+    0
+   ],
+   "r": 2.5,
+   "h": 0.02,
+   "style": "rail",
+   "collide": false
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_1",
+   "at": [
+    7,
+    11,
+    2.6
+   ],
+   "r": 0.7,
+   "r2": 2.6,
+   "h": 3.4,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_2",
+   "at": [
+    10.5,
+    14,
+    3.8
+   ],
+   "r": 1,
+   "r2": 2.8,
+   "h": 2.2,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost",
+   "label": "一团垂下来的云"
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_3",
+   "at": [
+    13,
+    10,
+    4.6
+   ],
+   "r": 0.6,
+   "r2": 1.8,
+   "h": 1.4000000000000004,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_4",
+   "at": [
+    9,
+    18,
+    1.4
+   ],
+   "r": 1.4,
+   "r2": 3.6,
+   "h": 4.6,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_5",
+   "at": [
+    15,
+    16,
+    3.2
+   ],
+   "r": 0.9,
+   "r2": 2.4,
+   "h": 2.8,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_6",
+   "at": [
+    5,
+    16,
+    4.4
+   ],
+   "r": 0.5,
+   "r2": 1.6,
+   "h": 1.5999999999999996,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_7",
+   "at": [
+    -27,
+    3,
+    2.2
+   ],
+   "r": 0.9,
+   "r2": 2.6,
+   "h": 3.8,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "plan": "ghost"
+  },
+  {
+   "kind": "cylinder",
+   "name": "drip_ground",
+   "at": [
+    24,
+    -6,
+    0
+   ],
+   "r": 2.6,
+   "r2": 4.2,
+   "h": 6,
+   "style": "glass",
+   "collide": false,
+   "shadow": false,
+   "label": "垂到地上的云（走得进去）"
+  },
+  {
+   "kind": "cylinder",
+   "name": "swell_1",
+   "at": [
+    -17,
+    9,
+    0
+   ],
+   "r": 8,
+   "r2": 5,
+   "h": 0.5,
+   "style": "deck",
+   "segments": 32
+  },
+  {
+   "kind": "cylinder",
+   "name": "swell_2",
+   "at": [
+    15,
+    -16,
+    0
+   ],
+   "r": 10,
+   "r2": 6.5,
+   "h": 0.8,
+   "style": "deck",
+   "segments": 32
+  },
+  {
+   "kind": "cylinder",
+   "name": "swell_3",
+   "at": [
+    -5,
+    27,
+    0
+   ],
+   "r": 5.5,
+   "r2": 3.5,
+   "h": 0.35,
+   "style": "deck",
+   "segments": 32
+  },
+  {
+   "kind": "cylinder",
+   "name": "swell_4",
+   "at": [
+    -31,
+    -18,
+    0
+   ],
+   "r": 7,
+   "r2": 4,
+   "h": 0.6,
+   "style": "deck",
+   "segments": 32
+  }
+ ],
+ "portals": [
+  {
+   "pair": false,
+   "name": "p_door",
+   "kind": "world",
+   "to": "home-core",
+   "at_node": "home-outside",
+   "mode": "walk",
+   "at": [
+    0,
+    0,
+    1.2
+   ],
+   "rot": 0,
+   "label": "→ 玄关",
+   "note": "走回门里"
+  },
+  {
+   "pair": false,
+   "name": "p_shaft",
+   "kind": "world",
+   "to": "drying",
+   "mode": "walk",
+   "at": [
+    -10,
+    -26,
+    1.2
+   ],
+   "radius": 1.6,
+   "label": "→ 晾场",
+   "note": "站进光里"
+  }
+ ],
+ "arrives": [
+  {
+   "name": "home-core",
+   "at": [
+    0,
+    -1.4,
+    0
+   ],
+   "face": 180
+  },
+  {
+   "name": "drying",
+   "at": [
+    -10,
+    -22.6,
+    0
+   ],
+   "face": 0
+  }
+ ],
+ "regions": [
+  {
+   "label": "悄悄带回来 · 云压到约 2.6m 处换回门前另一侧",
+   "shape": "circle",
+   "at": [
+    0,
+    0
+   ],
+   "r": 42,
+   "label_at": [
+    0,
+    -39
+   ]
+  },
+  {
+   "label": "云贴到地上",
+   "shape": "circle",
+   "at": [
+    0,
+    0
+   ],
+   "r": 48,
+   "label_at": [
+    0,
+    -46
+   ]
+  }
+ ],
+ "views": [
+  {
+   "name": "eye",
+   "at": [
+    0,
+    -1.4,
+    1.6
+   ],
+   "look": [
+    -10,
+    -26,
+    2.2
+   ],
+   "fov": 74
+  },
+  {
+   "name": "back",
+   "at": [
+    1.5,
+    -7,
+    1.6
+   ],
+   "look": [
+    4,
+    6,
+    2.2
+   ],
+   "fov": 70
+  },
+  {
+   "name": "wide",
+   "at": [
+    26,
+    -30,
+    1.6
+   ],
+   "look": [
+    0,
+    0,
+    2.6
+   ],
+   "fov": 90
+  },
+  {
+   "name": "under",
+   "at": [
+    -30,
+    30,
+    5.2
+   ],
+   "look": [
+    2,
+    -2,
+    0
+   ],
+   "fov": 80
+  }
+ ],
+ "notes": [
+  "和屋里不是一个地方，靠的是空地本身：屋里是夜，门外是正午；格子比屋里粗一级（屋里 4px，门外 8px）；只用白、雾、淡蓝、蓝、绿几枚色，屋里的暖色一个都不出现（look 字段；原型 house_out 里已接上）。",
+  "天压得很低：云底离地 6m，平平地铺满头顶，像一块无限大的天花板。屋里低，外面也低，只是没有墙。",
+  "地上几乎什么都没有，只有几处很缓的隆起。能看的东西都在头顶：门后东北一团垂下来的云、西边孤零零一根、东边一根一直垂到地上（走得进去）。",
+  "出生点背对着门，正前方偏左约 28m，云上开着一个洞，一柱正午的光落下来——整片空地唯一有影子、有直射光的地方。站进光里 → 晾场。",
+  "边界：往外云一路压下来，48m 处贴到地上。走到云压到约 2.6m 高的地方（约 42m），悄悄回到门前另一侧（要在引擎里加，样板里只画出那两圈）。"
+ ]
+}

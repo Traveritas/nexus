@@ -1,0 +1,909 @@
+{
+  "id": "isles",
+  "title": "云阶 · 断梯",
+  "en": "Shallows · Broken Stair",
+  "role": "一座从云里伸出来的巨型楼梯，断成一级级浮岛；悬空的踏步把断口串起来，一层层盘上顶岛的一本书。",
+  "extent": 126,
+  "ground": {
+    "a": "lilac_pale",
+    "b": "mist",
+    "pattern": "plain"
+  },
+  "sky": "lattice",
+  "levels": [
+    {
+      "z": 0.3,
+      "label": "出生岛（云底）"
+    },
+    {
+      "z": 5.4,
+      "label": "一级浮岛"
+    },
+    {
+      "z": 10.5,
+      "label": "二级浮岛"
+    },
+    {
+      "z": 15.6,
+      "label": "三级浮岛"
+    },
+    {
+      "z": 20.7,
+      "label": "顶岛 · 书台"
+    }
+  ],
+  "spawn": {
+    "at": [
+      0,
+      -47,
+      0.3
+    ],
+    "face": 0
+  },
+  "prims": [
+    {
+      "kind": "cylinder",
+      "name": "home_isle",
+      "r": 9.5,
+      "h": 0.3,
+      "at": [
+        0,
+        -43,
+        0
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "stairs",
+      "name": "flight_1",
+      "w": 4,
+      "n": 17,
+      "rise": 0.3,
+      "run": 0.6,
+      "at": [
+        -2.5,
+        -37,
+        0.3
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_1a",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        -2.5,
+        -26.3,
+        5.1
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_1b",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        -2.5,
+        -25.3,
+        5.1
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_1c",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        -2.5,
+        -24.3,
+        5.1
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "box",
+      "name": "isle_1",
+      "size": [
+        16,
+        7,
+        0.4
+      ],
+      "at": [
+        0,
+        -20.9,
+        5
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "stairs",
+      "name": "flight_2",
+      "w": 4,
+      "n": 17,
+      "rise": 0.3,
+      "run": 0.6,
+      "at": [
+        2.5,
+        -17.4,
+        5.4
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_2a",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        2.5,
+        -6.7,
+        10.2
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_2b",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        2.5,
+        -5.7,
+        10.2
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_2c",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        2.5,
+        -4.7,
+        10.2
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "box",
+      "name": "isle_2",
+      "size": [
+        16,
+        7,
+        0.4
+      ],
+      "at": [
+        0,
+        -1.3,
+        10.1
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "stairs",
+      "name": "flight_3",
+      "w": 4,
+      "n": 17,
+      "rise": 0.3,
+      "run": 0.6,
+      "at": [
+        -2.5,
+        2.2,
+        10.5
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_3a",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        -2.5,
+        12.9,
+        15.3
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_3b",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        -2.5,
+        13.9,
+        15.3
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_3c",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        -2.5,
+        14.9,
+        15.3
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "box",
+      "name": "isle_3",
+      "size": [
+        16,
+        7,
+        0.4
+      ],
+      "at": [
+        0,
+        18.3,
+        15.2
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "stairs",
+      "name": "flight_4",
+      "w": 4,
+      "n": 17,
+      "rise": 0.3,
+      "run": 0.6,
+      "at": [
+        2.5,
+        21.8,
+        15.6
+      ],
+      "rot": 0,
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_4a",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        2.5,
+        32.5,
+        20.4
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_4b",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        2.5,
+        33.5,
+        20.4
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "tread_4c",
+      "r": 1,
+      "h": 0.3,
+      "at": [
+        2.5,
+        34.5,
+        20.4
+      ],
+      "style": "stair"
+    },
+    {
+      "kind": "cylinder",
+      "name": "isle_top",
+      "r": 6.5,
+      "h": 0.4,
+      "at": [
+        0,
+        40.9,
+        20.3
+      ],
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "top_spire",
+      "size": [
+        2.6,
+        2.6,
+        12
+      ],
+      "at": [
+        0,
+        45,
+        20.7
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "torus",
+      "name": "top_ring0",
+      "major": 5,
+      "minor": 0.28,
+      "at": [
+        0,
+        40.9,
+        26.5
+      ],
+      "style": "rail",
+      "spin": 6,
+      "collide": false
+    },
+    {
+      "kind": "torus",
+      "name": "top_ring1",
+      "major": 7.2,
+      "minor": 0.24,
+      "at": [
+        0,
+        40.9,
+        30.2
+      ],
+      "style": "rail",
+      "spin": -4,
+      "collide": false
+    },
+    {
+      "kind": "box",
+      "name": "book_desk",
+      "size": [
+        2.4,
+        1.6,
+        0.9
+      ],
+      "at": [
+        0,
+        40.9,
+        20.7
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "site_pedestal",
+      "size": [
+        1.3,
+        1.3,
+        0.9
+      ],
+      "at": [
+        5.5,
+        -1.3,
+        10.5
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "cylinder",
+      "name": "home_post",
+      "r": 0.09,
+      "h": 3.4,
+      "at": [
+        0,
+        -51,
+        0.3
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "box",
+      "name": "home_head",
+      "size": [
+        0.7,
+        0.7,
+        0.5
+      ],
+      "at": [
+        0,
+        -51,
+        3.7
+      ],
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "lamp_1",
+      "sprite": "lamp_street",
+      "at": [
+        -7,
+        -20.9,
+        5.4
+      ],
+      "rot": 90,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "lamp_2",
+      "sprite": "lamp_street",
+      "at": [
+        7,
+        -1.3,
+        10.5
+      ],
+      "rot": -90,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "lamp_3",
+      "sprite": "lamp_street",
+      "at": [
+        -7,
+        18.3,
+        15.6
+      ],
+      "rot": 90,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "sprite",
+      "name": "tree_a",
+      "sprite": "tree.round:3",
+      "at": [
+        6,
+        -45,
+        0.3
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "tree_b",
+      "sprite": "tree.tall:4",
+      "at": [
+        -6,
+        -47,
+        0.3
+      ],
+      "style": "plant"
+    },
+    {
+      "kind": "sprite",
+      "name": "chair_a",
+      "sprite": "chair",
+      "at": [
+        3.5,
+        -40.5,
+        0.3
+      ],
+      "rot": 200,
+      "face": false,
+      "style": "prop"
+    },
+    {
+      "kind": "spriteRow",
+      "name": "home_grass",
+      "sprite": "grass.clump:2",
+      "from": [
+        -7.5,
+        -39.5
+      ],
+      "to": [
+        3.5,
+        -38.5
+      ],
+      "n": 4,
+      "style": "plant"
+    },
+    {
+      "kind": "box",
+      "name": "debris_1",
+      "size": [
+        8,
+        5,
+        0.5
+      ],
+      "at": [
+        -19,
+        -12,
+        12
+      ],
+      "rot": 14,
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "debris_2",
+      "size": [
+        7,
+        4.5,
+        0.5
+      ],
+      "at": [
+        19,
+        10,
+        8
+      ],
+      "rot": -11,
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "debris_3",
+      "size": [
+        6,
+        4,
+        0.5
+      ],
+      "at": [
+        -20,
+        26,
+        17.5
+      ],
+      "rot": 20,
+      "style": "deck"
+    },
+    {
+      "kind": "box",
+      "name": "chunk_0",
+      "size": [
+        7,
+        5,
+        1.2
+      ],
+      "at": [
+        -30,
+        -28,
+        9
+      ],
+      "rot": 12,
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "chunk_1",
+      "size": [
+        6,
+        4,
+        1
+      ],
+      "at": [
+        30,
+        -8,
+        13
+      ],
+      "rot": -16,
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "chunk_2",
+      "size": [
+        8,
+        5,
+        1.4
+      ],
+      "at": [
+        -28,
+        16,
+        18
+      ],
+      "rot": 8,
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "chunk_3",
+      "size": [
+        6,
+        4,
+        1
+      ],
+      "at": [
+        28,
+        30,
+        6
+      ],
+      "rot": -10,
+      "style": "mass"
+    },
+    {
+      "kind": "box",
+      "name": "far_tower",
+      "size": [
+        2,
+        2,
+        8
+      ],
+      "at": [
+        -30,
+        -28,
+        10.2
+      ],
+      "style": "mass"
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_0",
+      "sprite": "cloud:1",
+      "at": [
+        -16,
+        -48,
+        4
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_1",
+      "sprite": "cloud:2",
+      "at": [
+        16,
+        -40,
+        7
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_2",
+      "sprite": "cloud:3",
+      "at": [
+        -18,
+        -24,
+        3
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_3",
+      "sprite": "cloud:4",
+      "at": [
+        20,
+        -10,
+        9
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_4",
+      "sprite": "cloud:5",
+      "at": [
+        -20,
+        4,
+        5
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_5",
+      "sprite": "cloud:6",
+      "at": [
+        18,
+        22,
+        12
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_6",
+      "sprite": "cloud:7",
+      "at": [
+        -18,
+        36,
+        16
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    },
+    {
+      "kind": "sprite",
+      "name": "cloud_7",
+      "sprite": "cloud:8",
+      "at": [
+        22,
+        42,
+        20
+      ],
+      "style": "rail",
+      "collide": false,
+      "shadow": false
+    }
+  ],
+  "regions": [
+    {
+      "label": "出生岛",
+      "shape": "circle",
+      "at": [
+        0,
+        -43
+      ],
+      "r": 9.5
+    },
+    {
+      "label": "断梯 · 悬空踏步",
+      "shape": "rect",
+      "at": [
+        0,
+        -3
+      ],
+      "size": [
+        18,
+        96
+      ]
+    },
+    {
+      "label": "顶岛 · 书台",
+      "shape": "circle",
+      "at": [
+        0,
+        40.9
+      ],
+      "r": 6.5
+    }
+  ],
+  "portals": [
+    {
+      "name": "gate_home",
+      "kind": "home",
+      "at": [
+        0,
+        -51,
+        1.9
+      ],
+      "to": "home",
+      "at_node": "isles",
+      "mode": "key",
+      "title": "关灯",
+      "label": "→ 家",
+      "note": "出生岛南端，灯下"
+    },
+    {
+      "name": "gate_book",
+      "kind": "world",
+      "at": [
+        0,
+        40.9,
+        22.3
+      ],
+      "to": "arcade",
+      "mode": "key",
+      "title": "翻开",
+      "label": "→ 回廊",
+      "note": "顶岛书台上摊着的一本书"
+    },
+    {
+      "name": "gate_site",
+      "kind": "site",
+      "at": [
+        5.5,
+        -1.3,
+        12.1
+      ],
+      "url": "https://traveritas.github.io/",
+      "title": "AveritA的昼梦叙集",
+      "label": "→ 站点",
+      "note": "二级浮岛上的晶体"
+    }
+  ],
+  "arrives": [
+    {
+      "name": "home",
+      "at": [
+        0,
+        -47,
+        0.3
+      ],
+      "face": 0
+    }
+  ],
+  "views": [
+    {
+      "name": "bird",
+      "at": [
+        46,
+        -64,
+        42
+      ],
+      "look": [
+        0,
+        -2,
+        13
+      ],
+      "fov": 60,
+      "res": [
+        1900,
+        1050
+      ]
+    },
+    {
+      "name": "eye",
+      "at": [
+        0,
+        -47,
+        2
+      ],
+      "look": [
+        0,
+        -6,
+        13
+      ],
+      "fov": 70
+    },
+    {
+      "name": "lookup",
+      "at": [
+        -14,
+        -52,
+        1.5
+      ],
+      "look": [
+        0,
+        14,
+        19
+      ],
+      "fov": 62
+    },
+    {
+      "name": "lookdown",
+      "at": [
+        2,
+        26,
+        38
+      ],
+      "look": [
+        0,
+        -30,
+        3
+      ],
+      "fov": 62
+    },
+    {
+      "name": "top",
+      "at": [
+        14,
+        22,
+        27
+      ],
+      "look": [
+        0,
+        40.9,
+        21.6
+      ],
+      "fov": 58
+    }
+  ],
+  "notes": [
+    "一座从云里伸出来的巨型楼梯：四级实心踏步，每一级断成一方浮岛（16×7 的巨阶），阶梯本身悬空，两端搭在浮岛上。",
+    "浮岛与阶梯之间留 2.4m 的断口，用三枚悬空的圆踏步串起来（每枚直径 2m、互相搭上），一级级走上去，不用跳。",
+    "阶梯每级抬高 0.3m，十七级抬 5.1m；四级共抬 20.4m，顶岛（20.7m）上摊着一本书（E「翻开」→ 回廊）。",
+    "最低的出生岛（0.3m）最大，南端一盏灯（E「关灯」→ 家）；二级浮岛上一枚晶体（真实站点）。",
+    "四散的碎片：三块悬空的巨阶残片（12~18m 高）与远处几块浮石，撑住「断」的意思；顶岛背后一截断塔伸到 32.7m。",
+    "天空是天格（lattice），岛下压着纸云；整体从 0.3m 一路盘到 32.7m。"
+  ]
+}
