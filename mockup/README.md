@@ -5,6 +5,7 @@
 | 文件夹 | 是什么 |
 |---|---|
 | [`shallows-01/`](shallows-01/README.md) | **浅梦（Shallows）** 样板 01：家以外的七个世界的地图设计（白模），每个世界 2~3 个备选方案 |
+| [`shallows-02/`](shallows-02/README.md) | **浅梦** 样板 02：重排阵容（删、留、挪、新加），两个新世界光斑、长影直接做成能走的原型（`?world=sunpatch`、`?world=longshadow`），不是白模 |
 | [`home-01/`](home-01/README.md) | **梦里的家** 样板 01：核心（卧室与小客厅）、室外、家家家三个区域（白模）；规划见 `docs/home.md` |
 
 先看 [`shallows-01/plans/_index.png`](shallows-01/plans/_index.png)（七张地图拼在一起）。
