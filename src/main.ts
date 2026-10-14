@@ -535,33 +535,61 @@ function tagOf(key: Outlook | Pose, title: string): Promptable {
   return p;
 }
 
-/** 眼前的窗景或按键型的 pose（来回切换的东西）；按 E 就推开 / 切换 */
-function checkWindow(limit: number): { p: Promptable; d: number } | null {
-  if (travel || entering || gaze) return null;
+// ── 按 E 的东西：拾起的物品、窗景、门与开关（按键型的 pose）、按键型的传送物，一起挑出正对着的那一件 ──
+//    纸签挂在它上面，按 E 用的也是它：挂着的和按下去的永远是同一件 ──
+
+/** 一件够得着的：纸签、离眼睛多远、偏离视线多少（弧度）、按下去做什么 */
+interface Option {
+  p: Promptable;
+  d: number;
+  a: number;
+  act: () => void;
+}
+
+/** 挂着纸签的那一件 */
+let focus: Promptable | null = null;
+/** 主要看偏离视线多少；远一米算多偏这么些弧度 */
+const PER_METER = 0.08;
+/** 已经挂着纸签的那件再让这么些弧度：两件挨着时纸签不来回跳 */
+const KEEP = 0.1;
+
+function pickFocus(): Option | null {
+  if (intro || travel || entering || gaze || book.active || items.busy || items.ringActive) return (focus = null);
   camera.getWorldDirection(look);
-  let best: { p: Promptable; d: number; act: () => void } | null = null;
-  const consider = (pos: THREE.Vector3, radius: number, p: () => Promptable, act: () => void) => {
+  const opts: Option[] = [];
+  /** reach：比 radius 再远多少还够得着；near：贴得这么近时不在眼前也算 */
+  const consider = (pos: THREE.Vector3, radius: number, reach: number, near: number, p: () => Promptable, act: () => void) => {
     const d = eye.distanceTo(pos);
-    if (d > radius + 1.2 || d >= (best?.d ?? limit)) return;
+    if (d > radius + reach) return;
     tmp.copy(pos).sub(eye).normalize();
+    const dot = tmp.dot(look);
     // 不在眼前的只在贴得很近时才算：几扇门挨着时，按 E 开的是看着的那扇，不是身后更近的那扇
-    if (tmp.dot(look) < 0.55 && d > Math.min(radius, 0.7)) return;
-    best = { p: p(), d, act };
+    if (dot < 0.55 && d > near) return;
+    opts.push({ p: p(), d, a: Math.acos(Math.min(1, dot)), act });
   };
+  for (const { p, radius } of items.pickables()) consider(p.pos, radius, 1.2, radius, () => p, () => items.pick(p, camera));
   const ol = level.outlooks[level.outlook];
-  if (ol) consider(ol.pos, ol.radius, () => tagOf(ol, '推开窗'), openWindow);
+  if (ol) consider(ol.pos, ol.radius, 1.2, Math.min(ol.radius, 0.7), () => tagOf(ol, '推开窗'), openWindow);
   for (const g of level.poses.values()) {
     if (g.on !== 'key') continue;
     // 纸签可以写成「原样时|另一个样子时」（开关：开灯|关灯）
     const [t0, t1] = g.title.split('|');
-    consider(g.pos, g.radius, () => tagOf(g, (g.target > 0.5 ? t1 : t0) ?? t0), () => (g.target = g.target > 0.5 ? 0 : 1));
+    consider(g.pos, g.radius, 1.2, Math.min(g.radius, 0.7), () => tagOf(g, (g.target > 0.5 ? t1 : t0) ?? t0), () => (g.target = g.target > 0.5 ? 0 : 1));
   }
-  const b = best as { p: Promptable; d: number; act: () => void } | null;
-  if (b && interact) {
-    tag.press();
-    b.act();
+  for (const p of level.portals) {
+    if (p.mode === 'key') consider(p.pos, p.radius, 1.8, p.radius, () => p, () => go(p.to, p.at, true, true));
   }
-  return b;
+  let best: Option | null = null;
+  let bs = Infinity;
+  for (const o of opts) {
+    const s = o.a + o.d * PER_METER - (o.p === focus ? KEEP : 0);
+    if (s < bs) {
+      bs = s;
+      best = o;
+    }
+  }
+  focus = best?.p ?? null;
+  return best;
 }
 
 /** 凑在窗口往外看：in 凑过去 · look 看着（卡片在） · out 退回屋里 · go 进站（化白）。
@@ -718,43 +746,22 @@ const eye = new THREE.Vector3();
 const body = new THREE.Vector3();
 const look = new THREE.Vector3();
 
-/** 走进型的直接走；按键型的返回眼前那一个（用来显示提示） */
-function checkPortals(limit = Infinity): Portal | null {
-  if (travel || entering) return null;
+/** 走进型的传送物：走进去就走（按键型的和别的按 E 的东西一起挑，见 pickFocus） */
+function checkPortals() {
+  if (travel || entering) return;
   body.copy(player.feet);
   body.y += 0.9;
   const inside = (p: Portal, margin = 0) =>
     Math.hypot(body.x - p.pos.x, body.z - p.pos.z) < p.radius + margin && Math.abs(body.y - p.pos.y) < 1.3;
   // 刚到 / 刚被放下时若正站在某个走进型的传送物里，要先走出来（留 0.3m 余量）才上膛
   if (armedFrom && !level.portals.some((p) => p.mode === 'walk' && inside(p, 0.3))) armedFrom = null;
-  camera.getWorldDirection(look);
-  let prompt: Portal | null = null;
-  // limit：眼前有一件更近的物品可以拾起时，比它远的传送物不出纸签
-  let best = limit;
+  if (armedFrom) return;
   for (const p of level.portals) {
-    if (p.mode === 'walk') {
-      if (armedFrom) continue;
-      if (inside(p)) {
-        go(p.to, p.at, true, true);
-        return null;
-      }
-    } else {
-      const d = eye.distanceTo(p.pos);
-      if (d > p.radius + 1.8) continue;
-      tmp.copy(p.pos).sub(eye).normalize();
-      if (tmp.dot(look) < 0.55 && d > p.radius) continue;
-      if (d < best) {
-        best = d;
-        prompt = p;
-      }
+    if (p.mode === 'walk' && inside(p)) {
+      go(p.to, p.at, true, true);
+      return;
     }
   }
-  if (prompt && interact) {
-    tag.press();
-    go(prompt.to, prompt.at, true, true);
-    prompt = null;
-  }
-  return prompt;
 }
 
 function fieldOf(prompt: Promptable | null): Field {
@@ -838,22 +845,15 @@ function frame(dt: number) {
   stepGaze(dt);
 
   items.update(dt, { world, feet: player.feet, t }, camera);
-  // 纸签：眼前可以拾起的物品与按键型传送物，谁近挂谁
-  camera.getWorldDirection(look);
-  const itemP = travel || entering || book.active || intro ? null : items.promptAt(eye, look);
-  // 窗先看：它按了 E 就把 E 用掉，后面的传送物、物品不再响应
-  const winP = travel || entering || book.active || intro ? null : checkWindow(itemP?.d ?? Infinity);
-  if (winP && interact) interact = false;
-  let prompt: Promptable | null = checkPortals(winP?.d ?? itemP?.d ?? Infinity);
-  if (!prompt && winP) prompt = winP.p;
-  if (!prompt && itemP && !winP) {
-    prompt = itemP.p;
-    if (interact) {
-      tag.press();
-      items.pick(itemP.p, camera);
-    }
+  checkPortals();
+  // 纸签挂在正对着的那一件上；按 E 用的就是它
+  const opt = pickFocus();
+  if (opt && interact) {
+    tag.press(opt.p);
+    opt.act();
   }
   interact = false;
+  const prompt: Promptable | null = opt?.p ?? null;
   level.update(dt, t, camera, frozen);
   for (const e of level.entrances) e.crystal.update(camera, pipe.pixTexture);
   const field = fieldOf(prompt);

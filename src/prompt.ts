@@ -14,6 +14,8 @@ const IN_SPEED = 900;
 const OUT_SPEED = 600;
 
 interface Face {
+  /** 纸签上写的字：东西换了样子（开门 → 关门）时对不上，翻一下换成新的 */
+  text: string;
   w: number;
   mask: Uint8Array;
   title: HTMLCanvasElement;
@@ -51,13 +53,20 @@ export class PromptTag {
     this.ui = ui;
   }
 
-  press() {
+  /** 按下 E：键帽按下去。按的若不是纸签正挂着的那件（上一张还在收走），直接换成它，不等收完 */
+  press(p: Promptable) {
     this.pressT = 0.2;
+    if (p !== this.cur) {
+      this.cur = null;
+      this.phase = 'hidden';
+    }
   }
 
   update(dt: number, want: Promptable | null, camera: THREE.Camera) {
     this.pressT = Math.max(0, this.pressT - dt);
-    if (want !== this.cur) {
+    // 同一件东西换了字（按 E 开了门，「开门」变「关门」）：等键帽弹起来，翻一下换成新的
+    const stale = !!want && want === this.cur && this.face?.text !== (want.title || '……') && this.pressT === 0;
+    if (want !== this.cur || stale) {
       if (this.cur && this.phase !== 'hidden') this.phase = 'out';
       else if (want) this.show(want, camera);
     } else if (want && this.phase === 'out') this.phase = 'in';
@@ -105,7 +114,7 @@ export class PromptTag {
     const key = text('E', C.paper);
     const capW = key.width + 5;
     const w = PAD_X + capW + 4 + t.width + PAD_X;
-    return { w, mask: paperMask(w, H, title), title: t, key, capW };
+    return { text: title, w, mask: paperMask(w, H, title), title: t, key, capW };
   }
 
   /** 东西在 UI 画布上的位置；在身后就没有 */

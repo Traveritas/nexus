@@ -197,19 +197,10 @@ export class ItemSystem {
     this.places.push({ place, def, holder, shown, prompt: { pos: at, title: '拾起' } });
   }
 
-  /** 眼前可以拾起的那一件，和它离眼睛多远 */
-  promptAt(eye: THREE.Vector3, look: THREE.Vector3): { p: Promptable; d: number } | null {
-    if (this.reveal || this.ringActive) return null;
-    let best: { p: Promptable; d: number } | null = null;
-    for (const pl of this.places) {
-      if (pl.place.mode !== 'pick') continue;
-      const d = eye.distanceTo(pl.prompt.pos);
-      if (d > pl.place.radius + 1.2) continue;
-      tmp.copy(pl.prompt.pos).sub(eye).normalize();
-      if (tmp.dot(look) < 0.55 && d > pl.place.radius) continue;
-      if (!best || d < best.d) best = { p: pl.prompt, d };
-    }
-    return best;
+  /** 走近按 E 拾起的那几件（谁挂纸签由外面和别的可按的东西一起挑） */
+  pickables(): { p: Promptable; radius: number }[] {
+    if (this.reveal || this.ringActive) return [];
+    return this.places.filter((pl) => pl.place.mode === 'pick').map((pl) => ({ p: pl.prompt, radius: pl.place.radius }));
   }
 
   /** 按 E 拾起纸签挂着的那一件 */

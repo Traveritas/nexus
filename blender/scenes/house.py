@@ -36,6 +36,7 @@ H = 2.5       # 层高（地板面到天花板）
 T = 0.16      # 墙厚
 h = T / 2
 CT = 0.12     # 天花板厚
+LAP = 0.015   # 门扇关着时压住门套多少（两边、顶上）
 
 WALL = dict(a="pink_pale", b="mist", pattern="grain")
 WALL_MID = dict(a="lilac_pale", b="pink_pale", pattern="grain")
@@ -93,19 +94,23 @@ def door_in(name, axis, at, c, w=0.9, hgt=2.1, into=1, hinge=-1, start_open=Fals
     门扇关着时挡在开向那一侧的墙面外，开到底贴着旁边的墙（门开在房间角上时）。
     block：门洞里一块看不见的挡板（门外还什么都没有：大门、循环口）"""
     doorway(name, axis, at, c, w, hgt)
-    off = h + 0.03 + 0.0225
+    # 门扇贴在门套外面（离 2mm，不和门套的面叠在一起），两边和顶上都压住门套 LAP，关着时看不见缝
+    off = h + 0.03 + 0.0225 + 0.002
+    half = w / 2 - 0.01 + LAP
     if axis == "x":
-        hx, hy = c + hinge * (w / 2 - 0.02), at + into * off
+        hx, hy = c + hinge * half, at + into * off
         closed = 180 if hinge > 0 else 0
         target = 90 if into > 0 else -90
         mid = (c, at, F + 1.3)
     else:
-        hx, hy = at + into * off, c + hinge * (w / 2 - 0.02)
+        hx, hy = at + into * off, c + hinge * half
         closed = -90 if hinge > 0 else 90
         target = 0 if into > 0 else 180
         mid = (at, c, F + 1.3)
     swing = (((target - closed + 180) % 360) - 180) * swing_deg / 90
-    pf.door(name, (hx, hy, F + 0.01), closed, swing, w=w - 0.04, h=hgt - 0.04, start_open=start_open, at=mid, radius=1.3, style=style)
+    # 底边离地 1cm（大门的门缝漏光）；顶上压住门套（门洞顶在 hgt − 1cm）
+    pf.door(name, (hx, hy, F + 0.01), closed, swing, w=2 * half, h=hgt - 0.02 + LAP, start_open=start_open, at=mid, radius=1.3,
+            style=style)
     if block:
         size = (w, 0.04, hgt) if axis == "x" else (0.04, w, hgt)
         nx.collider_only(nx.box(f"{name}_block", size, (mid[0], mid[1], F)))
@@ -267,11 +272,12 @@ def french_window():
     nx.into("living")
     c, w, hh = 2.4, 2.2, 2.3
     pf.frame("fw_trim", (0, c, F + 0.002), 90, w=w - 0.02, h=hh - 0.012, depth=T + 0.08, t=0.08, kind="door", **TRIM)
-    x = h + 0.03 + 0.0225
-    lw = w / 2 - 0.02
+    # 窗扇贴在窗套外面、压住窗套（同 door_in）
+    x = h + 0.04 + 0.025 + 0.002
+    lw = w / 2 - 0.01 + LAP
     leaf = dict(a="white", b="mist", pattern="plain")
-    for name, y0, closed, swing in (("fw_s", c - w / 2 + 0.02, 90, -90), ("fw_n", c + w / 2 - 0.02, -90, 90)):
-        pf.door(name, (x, y0, F + 0.02), closed, swing, w=lw, h=hh - 0.08, thick=0.05, kind="glass", at=(0.3, c, F + 1.3),
+    for name, y0, closed, swing in (("fw_s", c - lw, 90, -90), ("fw_n", c + lw, -90, 90)):
+        pf.door(name, (x, y0, F + 0.02), closed, swing, w=lw, h=hh - 0.03 + LAP, thick=0.05, kind="glass", at=(0.3, c, F + 1.3),
                 radius=1.4, group="french", title=("推开窗", "关上窗"), style=leaf, knob_at=(lw - 0.08, 1.05))
     nx.collider_only(nx.box("fw_block", (0.04, w, hh), (0, c, F)))
     nx.box("fw_sill", (0.5, w + 0.2, 0.05), (-h - 0.25, c, F - 0.05), a="mist", b="white", pattern="plain")
@@ -373,7 +379,9 @@ def door_chain(prefix, ys, widths, heights, rolls, cols, last_blocked=False):
         nx.box(f"{prefix}{i}_lintel", (w, 0.14, 3.0 - hh), (0, 0, hh), parent=g, **st)
         pf.frame(f"{prefix}{i}_trim", (0, 0, 0), 0, w=w - 0.02, h=hh - 0.01, depth=0.16, t=0.06, kind="door", parent=g, **TRIM)
         s = 1 if i % 2 else -1
-        pf.door(f"{prefix}{i}_door", (s * (w / 2 - 0.02), 0.1, 0.01), 180 if s > 0 else 0, -95 * s, w=w - 0.04, h=hh - 0.04,
+        # 门扇贴在门套外面、压住门套（同 door_in）
+        half = w / 2 - 0.01 + LAP
+        pf.door(f"{prefix}{i}_door", (s * half, 0.08 + 0.0245, 0.01), 180 if s > 0 else 0, -95 * s, w=2 * half, h=hh - 0.02 + LAP,
                 at=((PX0 + PX1) / 2, y, F + 1.2), radius=1.2, parent=g,
                 style=dict(a=["blue_pale", "pink_pale", "lilac_pale"][i % 3], b="mist", pattern="tiles"))
         if last_blocked and i == len(ys) - 1:
@@ -613,7 +621,8 @@ def rooms_things(rnd):
     loc = P(c, r, 2.2, 2.3)
     g = tilt("h_lonedoor", loc, (0, 0, 32))
     pf.frame("h_lonedoor", (0, 0, 0), 0, w=0.86, h=2.06, depth=0.18, t=0.07, kind="door", parent=g, **TRIM)
-    pf.door("h_lonedoor_door", (-0.42, 0.11, 0.01), 0, 95, w=0.84, h=2.03, at=(loc[0], loc[1], F + 1.2), parent=g)
+    pf.door("h_lonedoor_door", (-0.43 - LAP, 0.09 + 0.0245, 0.01), 0, 95, w=0.86 + 2 * LAP, h=2.05 + LAP,
+            at=(loc[0], loc[1], F + 1.2), parent=g)
 
     # (1,3) 散开：东西都浮在头顶上，各转各的
     c, r = 1, 3

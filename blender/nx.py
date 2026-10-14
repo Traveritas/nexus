@@ -139,13 +139,15 @@ def collider_only(obj):
     return obj
 
 
-def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=None, time=0.8, title="", night=False):
+def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=None, time=0.8, title="", night=False,
+         anchor=None):
     """会动的东西：在原样与另一个样子之间来回。同一 group 的物体一起动，触发条件取组里第一个物体上写的。
     on="near" 走近（离 at 水平 radius 米内）就变、走开变回（窗帘）；"key" 走近 at 按 E 来回切换（title 是纸签，
     可以写成 "原样时|另一个样子时"，如 "开灯|关灯"）；"cue" 由别的东西叫它（推开窗时的窗扇）。at 不给 ＝ 物体自己的原点。
     rot：绕物体自己原点的欧拉角（度，物体本地轴）；scale：本地轴上的缩放倍数；move：世界坐标的位移（米）。
     转与缩放都绕原点，所以原点要放在铰链 / 收拢的那一头。会动的东西不进静态碰撞。
-    night=True：这一组拨到另一个样子 ＝ 世界入夜（天与天光暗下去，lit 的灯与 lamp 亮起），拨回来天亮"""
+    night=True：这一组拨到另一个样子 ＝ 世界入夜（天与天光暗下去，lit 的灯与 lamp 亮起），拨回来天亮。
+    anchor：纸签系在哪（物体本地坐标，米），跟着物体动（门把手）；组里取第一个写了的。不给 ＝ 系在 at"""
     obj["nx_pose"] = group
     obj["nx_pose_on"] = on
     obj["nx_pose_radius"] = float(radius)
@@ -155,6 +157,8 @@ def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=
     for key, v in (("rot", rot), ("scale", scale), ("move", move)):
         if v is not None:
             obj[f"nx_pose_{key}"] = ",".join(f"{c:g}" for c in v)
+    if anchor is not None:
+        obj["nx_pose_anchor"] = ",".join(f"{v:g}" for v in anchor)
     if title:
         obj["nx_pose_title"] = title
     if night:

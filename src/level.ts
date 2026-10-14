@@ -81,6 +81,8 @@ export interface Pose {
   members: { obj: THREE.Object3D; p0: THREE.Vector3; q0: THREE.Quaternion; s0: THREE.Vector3; dp: THREE.Vector3; dq: THREE.Quaternion; ds: THREE.Vector3 }[];
   /** 挡人（能开关的门）：原样与另一个样子两头各一份世界坐标的三角形；变到一半时不挡 */
   block: [Blocker, Blocker];
+  /** 纸签系在组里某个物体的这一点上（本地坐标），跟着它动：pos 每次动完都重算（nx_pose_anchor，门把手） */
+  anchor: { obj: THREE.Object3D; at: THREE.Vector3 } | null;
 }
 
 /** 会动的东西在某一头挡人：三角形（世界坐标）与它们的包围盒 */
@@ -232,9 +234,11 @@ export async function loadLevel(url: string): Promise<Level> {
         night: bool(u.nx_pose_night, false),
         members: [],
         block: [{ box: new THREE.Box3(), tris: [] }, { box: new THREE.Box3(), tris: [] }],
+        anchor: null,
       };
       poses.set(name, g);
     }
+    if (u.nx_pose_anchor !== undefined && !g.anchor) g.anchor = { obj: m, at: vecOf(u.nx_pose_anchor, [0, 0, 0]) };
     // 转：Blender 本地轴的欧拉角（度，XYZ）→ three 本地轴（Blender 的 x、y、z 是 three 的 x、−z、y）
     const [rx, ry, rz] = String(u.nx_pose_rot ?? '0,0,0').split(/[,\s]+/).map((s) => Number(s) * (Math.PI / 180));
     const ax = (x: number, y: number, z: number, a: number) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(x, y, z), a || 0);
@@ -661,6 +665,10 @@ export async function loadLevel(url: string): Promise<Level> {
         mb.obj.quaternion.copy(mb.q0).multiply(tq.identity().slerp(mb.dq, e));
         mb.obj.scale.set(mb.s0.x * (1 + (mb.ds.x - 1) * e), mb.s0.y * (1 + (mb.ds.y - 1) * e), mb.s0.z * (1 + (mb.ds.z - 1) * e));
         mb.obj.userData.posed = g.k;
+      }
+      if (g.anchor) {
+        g.anchor.obj.updateWorldMatrix(true, false);
+        g.pos.copy(g.anchor.at).applyMatrix4(g.anchor.obj.matrixWorld);
       }
     }
     shared.uTime.value = frozen ? 0 : t;

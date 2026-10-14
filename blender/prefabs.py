@@ -530,7 +530,7 @@ def door(name, hinge, closed_deg, swing, w=0.86, h=2.06, thick=0.045, start_open
     """一扇能开关的门：门扇与把手各是一个物体，原点都在铰链上（nx.pose 绕物体自己的原点转），走近按 E 开 / 关。
     hinge：铰链（门扇底边那一头）在哪；closed_deg：关着时门扇从铰链往哪个方向伸（0 ＝ 本地 +X，90 ＝ +Y）；
     swing：开门时绕铰链转多少度（正 ＝ 逆时针）。start_open：一开始就开着（纸签先是「关门」）。
-    at：纸签系在哪（世界坐标，一般是门洞中间、齐胸高）；group：几扇门一起开关时写同一个组名（衣柜、落地窗）。
+    纸签系在把手上、跟着门扇转，远近也按把手算（at 不再起作用）；group：几扇门一起开关时写同一个组名（衣柜、落地窗）。
     kind="glass"：窗扇（四边的框 + 十字棂，中间空着）。门扇挡人：停在开着或关着的那一头时挡，转到一半不挡"""
     style = style or dict(a="blue_pale", b="mist", pattern="tiles")
     knob = knob or dict(a="gold", b="white", pattern="plain")
@@ -555,7 +555,7 @@ def door(name, hinge, closed_deg, swing, w=0.86, h=2.06, thick=0.045, start_open
     t0, t1 = title
     for o in objs:
         nx.pose(o, group or name, on="key", at=at, radius=radius, rot=(0, 0, -swing if start_open else swing), time=time,
-                title=f"{t1}|{t0}" if start_open else f"{t0}|{t1}")
+                title=f"{t1}|{t0}" if start_open else f"{t0}|{t1}", anchor=(kx, 0, kz) if o is objs[1] else None)
     return objs
 
 

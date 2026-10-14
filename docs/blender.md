@@ -59,7 +59,7 @@
 | `nx_spin` | 度/秒 | 0 | 绕竖轴自转；会动的物体不参与碰撞 |
 | `nx_bob` | 米 | 0 | 上下浮动幅度 |
 | `nx_face` | 0 / 1 | 0 | 永远正面朝人（只绕竖轴转） |
-| `nx_pose` | 组名 | 无 | 会动的东西：在原样与另一个样子之间来回，同组一起动（`nx.pose(obj, 组, on=…, …)`）。`nx_pose_on`：`near` 走近（离 `nx_pose_at` 水平 `nx_pose_radius` 米内）就变、走开变回 · `key` 走近按 E 来回切换（纸签 `nx_pose_title`，可写成「原样时|另一个样子时」，如 `开灯|关灯`）· `cue` 由别的东西叫它（推开窗时的窗扇）。另一个样子：`nx_pose_rot` 本地轴欧拉角（度）、`nx_pose_scale` 本地轴缩放、`nx_pose_move` 世界位移（米），转与缩放都**绕物体自己的原点**（原点放在铰链 / 收拢的那一头）；`nx_pose_time` 秒。`nx_pose_night=1`（`night=True`）：这一组拨到另一个样子＝世界入夜（见下「昼夜」）。不进静态碰撞；没关掉 `nx_collide` 的停在原样或另一个样子那一头时挡人（能开关的门，`level.blockers()`），变到一半不挡。按 E 只认眼前的那个（离得 0.7m 以内的才不用看着）；别和 `nx_spin` / `nx_bob` 同用 |
+| `nx_pose` | 组名 | 无 | 会动的东西：在原样与另一个样子之间来回，同组一起动（`nx.pose(obj, 组, on=…, …)`）。`nx_pose_on`：`near` 走近（离 `nx_pose_at` 水平 `nx_pose_radius` 米内）就变、走开变回 · `key` 走近按 E 来回切换（纸签 `nx_pose_title`，可写成「原样时|另一个样子时」，如 `开灯|关灯`）· `cue` 由别的东西叫它（推开窗时的窗扇）。另一个样子：`nx_pose_rot` 本地轴欧拉角（度）、`nx_pose_scale` 本地轴缩放、`nx_pose_move` 世界位移（米），转与缩放都**绕物体自己的原点**（原点放在铰链 / 收拢的那一头）；`nx_pose_time` 秒。`nx_pose_night=1`（`night=True`）：这一组拨到另一个样子＝世界入夜（见下「昼夜」）。不进静态碰撞；没关掉 `nx_collide` 的停在原样或另一个样子那一头时挡人（能开关的门，`level.blockers()`），变到一半不挡。`nx_pose_anchor`（`anchor=`）：纸签系在物体本地坐标的这一点上、跟着它动，远近也按它算（门把手）。按 E 只认眼前的那个（离得 0.7m 以内的才不用看着）：物品、窗景、pose、按键型传送物一起挑，偏离视线最少的那件挂纸签，按 E 用的也是它（`main.ts` 的 `pickFocus`）；别和 `nx_spin` / `nx_bob` 同用 |
 
 描边按「物体」区分：分开的物体之间有轮廓线；想让几块零件之间也勾线就分开建，不想要就 Join。
 
@@ -207,7 +207,7 @@ NEXUS 是一组世界，像《梦日记》：**现实的家**（`wake_fragment`�
 | 台 | `island`、`pad`、`plinth` | 下面收尖的浮岛、缺口圆台、低矮方台 |
 | 器 | `vessel(lying=…)` | 横躺（走得进去，返回杯里的站立点）/ 立着的杯 |
 | 世界之间 | `gate_home` `gate_book` `gate_bed` `gate_wardrobe` `gate_vase` `gate_glass` `gate_vessel` `gate_window`、`wardrobe` | 通往各个世界的东西，连同传送物与回来的到达点（见「世界」）。`wardrobe(..., to=None)` 只是一只衣柜（没有膜、不传送），`open_deg` 柜门开多大（负数往外半开，0 关着），`parent` 挂在别的东西下面（歪着、倒着放），`interactive=True` 柜门关着、走近按 E 开关 |
-| 门 | `door` | 一扇能开关的门：门扇与把手的原点都在铰链上，`nx.pose(on="key")` 绕铰链转，纸签「开门 / 关门」；`closed_deg` 关着时朝哪、`swing` 开多少度、`start_open`、`group`（几扇一起开关：衣柜、落地窗）、`kind="glass"` 窗扇。门扇停在开着或关着的那一头时挡人，转到一半不挡。墙上的门用 `house.py` 的 `door_in`（门洞、门套、门槛、门扇一起放） |
+| 门 | `door` | 一扇能开关的门：门扇与把手的原点都在铰链上，`nx.pose(on="key")` 绕铰链转，纸签「开门 / 关门」；`closed_deg` 关着时朝哪、`swing` 开多少度、`start_open`、`group`（几扇一起开关：衣柜、落地窗）、`kind="glass"` 窗扇。门扇停在开着或关着的那一头时挡人，转到一半不挡。纸签系在把手上。门扇要贴在门套外面、两边和顶上压住门套（`house.py` 的 `LAP`），关着时才看不见缝。墙上的门用 `house.py` 的 `door_in`（门洞、门套、门槛、门扇一起放） |
 | 纸片撒布 | `paper_scatter`、`paper_ring` | 环带里随机撒（可避让）、沿圆固定朝向排开（朝里/朝外） |
 
 基本形 `plate`（两头尖的板）和 `shapes.py` 里的 `tube`（管/扇/缺口环）、`spiral_stair` 也可以直接用。
