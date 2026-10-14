@@ -35,6 +35,16 @@ export const shared = {
   tShadow: { value: null as THREE.Texture | null },
   uShadowMat: { value: new THREE.Matrix4() },
   uShadowOn: { value: 0 },
+  /** 影子图外面算不算在影子里：0 亮（默认）· 1 暗（整片在一块看不见的顶底下的世界，atmosphere 的 nx_shadow_out） */
+  uShadowOut: { value: 0 },
+  /** 半影（米，atmosphere 的 nx_penumbra）：影子边上软的一圈，明暗之间是渐变而不是一刀切；0 ＝ 硬边 */
+  uPenumbra: { value: 0 },
+  /** 影子图盖着的宽、高（米）：半影按它换算成影子图上的偏移（shadow.ts 的 bind 写） */
+  uShadowSpan: { value: new THREE.Vector2(80, 80) },
+  /** 影子多暗：x 影子里的受光档，y 往它压多少（天空主题的 shade，默认 0.22、0.85） */
+  uShade: { value: new THREE.Vector2(0.22, 0.85) },
+  /** 受光按「朝向 · 太阳」÷ 它算（天空主题的 lift，默认 1）：太阳很低时地面也照得亮 */
+  uSunLift: { value: 1 },
   uTexel: { value: TEXEL },
   /** 没写三色明暗的哑光按主色自动配一组（palette.ts 的 AUTO_RAMP），与「主色乘光照」按这个比例混：0 关 · 1 全用三色 */
   uAutoRamp: { value: 0.3 },
@@ -109,7 +119,8 @@ const CUT = /* glsl */ `if (dot(uCut.xyz, vWorld) > uCut.w) discard;`;
 const LIGHT_UNIFORMS = /* glsl */ `
 uniform vec4 uCut;
 uniform vec3 uSun, uSunCol, uSkyCol, uGroundCol, uFogCol, uGlowCol;
-uniform float uFogNear, uFogFar, uTexel, uShadowOn;
+uniform float uFogNear, uFogFar, uTexel, uShadowOn, uShadowOut, uSunLift, uPenumbra;
+uniform vec2 uShade, uShadowSpan;
 uniform vec4 uGlows[${MAX_GLOWS}];
 uniform sampler2D tShadow;
 uniform mat4 uShadowMat;
@@ -134,6 +145,10 @@ export interface MatteOpts {
   ramp?: [number, number, number];
   /** 自己发亮（0..1）：不受光照，取色板原色（亮着的灯罩、窗缝里漏进来的光） */
   emit?: number;
+  /** 只在光里：背着太阳、在影子里的纹素不画 */
+  litOnly?: boolean;
+  /** 虚像：[最浓, 近, 远]——离人近于「近」米时看不见，远于「远」米时按「最浓」半透（屏幕上按 Bayer 格子筛掉一部分像素，像素化时混成半透） */
+  ghost?: [number, number, number];
   id?: number;
 }
 
@@ -182,12 +197,14 @@ vec3 lampLight(vec3 p, vec3 n) {
 }
 `;
 
-export function matte({ a, b, pattern = 0, top, yRange = [0, 0], ramp, emit = 0, id = newId() }: MatteOpts) {
+export function matte({ a, b, pattern = 0, top, yRange = [0, 0], ramp, emit = 0, litOnly = false, ghost, id = newId() }: MatteOpts) {
   return new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     uniforms: {
       ...shared,
       uEmit: { value: emit },
+      uLitOnly: { value: litOnly ? 1 : 0 },
+      uGhost: { value: new THREE.Vector3(...(ghost ?? [0, 0, 0])) },
       uA: { value: pal(a) },
       uB: { value: pal(b) },
       uPattern: { value: pattern },
@@ -206,13 +223,21 @@ ${OUTS}
 ${LIGHT_UNIFORMS}
 uniform vec3 uA, uB, uTop;
 uniform vec3 uRamp[3];
-uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId, uEmit, uWrap;
+uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId, uEmit, uWrap, uLitOnly;
+uniform vec3 uGhost;
 uniform vec2 uYRange;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
 ${LAMP_GLSL}
 void main() {
   ${CUT}
+  if (uGhost.x > 0.0) {
+    // 虚像：远处半透，走近散掉
+    float al = uGhost.x * smoothstep(uGhost.y, uGhost.z, vDepth);
+    ivec2 q = ivec2(gl_FragCoord.xy) & 3;
+    int bm[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
+    if ((float(bm[q.y * 4 + q.x]) + 0.5) / 16.0 >= al) discard;
+  }
   vec3 n = normalize(vNormal);
   vec3 an = abs(n);
   float T = uTexel;
@@ -293,18 +318,54 @@ void main() {
   float ground = side && hgt > 0.6 ? (above < 2.0 / T ? 0.72 : (above < 4.0 / T ? 0.86 : 1.0)) : 1.0;
 
   // 三档受光，不要平滑的明暗
-  float ndl = max(dot(n, uSun), 0.0);
+  float ndl = clamp(dot(n, uSun) / uSunLift, 0.0, 1.0);
   float band = ndl > 0.62 ? 1.0 : (ndl > 0.22 ? 0.6 : 0.22);
 
   float sh = 0.0;
-  if (uShadowOn > 0.5 && ndl > 0.0) {
-    vec4 sc = uShadowMat * vec4(tp + n * (0.6 / T), 1.0);
-    vec3 s = sc.xyz / sc.w;
+  // 有半影的世界：影子按这个像素真实的位置取，不落在材质的纹素格上——明暗的过渡在世界里是连续的，
+  // 只在最后的屏幕像素化里变成格子（纹素格上取会在斜着的影子边上留下一道道锯齿）
+  vec3 sp = uPenumbra > 0.0 ? vWorld + n * 0.04 : tp + n * (0.6 / T);
+  vec4 sc = uShadowMat * vec4(sp, 1.0);
+  vec3 s = sc.xyz / sc.w;
+  // 接收面在影子图里的斜度（屏幕导数要在分支外面取）
+  vec3 sdx = dFdx(s), sdy = dFdy(s);
+  if (uShadowOn > 0.5 && (ndl > 0.0 || uLitOnly > 0.5)) {
     if (all(greaterThan(s, vec3(0.0))) && all(lessThan(s, vec3(1.0)))) {
-      sh = texture(tShadow, s.xy).r < s.z - 0.0006 ? 1.0 : 0.0;
+      if (uPenumbra > 0.0) {
+        // 半影：4 × 4 的规则网格铺满半影的宽度，每一点按影子图的四个纹素双线性地比（不是非黑即白），
+        // 几成在影子里是连续变化的，没有一圈圈的台阶
+        vec2 ts = vec2(textureSize(tShadow, 0));
+        vec2 r = uPenumbra / uShadowSpan;
+        // 接收面在影子图里是斜的：取样点挪开多少，比较的深度也跟着这个面挪多少（否则平地上一半的点会被当成挡住）
+        float det = sdx.x * sdy.y - sdx.y * sdy.x;
+        vec2 dz = abs(det) > 1e-12 ? vec2(sdy.y * sdx.z - sdx.y * sdy.z, sdx.x * sdy.z - sdy.x * sdx.z) / det : vec2(0.0);
+        dz = clamp(dz, -4.0, 4.0);
+        for (int j = 0; j < 4; j++)
+          for (int i = 0; i < 4; i++) {
+            vec2 o = (vec2(float(i), float(j)) - 1.5) / 1.5 * r;
+            float z = s.z + dot(dz, o) - 0.0006;
+            vec2 p = (s.xy + o) * ts - 0.5;
+            vec2 f = fract(p);
+            vec2 b = (floor(p) + 0.5) / ts;
+            vec2 e = 1.0 / ts;
+            float s00 = texture(tShadow, b).r < z ? 1.0 : 0.0;
+            float s10 = texture(tShadow, b + vec2(e.x, 0.0)).r < z ? 1.0 : 0.0;
+            float s01 = texture(tShadow, b + vec2(0.0, e.y)).r < z ? 1.0 : 0.0;
+            float s11 = texture(tShadow, b + e).r < z ? 1.0 : 0.0;
+            sh += mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+          }
+        sh = smoothstep(0.0, 1.0, sh / 16.0);
+      } else {
+        sh = texture(tShadow, s.xy).r < s.z - 0.0006 ? 1.0 : 0.0;
+      }
+    } else {
+      sh = uShadowOut;
     }
   }
-  band = mix(band, 0.22, sh * 0.85);
+  // 只在光里的东西：落在影子里的纹素不画（按位置算，背光的那一面照样在）
+  if (uLitOnly > 0.5 && sh > 0.5) discard;
+  if (ndl <= 0.0) sh = 0.0;
+  band = mix(band, uShade.x, sh * uShade.y);
 
   vec3 amb = mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5);
   vec3 col = base * (amb + uSunCol * band) * ground;
@@ -320,7 +381,9 @@ void main() {
     float pos = idx > 0.5 ? idx - st : st;
     vec3 rc = pos >= 1.0 ? mix(uRamp[1], uRamp[2], pos - 1.0) : mix(uRamp[0], uRamp[1], pos);
     // 色板原色乘「中档照度 ÷ 默认天色的中档照度」：默认天下所见即所选，换天时随之变暗变色
-    col = mix(col, rc * (amb + uSunCol * 0.6) / uRampRef * ground, rampMix);
+    // 影子压得比默认（0.85）更狠的世界，这一项的太阳也跟着压，影子里才暗得下去（光斑：压到底，影子里几乎全黑）
+    float sunK = 1.0 - sh * clamp((uShade.y - 0.85) / 0.15, 0.0, 1.0);
+    col = mix(col, rc * (amb + uSunCol * 0.6 * sunK) / uRampRef * ground, rampMix);
     base = mix(base, rc, rampMix);
   }
 

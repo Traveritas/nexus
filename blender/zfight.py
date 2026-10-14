@@ -1,7 +1,7 @@
 """共面检查：不同物体的两个面贴在同一平面上、朝向相同、又有重叠——网页里这里的材质和轮廓会闪（z-fighting）。
 
 用法：node scripts/blender.cjs zfight <名字>
-- 只查看得见的网格（nx_mat 为 collider / none 的不算）；像素哑光只画正面，背靠背的两个面不会闪，不算。
+- 只查看得见的网格（nx_mat 为 collider / none / shade 的不算；虚像 nx_ghost 也不算：同一种颜色、同一套筛点，贴着的面交替显示也看不出来）；像素哑光只画正面，背靠背的两个面不会闪，不算。
 - 两面相距 < 1mm 算共面，重叠面积 > 1cm² 才报；重叠处埋在第三个物体里面（墙底压在地板上之类）看不见，不算。
 - 改法：让一边退开或伸出 ≥ 1cm（门套比洞口窄一点、地板别叠在一起……）。
 - 有共面时打印每一对（重叠面积、大致位置）并以非零退出。
@@ -74,7 +74,7 @@ def clip(subject, clipper):
     return out
 
 
-meshes = [o for o in bpy.data.objects if o.type == "MESH" and o.get("nx_mat", "matte") not in ("collider", "none")]
+meshes = [o for o in bpy.data.objects if o.type == "MESH" and o.get("nx_mat", "matte") not in ("collider", "none", "shade") and not o.get("nx_ghost")]
 
 
 def solid(o):

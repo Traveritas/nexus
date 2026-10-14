@@ -31,6 +31,8 @@ interface Behavior {
   spin: number;
   bob: number;
   face: boolean;
+  /** 来回荡（nx_sway，度）：绕自己本地的 x 轴摆，原点放在挂点上（秋千） */
+  sway: number;
   phase: number;
 }
 
@@ -164,6 +166,12 @@ export interface Level {
   /** 这一刻挡人的会动的东西（停在某一头的门） */
   blockers(): Blocker[];
   update(dt: number, t: number, camera: THREE.Camera, frozen: boolean): void;
+  /** 影子图外面算暗（1）还是亮（0） */
+  shadowOut: number;
+  /** 影子图盖多远（米，0 ＝ 默认） */
+  shadowReach: number;
+  /** 太阳转到哪一刻（秒；atmosphere 写了 nx_sun_turn 才有用）。可以拨 */
+  sunTime: number;
 }
 
 const num = (v: unknown, d: number) => (v === undefined || v === null || v === '' ? d : Number(v));
@@ -303,8 +311,13 @@ export async function loadLevel(url: string): Promise<Level> {
   scene.add(sky.mesh);
   let skyName = 'blank';
   let style = 'pixel';
-  const look: Look = { grid: 2, mask: 0xffff, lamps: false };
+  const look: Look = { grid: 2, mask: 0xffff, lamps: false, lit: -1 };
   let wrap = 0;
+  /** 影子：图外面算不算暗、图盖多远（米）；太阳绕竖轴转多快（度每分） */
+  let shadowOut = 0;
+  let penumbra = 0;
+  let shadowReach = 0;
+  let sunTurn = 0;
 
   const nodes: THREE.Object3D[] = [];
   root.traverse((o) => nodes.push(o));
@@ -435,6 +448,11 @@ export async function loadLevel(url: string): Promise<Level> {
       if (u.nx_palette !== undefined) look.mask = String(u.nx_palette).split(',').reduce((m, c) => m | (1 << (Number(c) & 15)), 0) || 0xffff;
       look.lamps = bool(u.nx_lamps, false);
       wrap = Math.max(0, num(u.nx_wrap, 0));
+      look.lit = u.nx_grid_lit === undefined ? -1 : THREE.MathUtils.clamp(Math.round(num(u.nx_grid_lit, 1)), 0, 4);
+      shadowOut = bool(u.nx_shadow_out, false) ? 1 : 0;
+      penumbra = Math.max(0, num(u.nx_penumbra, 0));
+      shadowReach = Math.max(0, num(u.nx_shadow_reach, 0));
+      sunTurn = num(u.nx_sun_turn, 0);
       continue;
     }
 
@@ -496,7 +514,7 @@ export async function loadLevel(url: string): Promise<Level> {
     const geo = mesh.geometry;
     const b = behaviorOf(mesh, u, false);
     // 会动的（nx_spin / nx_bob / nx_pose）不进静态碰撞
-    const collide = bool(u.nx_collide, kind !== 'none' && kind !== 'veil') && !b && u.nx_pose === undefined;
+    const collide = bool(u.nx_collide, kind !== 'none' && kind !== 'veil' && kind !== 'shade') && !b && u.nx_pose === undefined;
     if (collide) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', geo.getAttribute('position').clone());
@@ -505,6 +523,24 @@ export async function loadLevel(url: string): Promise<Level> {
       colliderGeos.push(g.index ? g.toNonIndexed() : g);
     }
     if (kind === 'collider' || kind === 'none') continue;
+
+    if (kind === 'shade') {
+      // 只投影：看不见，只往太阳的影子图里画
+      const m = new THREE.Mesh(geo, HIDDEN);
+      m.position.copy(wpos);
+      m.quaternion.copy(wquat);
+      m.scale.copy(wscale);
+      m.userData.shadowMat = SHADE_ONLY;
+      scene.add(m);
+      // 会动的投影（转、浮、荡）：影子跟着动（影子图看见投影物在动就整张重画）
+      if (b) {
+        b.obj = m;
+        b.basePos.copy(m.position);
+        b.baseRot.copy(m.rotation);
+        behaviors.push(b);
+      }
+      continue;
+    }
 
     if (kind === 'pane' || kind === 'clean') {
       // 干净低模；窗玻璃先于窗里的景画（renderOrder），窗里的景只画在玻璃记过的模板里
@@ -580,6 +616,8 @@ export async function loadLevel(url: string): Promise<Level> {
         yRange: [box.min.y, box.max.y],
         ramp: rampOf(u.nx_ramp),
         emit: num(u.nx_emit, 0),
+        litOnly: bool(u.nx_lit_only, false),
+        ghost: ghostOf(u.nx_ghost),
         id: u.nx_id as number | undefined,
       });
     }
@@ -684,6 +722,10 @@ export async function loadLevel(url: string): Promise<Level> {
   lampOn();
 
   function update(dt: number, t: number, camera: THREE.Camera, frozen: boolean) {
+    if (sunTurn) {
+      if (!frozen) sunTime += dt;
+      turnSun();
+    }
     const nt = nightPose?.target ?? 0;
     if (nightK !== nt) {
       nightK = nt > nightK ? Math.min(nt, nightK + dt / NIGHT_TIME) : Math.max(nt, nightK - dt / NIGHT_TIME);
@@ -722,6 +764,7 @@ export async function loadLevel(url: string): Promise<Level> {
       b.obj.rotation.copy(b.baseRot);
       if (b.bob) b.obj.position.y += Math.sin(tt * 1.5 + b.phase) * b.bob;
       if (b.spin) b.obj.rotation.y += tt * b.spin;
+      if (b.sway) b.obj.quaternion.multiply(tq.setFromAxisAngle(SWAY_AXIS, Math.sin(tt * 0.9 + b.phase) * b.sway));
       if (b.face) b.obj.rotation.set(0, Math.atan2(camera.position.x - b.obj.position.x, camera.position.z - b.obj.position.z), 0);
     }
     entrances.forEach((e, i) => {
@@ -744,9 +787,24 @@ export async function loadLevel(url: string): Promise<Level> {
   }
 
   const sunDir = shared.uSun.value.clone();
+  // 太阳转（nx_sun_turn，度每分）：绕竖轴，从 Blender 里摆的方向起。按 SUN_STEP 秒一步跳，
+  // 影子图不用每帧重画（光斑一步挪不到一个纹素）
+  const sunBase = sunDir.clone();
+  let sunTime = Number(new URLSearchParams(location.search).get('suntime')) || 0;
+  let sunStep = NaN;
+  const turnSun = () => {
+    const k = Math.floor(sunTime / SUN_STEP);
+    if (k === sunStep) return;
+    sunStep = k;
+    sunDir.copy(sunBase).applyAxisAngle(UP, (k * SUN_STEP * sunTurn * Math.PI) / (60 * 180));
+    shared.uSun.value.copy(sunDir);
+  };
+  if (sunTurn) turnSun();
   const apply = () => {
     shared.uSun.value.copy(sunDir);
     shared.uWrap.value = wrap;
+    shared.uShadowOut.value = shadowOut;
+    shared.uPenumbra.value = penumbra;
     sky.set(sky.spec);
     applyLamps();
     lampOn();
@@ -754,7 +812,18 @@ export async function loadLevel(url: string): Promise<Level> {
     showOutlook(outlook);
   };
   shared.uWrap.value = wrap;
+  shared.uShadowOut.value = shadowOut;
+  shared.uPenumbra.value = penumbra;
   return {
+    shadowOut,
+    shadowReach,
+    get sunTime() {
+      return sunTime;
+    },
+    set sunTime(v: number) {
+      sunTime = v;
+      if (sunTurn) turnSun();
+    },
     scene, crystalScene, collider, entrances, spawn, portals, seams, wrap, items, arrivals, sky, windowSky, outlooks,
     get outlook() {
       return outlook;
@@ -804,6 +873,19 @@ function copyOf(o: THREE.Object3D): THREE.Object3D {
 }
 
 const tq = new THREE.Quaternion();
+const UP = new THREE.Vector3(0, 1, 0);
+/** 虚像 "最浓,近,远"；不是三个数就当没有 */
+function ghostOf(v: unknown): [number, number, number] | undefined {
+  if (typeof v !== 'string') return undefined;
+  const p = v.split(/[,\s]+/).map(Number);
+  return p.length === 3 && p.every(Number.isFinite) ? [p[0], p[1], p[2]] : undefined;
+}
+const SWAY_AXIS = new THREE.Vector3(1, 0, 0);
+/** 太阳转的时候隔多少秒跳一步 */
+const SUN_STEP = 0.25;
+/** 只投影的东西（nx_mat=shade）：主画面里不画，影子图里照常写深度 */
+const HIDDEN = new THREE.MeshBasicMaterial({ visible: false });
+const SHADE_ONLY = shadowVariant(new THREE.ShaderMaterial({ uniforms: {} }));
 const BLACK = new THREE.Color(0, 0, 0);
 const FAR_LO = new THREE.Vector3(-1e5, -1e5, -1e5);
 const FAR_HI = new THREE.Vector3(1e5, 1e5, 1e5);
@@ -812,6 +894,8 @@ export interface Look {
   grid: number;
   mask: number;
   lamps: boolean;
+  /** 亮处的格子是几级（atmosphere 的 nx_grid_lit）；-1 ＝ 不按亮度 */
+  lit: number;
 }
 /** 昼夜换一次要几秒 */
 const NIGHT_TIME = 1.6;
@@ -820,7 +904,8 @@ function behaviorOf(obj: THREE.Object3D, u: Record<string, unknown>, faceDefault
   const spin = num(u.nx_spin, 0) * (Math.PI / 180);
   const bob = num(u.nx_bob, 0);
   const face = bool(u.nx_face, faceDefault);
-  if (!spin && !bob && !face) return null;
+  const sway = num(u.nx_sway, 0) * (Math.PI / 180);
+  if (!spin && !bob && !face && !sway) return null;
   return {
     obj,
     basePos: obj.position.clone(),
@@ -828,6 +913,7 @@ function behaviorOf(obj: THREE.Object3D, u: Record<string, unknown>, faceDefault
     spin,
     bob,
     face,
+    sway,
     phase: Math.random() * Math.PI * 2,
   };
 }

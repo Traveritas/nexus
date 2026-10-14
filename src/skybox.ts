@@ -19,6 +19,10 @@ interface Light {
   glow?: [string, number];
   fogNear?: number;
   fogFar?: number;
+  /** 影子多暗：[影子里的受光档, 往它压多少]，默认 [0.22, 0.85] */
+  shade?: [number, number];
+  /** 受光按「朝向 · 太阳」÷ lift 算（默认 1）：太阳很低时地面也照得亮，影子才分得出来 */
+  lift?: number;
 }
 
 interface Theme {
@@ -793,6 +797,56 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
   col = mix(col, ${lin('#f3d6d6')}, away * away * band * 0.5);
 }`,
   },
+
+  // ── 自由 · 暗处：光斑（sunpatch）。天是暗紫的，什么也没有，几乎没有天光；
+  //    太阳是暖金、很强，只从看不见的顶上那扇天窗漏下来——影子里几乎全黑 ──
+  umbra: {
+    label: '暗处',
+    light: {
+      fog: '#231e31',
+      zenith: '#1d1a2b',
+      sky: ['#6a6fa8', 0.13],
+      ground: ['#5a4a66', 0.07],
+      sun: ['#ffe2b8', 1.5],
+      glow: ['#f6c6e2', 1.1],
+      fogNear: 24,
+      fogFar: 110,
+      shade: [0.04, 1.0],
+      lift: 0.5,
+    },
+    glsl: NONE,
+  },
+
+  // ── 自由 · 斜阳：长影（longshadow）。太阳贴着地平线（仰角约 6°）不动：那一边的地平线上方泛金、泛粉，
+  //    一枚白金的日轮；背面是冷的淡紫。受光按 lift 抬起来，平地也照得亮，影子才分得出来 ──
+  lowsun: {
+    label: '斜阳',
+    light: {
+      fog: '#ebe2ea',
+      zenith: '#e2d6e4',
+      sky: ['#d6d2f0', 0.4],
+      ground: ['#f0d8d0', 0.3],
+      sun: ['#ffe8cc', 1.05],
+      glow: ['#f6c6e2', 0.85],
+      fogNear: 30,
+      fogFar: 160,
+      shade: [0.1, 0.9],
+      lift: 0.07,
+    },
+    glsl: /* glsl */ `
+void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
+  vec3 s = normalize(uSun);
+  vec2 h = normalize(d.xz + vec2(1e-5));
+  float toward = max(dot(h, normalize(s.xz + vec2(1e-5))), 0.0);
+  float band = smoothstep(0.015, 0.08, d.y) * (1.0 - smoothstep(0.1, 0.5, d.y));
+  col = mix(col, ${lin('#f3d6d6')}, pow(toward, 3.0) * band * 0.7);
+  col = mix(col, ${lin('#ead7a0')}, pow(toward, 24.0) * band * 0.8);
+  col = mix(col, ${lin('#cdc8db')}, pow(max(-dot(h, normalize(s.xz + vec2(1e-5))), 0.0), 2.0) * band * 0.35);
+  float c = dot(d, s);
+  if (c > 0.9994) { col = ${lin('#fbf9f7')} * 1.2; id = 9700.0; depth = 950.0; }
+  else col = mix(col, ${lin('#fbf9f7')}, smoothstep(0.996, 0.9994, c) * 0.7);
+}`,
+  },
 };
 
 export const SKY_NAMES = Object.keys(THEMES);
@@ -936,6 +990,8 @@ export function makeSky(): SkyBox {
       blend(shared.uGlowCol.value, day.glow!, dark.glow!, k);
       shared.uFogNear.value = day.fogNear!;
       shared.uFogFar.value = day.fogFar!;
+      shared.uShade.value.set(...(day.shade ?? [0.22, 0.85]));
+      shared.uSunLift.value = day.lift ?? 1;
       shared.uNight.value = k;
     },
     update(t, camera) {

@@ -951,7 +951,7 @@ function frame(dt: number) {
   const field = fieldOf(prompt);
   // 窗景不挂站名：走近窗有纸签，推开窗有站点卡片，名字在卡片上
   field.sources = [...items.sources(camera), ...field.sources].slice(0, MAX_FIELD);
-  shadow.render(renderer, level.scene, player.feet);
+  shadow.render(renderer, level.scene, player.feet, level.shadowReach);
   book.update(dt);
   field.drowse = Math.max(book.drowse, items.drowse);
   map.update(dt);
@@ -960,7 +960,7 @@ function frame(dt: number) {
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
   // 世界自己的格子粗细与色板子集（家的室外：8px、只用几枚冷色）
-  pipe.setLook(level.look.grid, level.look.mask);
+  pipe.setLook(level.look.grid, level.look.mask, level.look.lit);
   // 开场：标题是梦的画面，滑向床边时醒过来
   pipe.setDream(Math.max(intro?.dream ?? 0, travelDream));
   // 缝在眼前：世界画完以后，透过门洞把那边也画进同一张世界图
@@ -972,7 +972,7 @@ function frame(dt: number) {
   if (pair && thru) {
     // 那边的影子图：用那边的太阳，跟着人对过去的位置
     pair.there.apply();
-    farShadow.render(renderer, pair.there.scene, tmp.copy(player.feet).applyMatrix4(seamMatrix(pair.hs, pair.ts)));
+    farShadow.render(renderer, pair.there.scene, tmp.copy(player.feet).applyMatrix4(seamMatrix(pair.hs, pair.ts)), pair.there.shadowReach);
     level.apply();
     shadow.bind();
   }
@@ -1048,6 +1048,11 @@ updateHud();
   sleep: SLEEP,
   freeze(b: boolean) {
     frozen = b;
+  },
+  /** 会转的太阳（atmosphere 的 nx_sun_turn）：拨到第几秒；不给参数就读 */
+  sunTime(sec?: number) {
+    if (sec !== undefined) level.sunTime = sec;
+    return level.sunTime;
   },
   /** 直接去一个世界（测试用） */
   go: (to: string, at = '') => go(to, at),

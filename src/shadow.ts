@@ -10,6 +10,10 @@ import * as THREE from 'three';
 import { shared } from './materials';
 
 const SIZE = 2048;
+/** 覆盖范围大时的图边长 */
+const BIG = 4096;
+/** 大范围时竖向要盖住多高的东西（米） */
+const BIG_H = 45;
 /** 影子覆盖半径（米） */
 const HALF = 40;
 /** 玩家离上次的中心超过这么远（米）才挪中心重画 */
@@ -23,8 +27,11 @@ interface Track {
 }
 
 export class SunShadow {
-  readonly rt: THREE.WebGLRenderTarget;
+  rt: THREE.WebGLRenderTarget;
   private cam = new THREE.OrthographicCamera(-HALF, HALF, HALF, -HALF, 0.5, 260);
+  /** 盖多远（米，atmosphere 的 nx_shadow_reach；0 ＝ 默认的 HALF）与此刻的图边长 */
+  private reach = 0;
+  private size = SIZE;
   private bias = new THREE.Matrix4().set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
   private tmp = new THREE.Vector3();
   private basis = new THREE.Matrix4();
@@ -40,11 +47,35 @@ export class SunShadow {
   readonly stats = { frames: 0, draws: 0, live: 0 };
 
   constructor() {
-    this.rt = new THREE.WebGLRenderTarget(SIZE, SIZE, { depthBuffer: true });
-    this.rt.depthTexture = new THREE.DepthTexture(SIZE, SIZE);
-    this.rt.depthTexture.type = THREE.UnsignedIntType;
+    this.rt = SunShadow.target(SIZE);
     shared.uShadowOn.value = 1;
     this.bind();
+  }
+
+  private static target(size: number) {
+    const rt = new THREE.WebGLRenderTarget(size, size, { depthBuffer: true });
+    rt.depthTexture = new THREE.DepthTexture(size, size);
+    rt.depthTexture.type = THREE.UnsignedIntType;
+    return rt;
+  }
+
+  /** 换一个覆盖范围：大的（太阳低、影子上百米长的世界）换一张 4096² 的图。
+      横向（垂直于太阳）盖 reach；竖向只要盖住「沿太阳方向 reach 米的地面」与 BIG_H 米高的东西，
+      太阳低时竖向窄得多，沿太阳方向的影子边才不粗 */
+  private setReach(reach: number, sun: THREE.Vector3) {
+    const r = reach || HALF;
+    const size = r > 60 ? BIG : SIZE;
+    if (size !== this.size) {
+      this.rt.dispose();
+      this.rt = SunShadow.target(size);
+      this.size = size;
+    }
+    this.reach = reach;
+    const hy = reach ? Math.min(r, r * Math.abs(sun.y) + BIG_H) : r;
+    const back = Math.max(120, r * 2.5);
+    Object.assign(this.cam, { left: -r, right: r, top: hy, bottom: -hy, near: 0.5, far: back * 2 + 20 });
+    this.cam.updateProjectionMatrix();
+    return back;
   }
 
   /** 影子矩阵（世界 → 影子图） */
@@ -54,10 +85,11 @@ export class SunShadow {
   bind() {
     shared.tShadow.value = this.rt.depthTexture;
     shared.uShadowMat.value.copy(this.mat);
+    shared.uShadowSpan.value.set(this.cam.right - this.cam.left, this.cam.top - this.cam.bottom);
   }
 
   /** 画完（或不用重画）都会 bind */
-  render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, center: THREE.Vector3) {
+  render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, center: THREE.Vector3, reach = 0) {
     this.bind();
     this.frame++;
     this.stats.frames++;
@@ -93,10 +125,10 @@ export class SunShadow {
     const sig = n * 1e12 + s1 * 1e6 + s2;
 
     const sun = shared.uSun.value;
-    const recenter = !this.sun.equals(sun) || this.scene !== scene || this.center.distanceToSquared(center) > RECENTER * RECENTER;
+    const recenter = !this.sun.equals(sun) || this.scene !== scene || this.reach !== reach || this.center.distanceToSquared(center) > RECENTER * RECENTER;
     if (!recenter && !live && sig === this.sig) return;
     if (recenter) {
-      this.place(sun, center);
+      this.place(sun, center, this.setReach(reach, sun));
       this.sun.copy(sun);
       this.center.copy(center);
       this.scene = scene;
@@ -108,17 +140,18 @@ export class SunShadow {
   }
 
   /** 把影子相机摆到 center 上方，沿太阳方向看；中心按纹素对齐 */
-  private place(sun: THREE.Vector3, center: THREE.Vector3) {
+  private place(sun: THREE.Vector3, center: THREE.Vector3, back: number) {
     const z = sun.clone().normalize();
     const x = new THREE.Vector3(0, 1, 0).cross(z).normalize();
     if (x.lengthSq() < 1e-6) x.set(1, 0, 0);
     const y = z.clone().cross(x);
     this.basis.makeBasis(x, y, z);
-    const texel = (2 * HALF) / SIZE;
-    const lx = Math.round(center.dot(x) / texel) * texel;
-    const ly = Math.round(center.dot(y) / texel) * texel;
+    const tx = (this.cam.right - this.cam.left) / this.size;
+    const ty = (this.cam.top - this.cam.bottom) / this.size;
+    const lx = Math.round(center.dot(x) / tx) * tx;
+    const ly = Math.round(center.dot(y) / ty) * ty;
     const lz = center.dot(z);
-    this.tmp.set(0, 0, 0).addScaledVector(x, lx).addScaledVector(y, ly).addScaledVector(z, lz + 120);
+    this.tmp.set(0, 0, 0).addScaledVector(x, lx).addScaledVector(y, ly).addScaledVector(z, lz + back);
     this.cam.position.copy(this.tmp);
     this.cam.quaternion.setFromRotationMatrix(this.basis);
     this.cam.updateMatrixWorld();

@@ -159,6 +159,8 @@ uniform mat3 uView;
 uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse, uClean, uDream;
 // 远处（没有源时）的格子是几级：2 ＝ 4px（默认），3 ＝ 8px
 uniform float uBase;
+// 亮处的格子是几级（-1 ＝ 不按亮度）：一块 8×8 的平均亮度够亮就用它（光斑：光里细、暗里粗）
+uniform float uLit;
 out vec4 fragColor;
 ${COMMON}
 vec3 toSrgb(vec3 c) {
@@ -212,6 +214,12 @@ int levelAt(ivec2 px) {
   if (uLock >= 0.0) return int(uLock);
   ivec2 blk = px / 8;
   float lc = srcLevel(px);
+  if (uLit >= 0.0) {
+    int lv = max(3 - uShift, 0);
+    vec3 c = texelFetch(tColor, min(blk, textureSize(tColor, lv) - 1), lv).rgb;
+    float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    lc = min(lc, mix(uBase, uLit, smoothstep(0.06, 0.16, y)));
+  }
   lc -= 1.7 * uProx + 3.0 * uResolve;
   lc = clamp(lc, 0.0, uBase);
   // 级别交界处按块抖开一窄条：不画出一道圆，也不满屏碎块
@@ -474,6 +482,7 @@ export class Pipeline {
         uClean: { value: 0 },
         uDream: { value: 0 },
         uBase: { value: 2 },
+        uLit: { value: -1 },
         uDim: { value: new THREE.Vector3() },
         uGlow: { value: Array.from({ length: MAX_GLOW }, () => new THREE.Vector3()) },
         uGlowCount: { value: 0 },
@@ -613,8 +622,9 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
 
   /** 世界的样子：grid 远处的格子是几级（2 ＝ 4px，3 ＝ 8px）；mask 只落到哪几枚色板色上（第 i 位 ＝ 第 i 色）。
       换世界时按 level.look 设。暗一档 / 亮一档（犯困、星光、描边用）也跟着收进这几色里 */
-  setLook(grid: number, mask: number) {
+  setLook(grid: number, mask: number, lit = -1) {
     this.pixMat.uniforms.uBase.value = grid;
+    this.pixMat.uniforms.uLit.value = lit;
     if (mask === this.mask) return;
     this.mask = mask;
     this.quantMat.uniforms.uPalMask.value = mask;

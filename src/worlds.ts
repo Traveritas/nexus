@@ -15,6 +15,9 @@ export const WORLD_NAMES: Record<string, string> = {
   // 梦里的家的原型（docs/home.md）：传送都接上以后换掉 home
   house: '家 · 原型',
   house_out: '家 · 门外',
+  // 浅梦第二轮的新世界（mockup/shallows-02）：还没接进家里
+  sunpatch: '光斑',
+  longshadow: '长影',
 };
 
 export const worldName = (w: string) => WORLD_NAMES[w] ?? w;

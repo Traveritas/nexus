@@ -78,11 +78,17 @@ def _pal(v):
     return P[v] if isinstance(v, str) else int(v)
 
 
-def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=True, top=None, ramp=None, emit=0.0):
+def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=True, top=None, ramp=None, emit=0.0, lit_only=False, ghost=None):
     """像素哑光：主色 a、副色 b（色板名或编号），纹样见 PATTERN；
     top：顶面色，朝上的面整片换成它，并沿侧面上沿垂下参差的几格（草皮、积雪、桌布之类）；
     ramp：(暗, 中, 亮) 三色明暗，受光档直接取这三色，可以跨色相（暗偏冷紫、亮偏暖粉/淡金）；给了就不用 a、b；
-    emit：自己发亮（0..1），不受光照、取色板原色——亮着的灯罩、门缝里漏进来的光"""
+    emit：自己发亮（0..1），不受光照、取色板原色——亮着的灯罩、门缝里漏进来的光；
+    lit_only：只在光里——落在太阳影子里的那部分不画（光斑爬过去，它从光的边上一格格长出来）。一般连同 shadow=False、collide=False；
+    ghost=(最浓, 近, 远)：虚像——离人近于「近」米时看不见，远于「远」米时按「最浓」（0..1）半透，一般也连同 shadow=False、collide=False"""
+    if lit_only:
+        obj["nx_lit_only"] = 1
+    if ghost:
+        obj["nx_ghost"] = ",".join(f"{v:g}" for v in ghost)
     if ramp is not None:
         obj["nx_ramp"] = ",".join(str(_pal(c)) for c in ramp)
     if emit:
@@ -131,6 +137,14 @@ def pane(obj):
     return obj
 
 
+def shade(obj):
+    """只投影：看不见、不挡人，只往太阳的影子图里画（长影里那些找不到的东西、光斑头顶那片看不见的顶）"""
+    obj["nx_mat"] = "shade"
+    obj["nx_collide"] = 0
+    obj.display_type = "WIRE"
+    return obj
+
+
 def collider_only(obj):
     """看不见、只挡人"""
     obj["nx_mat"] = "collider"
@@ -166,8 +180,11 @@ def pose(obj, group, on="near", at=None, radius=2.0, rot=None, scale=None, move=
     return obj
 
 
-def behave(obj, spin=0.0, bob=0.0, face=None):
-    """spin：绕竖轴 度/秒；bob：上下浮动幅度（米）；face：永远正面朝人"""
+def behave(obj, spin=0.0, bob=0.0, face=None, sway=0.0):
+    """spin：绕竖轴 度/秒；bob：上下浮动幅度（米）；face：永远正面朝人；
+    sway：绕本地 x 轴来回荡的幅度（度），原点放在挂点上（秋千）"""
+    if sway:
+        obj["nx_sway"] = float(sway)
     if spin:
         obj["nx_spin"] = float(spin)
     if bob:
@@ -346,16 +363,22 @@ def export(name):
 
 # ── 天空主题 ───────────────────────────────────────────
 
-def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamps=False, wrap=None):
+def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamps=False, wrap=None,
+               grid_lit=None, shadow_out=False, shadow_reach=None, sun_turn=None, penumbra=None):
     """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
-    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午 · meadow 原野（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
+    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午 · meadow 原野 · umbra 暗处 · lowsun 斜阳（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
     seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1。
     style='clean'：这个世界是干净低模，管线不做像素化、落色板与描边（现实的世界）。
     grid：远处（没有晶体时）的格子是几级，默认 2（4px），3 ＝ 8px。
     palette：这个世界只落到这几枚色板色上（名字或编号的列表）；不给就是全部 16 色。
     lamps=True：灯（lamp）一直亮着、照像素哑光，不等入夜。
     wrap：循环的大地，方块边长（米，以原点为中心）。走出方块从另一边回来；网页在四周各画一份复制，
-    方块里的东西要首尾接得上（地形按 wrap 周期），也别跨过边界放；雾要在半个方块以内合上"""
+    方块里的东西要首尾接得上（地形按 wrap 周期），也别跨过边界放；雾要在半个方块以内合上。
+    grid_lit：亮处的格子是几级（一块 8×8 的平均亮度够亮就用它；如 1 ＝ 2px），暗处照 grid。
+    shadow_out=True：太阳影子图盖不到的地方算在影子里（整片在一块看不见的顶底下的世界）；默认算亮。
+    shadow_reach：影子图盖多远（米，默认 40）；太阳低、影子上百米长的世界要大。
+    sun_turn：太阳绕竖轴转，度每分（从 sun() 摆的方向起），每 0.25 秒走一步。
+    penumbra：半影（米）——太阳影子的边上软的一圈，明暗之间是渐变（落色板时抖成一格格的过渡）。很贵，慎用"""
     if ATLAS:
         return None
     obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
@@ -371,6 +394,16 @@ def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamp
         obj["nx_lamps"] = 1
     if wrap:
         obj["nx_wrap"] = float(wrap)
+    if grid_lit is not None:
+        obj["nx_grid_lit"] = int(grid_lit)
+    if shadow_out:
+        obj["nx_shadow_out"] = 1
+    if shadow_reach:
+        obj["nx_shadow_reach"] = float(shadow_reach)
+    if sun_turn:
+        obj["nx_sun_turn"] = float(sun_turn)
+    if penumbra:
+        obj["nx_penumbra"] = float(penumbra)
     return obj
 
 
