@@ -56,6 +56,10 @@ export const shared = {
   uLampShade: { value: Array.from({ length: MAX_LAMPS }, () => new THREE.Vector4(2, 1, 1, 0.07)) },
   /** 下口那一束照到罩口方向多远为止（米；被床面之类挡住，灯光不投影时用它代替影子）。很大 ＝ 不挡 */
   uLampReach: { value: Array.from({ length: MAX_LAMPS }, () => 1e4) },
+  /** 切面（xyz 法线，w 距离）：dot(法线, 位置) > w 的不画。透过缝画另一个世界时，只留缝前面的那一半（见 seam.ts）；平时 w 很大 ＝ 不切 */
+  uCut: { value: new THREE.Vector4(0, 0, 0, 1e9) },
+  /** 循环的大地：纹样按这么大的方块首尾相接（米，0 ＝ 不循环）。走过边界被挪回另一边时，脚下的颗粒、色斑不跳 */
+  uWrap: { value: 0 },
 };
 
 const COMMON = /* glsl */ `
@@ -99,7 +103,11 @@ layout(location = 0) out vec4 oColor;
 layout(location = 1) out vec4 oData;
 `;
 
+/** 切面：放在每种世界材质的 main() 开头 */
+const CUT = /* glsl */ `if (dot(uCut.xyz, vWorld) > uCut.w) discard;`;
+
 const LIGHT_UNIFORMS = /* glsl */ `
+uniform vec4 uCut;
 uniform vec3 uSun, uSunCol, uSkyCol, uGroundCol, uFogCol, uGlowCol;
 uniform float uFogNear, uFogFar, uTexel, uShadowOn;
 uniform vec4 uGlows[${MAX_GLOWS}];
@@ -115,7 +123,7 @@ export interface MatteOpts {
   /** 主色、副色的色板编号 */
   a: number;
   b: number;
-  /** 0 颗粒 · 1 一米方砖 · 2 横纹 · 3 竖条 · 4 素面 */
+  /** 0 颗粒 · 1 一米方砖 · 2 横纹 · 3 竖条 · 4 素面 · 5 漂（大片的地：几米一块的过渡，沿等高线拉成一道道） */
   pattern?: number;
   /** 顶面色的色板编号：朝上的面整片，并沿侧面上沿垂下参差的几格；不给就没有 */
   top?: number;
@@ -198,16 +206,20 @@ ${OUTS}
 ${LIGHT_UNIFORMS}
 uniform vec3 uA, uB, uTop;
 uniform vec3 uRamp[3];
-uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId, uEmit;
+uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId, uEmit, uWrap;
 uniform vec2 uYRange;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
 ${LAMP_GLSL}
 void main() {
+  ${CUT}
   vec3 n = normalize(vNormal);
   vec3 an = abs(n);
   float T = uTexel;
-  vec2 uv = an.x > an.y && an.x > an.z ? vWorld.zy : (an.y > an.z ? vWorld.xz : vWorld.xy);
+  // 循环的大地：纹样的坐标按方块折回来，四周的几份复制和中间这一份长得一样
+  vec3 pw = vWorld;
+  if (uWrap > 0.0) pw.xz -= uWrap * floor(pw.xz / uWrap + 0.5);
+  vec2 uv = an.x > an.y && an.x > an.z ? pw.zy : (an.y > an.z ? pw.xz : pw.xy);
   vec2 tc = floor(uv * T + 1e-3);
   float axis = an.x > an.y && an.x > an.z ? 1.0 : (an.y > an.z ? 2.0 : 3.0);
   float face = axis * sign(dot(n, vec3(1.0)));
@@ -242,6 +254,16 @@ void main() {
     k = clamp(k + (rh - 0.5) * 0.25, 0.0, 1.0);
     if (mod(floor(vWorld.y * T), 8.0) == 0.0) k = 0.8;
     else if (side && mod(tc.x + floor(rh * 40.0), 20.0 + floor(rh * 12.0)) == 0.0) k = 0.7;
+  } else if (uPattern == 5.0) {
+    // 漂：大片的地（原野）。几米一块、慢慢过渡的色块，沿等高线拉成一道道；颗粒照旧压在上面。
+    // k 是连续的，落色板时主副两色之间抖出过渡，大片的坡不会落成一整片纯色
+    vec2 m = pw.xz;
+    float warp = vnoise(m / 15.0, face + 47.0) * 5.0;
+    float stripe = vnoise(vec2(tp.y * 0.9 + warp, m.x * 0.02 + m.y * 0.015), face + 45.0);
+    float blot = vnoise(m / 4.5, face + 41.0) * 0.6 + vnoise(m / 1.6, face + 43.0) * 0.4;
+    float drift = smoothstep(0.2, 0.8, stripe * 0.5 + blot * 0.5);
+    // 颗粒推得过一档：一整块同色的里面也有成团的另一色
+    k = clamp(drift * 0.85 + k * 0.7 - 0.1, 0.0, 1.0);
   } else if (uPattern == 3.0) {
     // 竖条：每条一点色偏
     float sh3 = hash13(vec3(floor(tc.x / 6.0), face, 9.0));
@@ -344,6 +366,7 @@ uniform float uUseFog, uId;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
 void main() {
+  ${CUT}
   vec4 t = texture(tMap, vUv);
   if (t.a < 0.5) discard;
   vec3 n = normalize(vNormal) * (gl_FrontFacing ? 1.0 : -1.0);
@@ -411,11 +434,13 @@ export function veil(opts: { a: number; b: number; size: [number, number]; id?: 
 precision highp float;
 ${OUTS}
 uniform vec3 uA, uB, uFogCol;
+uniform vec4 uCut;
 uniform vec2 uSize;
 uniform float uTime, uId, uFogNear, uFogFar, uTexel;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
 void main() {
+  ${CUT}
   // 离得越近铺得越满：8m 外没有，2m 内满
   float cover = 1.0 - smoothstep(2.0, 8.0, distance(cameraPosition, vWorld));
   if (cover <= 0.0) discard;
@@ -468,7 +493,7 @@ export function asset(o: AssetOpts) {
       ...shared,
       tMap: { value: o.map ?? WHITE },
       uColor: { value: o.color },
-      uCut: { value: o.cutout ? 1 : 0 },
+      uCutout: { value: o.cutout ? 1 : 0 },
       uTint: { value: o.tint },
       uA: { value: pal(o.a) },
       uB: { value: pal(o.b) },
@@ -482,12 +507,13 @@ ${OUTS}
 ${LIGHT_UNIFORMS}
 uniform sampler2D tMap;
 uniform vec3 uColor, uA, uB;
-uniform float uCut, uTint, uSmooth, uId;
+uniform float uCutout, uTint, uSmooth, uId;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
 void main() {
+  ${CUT}
   vec4 t = texture(tMap, vUv);
-  if (uCut > 0.5 && t.a < 0.5) discard;
+  if (uCutout > 0.5 && t.a < 0.5) discard;
   vec3 base = t.rgb * uColor;
   float lum = dot(base, vec3(0.2126, 0.7152, 0.0722));
   base = mix(base, mix(uB, uA, smoothstep(0.02, 0.6, lum)), uTint);
@@ -567,6 +593,7 @@ uniform float uLampReach[${MAX_LAMPS}];
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
 void main() {
+  ${CUT}
   // 面法线：低模的每个面一块平的颜色；朝向镜头的那一面
   vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
   if (dot(n, cameraPosition - vWorld) < 0.0) n = -n;

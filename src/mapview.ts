@@ -1,7 +1,7 @@
 /* 罗盘的地图：捏到底，世界从手边那一点暗下去（pipeline 的 dim），星星一颗颗亮起来。
    - 星是连续的光：画在全分辨率的 #glow 画布上（叠加发亮），一颗亮核、一团光晕、细长的星芒；亮度慢慢呼吸，偶尔星芒一长。
      亮起时先闪一下再落定。星光落到暗下去的世界上是像素的：星的周围按格子撤回一两档暗（pipeline 的 glow）。
-   - 本世界：每个出入口（传送物）与站点（晶体）一颗星，隔着墙也看得见；不标物品。
+   - 本世界：每个出入口（传送物、缝）与站点（晶体）一颗星，隔着墙也看得见；不标物品。
        站点：金，大，另有一对慢慢转的斜芒 · 去过的世界的出口：白，雾蓝的晕 · 没去过的：暗紫，一点微光，没有芒。
        远处的小一号；画面外的贴在屏幕边上。正看着的那颗挂一张纸签：「→ 浅滩 · 一杯水」，没去过的「→ ？」；
        站点的名字连着真实的站点，是「现实的字」（#maplabel，src/realtext.ts），换到它时对一次焦。
@@ -229,6 +229,12 @@ export class MapView {
       const seen = c.visited.includes(p.to);
       const what = p.title ? ` · ${p.title}` : '';
       all.push(this.place(p.pos, camera, seen ? LOOK.seen : LOOK.unseen, `→ ${seen ? worldName(p.to) : '？'}${what}`, false, seed++));
+    }
+    // 缝（家的大门）也是出入口：星在门洞正中
+    for (const s of c.level.seams) {
+      const seen = c.visited.includes(s.to);
+      tmp.copy(s.pos).setY(s.pos.y + s.h / 2);
+      all.push(this.place(tmp.clone(), camera, seen ? LOOK.seen : LOOK.unseen, `→ ${seen ? worldName(s.to) : '？'} · 门`, false, seed++));
     }
     let best = 60;
     const margin = 10;

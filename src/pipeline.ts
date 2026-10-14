@@ -645,8 +645,9 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
   }
 
   /** overlay：手边的东西（拿在手里的、环绕展示的）。世界画完后清掉深度再画进同一张图，所以不会插进墙里；
-      之后和世界一起像素化、落色板、描边 */
-  render(world: THREE.Scene, crystal: THREE.Scene, camera: THREE.PerspectiveCamera, field: Field, overlay?: THREE.Scene) {
+      之后和世界一起像素化、落色板、描边。
+      through：世界画完、还在世界图上时调用（透过缝画另一个世界，见 seam.ts），之后一起像素化 */
+  render(world: THREE.Scene, crystal: THREE.Scene, camera: THREE.PerspectiveCamera, field: Field, overlay?: THREE.Scene, through?: (r: THREE.WebGLRenderer) => void) {
     const r = this.renderer;
     const f = this.flags;
     const u = this.pixMat.uniforms;
@@ -686,6 +687,7 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     r.setRenderTarget(this.rtWorld);
     r.clear(true, true, true);
     r.render(world, camera);
+    through?.(r);
     if (overlay && overlay.children.length) {
       r.clearDepth();
       r.render(overlay, camera);

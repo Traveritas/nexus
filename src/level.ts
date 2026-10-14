@@ -13,6 +13,7 @@ import { ExtendedTriangle, MeshBVH } from 'three-mesh-bvh';
 import { asset, clean, matte, pane, paper, throughPane, veil, shared, shadowVariant, newId, TEXEL, MAX_LAMPS } from './materials';
 import { makeSky, makeWindowSky, type SkyBox, type WindowSky } from './skybox';
 import { makeCrystal } from './crystal';
+import { seamMesh } from './seam';
 import { loadSprite, spriteSize } from './sprites';
 
 export interface Entrance {
@@ -42,6 +43,21 @@ export interface Portal {
   title: string;
   radius: number;
   pos: THREE.Vector3;
+}
+
+/** 缝：这个世界在一处门洞里和另一个世界接上（nx_type=seam，见 seam.ts）。透过它看见的是那个世界，走过去就到了那边，不转场 */
+export interface Seam {
+  /** 接到哪个世界（那边也要有一道 to 写着这个世界的缝） */
+  to: string;
+  /** 门洞底边的中点（three 坐标） */
+  pos: THREE.Vector3;
+  /** 从这边看过去的方向（水平单位向量）与它的 yaw（同 spawn） */
+  fwd: THREE.Vector3;
+  yaw: number;
+  w: number;
+  h: number;
+  /** 从那边透过这道缝看进来时，画到缝里面多深为止（米，nx_reach；0 ＝ 不限）：屋里看不见的房间不画 */
+  reach: number;
 }
 
 /** 窗景：窗外是哪一个站点的天。走近窗按 E 推开窗，视角凑到窗口（view）往外看，站点卡片浮出来；
@@ -117,6 +133,8 @@ export interface Level {
   entrances: Entrance[];
   spawn: { pos: THREE.Vector3; yaw: number };
   portals: Portal[];
+  /** 缝：和别的世界无缝接上的门洞 */
+  seams: Seam[];
   items: ItemPlace[];
   /** 到达点：名字 → 脚底位置与朝向 */
   arrivals: Map<string, { pos: THREE.Vector3; yaw: number }>;
@@ -135,6 +153,8 @@ export interface Level {
   /** 世界的样子（atmosphere 上写的）：grid 远处的格子是几级（2 ＝ 4px，3 ＝ 8px）、mask 只用哪几枚色板色（位）、
       lamps 灯一直亮着（不等入夜） */
   look: Look;
+  /** 循环的大地：方块边长（米，0 ＝ 不循环），方块以原点为中心。四周八份复制只是画出来看的，碰撞只有中间这一份 */
+  wrap: number;
   /** 昼夜：0 白天 … 1 夜里（跟着 night 的 pose 慢慢变） */
   readonly night: number;
   /** 把这个世界的太阳、天色、雾、灯重新套到共享的 uniform 上（几个世界同时在内存里时，后加载的会改掉它们） */
@@ -182,6 +202,7 @@ export async function loadLevel(url: string): Promise<Level> {
   const colliderGeos: THREE.BufferGeometry[] = [];
   const spawn = { pos: new THREE.Vector3(0, 0, 0), yaw: 0 };
   const portals: Portal[] = [];
+  const seams: Seam[] = [];
   const items: ItemPlace[] = [];
   const arrivals = new Map<string, { pos: THREE.Vector3; yaw: number }>();
   let intro: Intro | null = null;
@@ -281,6 +302,7 @@ export async function loadLevel(url: string): Promise<Level> {
   let skyName = 'blank';
   let style = 'pixel';
   const look: Look = { grid: 2, mask: 0xffff, lamps: false };
+  let wrap = 0;
 
   const nodes: THREE.Object3D[] = [];
   root.traverse((o) => nodes.push(o));
@@ -331,6 +353,17 @@ export async function loadLevel(url: string): Promise<Level> {
         radius: num(u.nx_radius, 0.9),
         pos: wpos.clone(),
       });
+      continue;
+    }
+
+    if (type === 'seam') {
+      const [w, h] = String(u.nx_size ?? '').split(/[,\s]+/).map(Number);
+      const yaw = Math.atan2(-fwd.x, -fwd.z);
+      seams.push({ to: String(u.nx_to ?? ''), pos: wpos.clone(), fwd: new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), yaw, w: w || 1, h: h || 2.1, reach: num(u.nx_reach, 0) });
+      const m = seamMesh(w || 1, h || 2.1);
+      m.position.copy(wpos);
+      m.rotation.set(0, yaw, 0);
+      scene.add(m);
       continue;
     }
 
@@ -396,6 +429,7 @@ export async function loadLevel(url: string): Promise<Level> {
       look.grid = THREE.MathUtils.clamp(Math.round(num(u.nx_grid, 2)), 0, 4);
       if (u.nx_palette !== undefined) look.mask = String(u.nx_palette).split(',').reduce((m, c) => m | (1 << (Number(c) & 15)), 0) || 0xffff;
       look.lamps = bool(u.nx_lamps, false);
+      wrap = Math.max(0, num(u.nx_wrap, 0));
       continue;
     }
 
@@ -562,6 +596,7 @@ export async function loadLevel(url: string): Promise<Level> {
 
   await Promise.all(pending);
   sky.set(skyName);
+  if (wrap > 0) tile(scene, wrap, new Set([sky.mesh, ...behaviors.map((b) => b.obj), ...skySprites.map((s) => s.obj)]));
 
   // 窗：有窗玻璃就有窗里的天。没写窗景的，窗外就是这个世界自己的天
   outlooks.sort((p, q) => p.name.localeCompare(q.name));
@@ -706,14 +741,16 @@ export async function loadLevel(url: string): Promise<Level> {
   const sunDir = shared.uSun.value.clone();
   const apply = () => {
     shared.uSun.value.copy(sunDir);
+    shared.uWrap.value = wrap;
     sky.set(sky.spec);
     applyLamps();
     lampOn();
     // 窗里的天的底色与种子也是共用的一份
     showOutlook(outlook);
   };
+  shared.uWrap.value = wrap;
   return {
-    scene, crystalScene, collider, entrances, spawn, portals, items, arrivals, sky, windowSky, outlooks,
+    scene, crystalScene, collider, entrances, spawn, portals, seams, wrap, items, arrivals, sky, windowSky, outlooks,
     get outlook() {
       return outlook;
     },
@@ -730,6 +767,35 @@ export async function loadLevel(url: string): Promise<Level> {
       return out;
     },
   };
+}
+
+/** 循环的大地：把世界里不动的东西在四周各复制一份（共用网格与材质），站在方块边上往外看也是连着的。
+    缝、天、会动的东西不复制；碰撞只有中间这一份（人一走出方块就被挪回另一边，见 main.ts） */
+function tile(scene: THREE.Scene, size: number, skip: Set<THREE.Object3D>) {
+  const things = scene.children.filter((o) => !skip.has(o) && !o.userData.seam);
+  for (let i = -1; i <= 1; i++)
+    for (let j = -1; j <= 1; j++) {
+      if (!i && !j) continue;
+      for (const o of things) {
+        const c = copyOf(o);
+        c.position.x += i * size;
+        c.position.z += j * size;
+        scene.add(c);
+      }
+    }
+}
+
+/** 复制一个物体（连同子物体）：网格、材质共用，影子材质也共用（Object3D.clone 会把 userData 过一遍 JSON，材质就坏了） */
+function copyOf(o: THREE.Object3D): THREE.Object3D {
+  const m = o as THREE.Mesh;
+  const c = m.isMesh ? new THREE.Mesh(m.geometry, m.material) : new THREE.Group();
+  c.position.copy(o.position);
+  c.quaternion.copy(o.quaternion);
+  c.scale.copy(o.scale);
+  c.renderOrder = o.renderOrder;
+  if (o.userData.shadowMat) c.userData.shadowMat = o.userData.shadowMat;
+  for (const k of o.children) c.add(copyOf(k));
+  return c;
 }
 
 const tq = new THREE.Quaternion();

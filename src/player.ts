@@ -84,6 +84,12 @@ export class Player {
     this.bvh = bvh;
   }
 
+  /** 整个人挪一下（走过缝、走出循环的大地被挪回另一边）：视线的平滑跟着一起挪，镜头不晃 */
+  shift(d: THREE.Vector3) {
+    this.feet.add(d);
+    this.eyeY += d.y;
+  }
+
   /** 滚轮行走：沿视线水平方向推一下 */
   nudge(amount: number) {
     this.vel.addScaledVector(this.forward(), amount);

@@ -7,8 +7,8 @@
 
 通往浅梦各世界的东西先不接：
 - 书、花瓶、一杯水不放：书桌、边几、茶几上留着它们的位置，各有一盏灯照得到那块空着的地方；
-- 床、衣柜、落地窗、大门照常在，只是不传送（落地窗、窗口、大门外有看不见的挡板）；
-- 大门关着，门缝下漏进一条正午的白光；推开门是一片白（门外的世界以后再做）。
+- 床、衣柜、落地窗照常在，只是不传送（落地窗、窗口有看不见的挡板）；
+- 大门关着；推开门外面就是原野（house_out），门洞外一道缝（nx.seam），走过门槛就站在原野上，不转场。
 
 家家家：走廊尽头那扇门后，往北一条过道，七扇门一扇比一扇小、一扇比一扇歪，一扇扇推开；
 然后是 3 × 4 间和卧室一样大的房间（4.2 × 4.6m），全是家里的家具，越往北、越往两边越错乱——
@@ -114,6 +114,21 @@ def door_in(name, axis, at, c, w=0.9, hgt=2.1, into=1, hinge=-1, start_open=Fals
     if block:
         size = (w, 0.04, hgt) if axis == "x" else (0.04, w, hgt)
         nx.collider_only(nx.box(f"{name}_block", size, (mid[0], mid[1], F)))
+
+
+FRONT_W, FRONT_H = 1.0, 2.1
+FRONT_SEAM = h + 0.03 + 0.012   # 缝离墙中线多远：门套外面再让 1cm 多
+
+
+def front_door(x, y, z):
+    """大门：门洞中心在 (x, y)（墙的中线上）、地面在 z，往 +y 开。门外的原野（house_out）里立着同一扇，
+    两边的缝把它们对齐，所以两边都用这一份"""
+    global F
+    keep, F = F, z
+    try:
+        door_in("d_front", "x", y, x, FRONT_W, FRONT_H, into=1, hinge=-1)
+    finally:
+        F = keep
 
 
 def window(name, axis, at, c, w, z0, z1):
@@ -248,10 +263,10 @@ def core():
     door_in("d_store", "y", 6.0, 5.38, 0.8, into=1, hinge=-1)
     door_in("d_bath", "y", 6.0, 7.78, 0.8, into=1, hinge=-1)
     door_in("d_end", "x", 10.0, 5.1, 0.9, into=1, hinge=-1, swing_deg=100)
-    # 大门：关着，门缝下漏进一条白光；推开是一片正午的白（门外先只是一块亮的板，挡着出不去）
-    door_in("d_front", "x", -1.8, 4.1, 1.0, into=1, hinge=-1, block=True)
-    nx.box("daylight", (1.4, 0.04, 2.4), (4.1, -2.15, F - 0.05), collide=False, shadow=False, emit=1.0, a="white", b="white", pattern="plain")
-    nx.box("daylight_under", (0.9, 0.1, 0.004), (4.1, -1.61, F), collide=False, shadow=False, emit=1.0, a="white", b="white", pattern="plain")
+    # 大门：推开就是门外的原野（house_out），门洞外贴着一道缝，走过门槛就到了那边
+    front_door(4.1, -1.8, F)
+    # 从原野看进来只画到门里 14m（到尽头那扇门为止）：家家家的房间隔着墙，反正看不见
+    nx.seam("seam_out", (4.1, -1.8 - FRONT_SEAM, F), 180, "house_out", FRONT_W - 0.02, FRONT_H - 0.01, reach=14)
     # 没有门扇的口：玄关 ↔ 客厅
     doorway("d_entry", "x", 0, 4.4, 1.2, 2.3)
 

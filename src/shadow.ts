@@ -43,11 +43,22 @@ export class SunShadow {
     this.rt = new THREE.WebGLRenderTarget(SIZE, SIZE, { depthBuffer: true });
     this.rt.depthTexture = new THREE.DepthTexture(SIZE, SIZE);
     this.rt.depthTexture.type = THREE.UnsignedIntType;
-    shared.tShadow.value = this.rt.depthTexture;
     shared.uShadowOn.value = 1;
+    this.bind();
   }
 
+  /** 影子矩阵（世界 → 影子图） */
+  private mat = new THREE.Matrix4();
+
+  /** 把这张影子图套到共享的 uniform 上（几张影子图轮流用：缝那边的世界有自己的一张，见 seam.ts） */
+  bind() {
+    shared.tShadow.value = this.rt.depthTexture;
+    shared.uShadowMat.value.copy(this.mat);
+  }
+
+  /** 画完（或不用重画）都会 bind */
   render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, center: THREE.Vector3) {
+    this.bind();
     this.frame++;
     this.stats.frames++;
     scene.updateMatrixWorld();
@@ -93,6 +104,7 @@ export class SunShadow {
     this.sig = sig;
     this.stats.draws++;
     this.draw(renderer, scene);
+    this.bind();
   }
 
   /** 把影子相机摆到 center 上方，沿太阳方向看；中心按纹素对齐 */
@@ -110,7 +122,7 @@ export class SunShadow {
     this.cam.position.copy(this.tmp);
     this.cam.quaternion.setFromRotationMatrix(this.basis);
     this.cam.updateMatrixWorld();
-    shared.uShadowMat.value.multiplyMatrices(this.bias, this.cam.projectionMatrix).multiply(this.cam.matrixWorldInverse);
+    this.mat.multiplyMatrices(this.bias, this.cam.projectionMatrix).multiply(this.cam.matrixWorldInverse);
   }
 
   /** 投影物换成只写深度的影子材质，其余的先藏起来 */

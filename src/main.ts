@@ -14,10 +14,13 @@ import { SiteCard } from './sitecard';
 import { dreamt, edges, isReality, recordEdge, recordSite, sites } from './worlds';
 import { RealName } from './realtext';
 import { IntroPlayer, introSeen, stripIntro } from './intro';
+import { Through, seamMatrix, seamSide, seamTurn } from './seam';
 
 /* 世界：?world=名字（public/scenes/<名字>.glb，默认 wake_fragment——现实的家，醒着的那一间）；?scene= 是旧写法，同义
    世界之间靠传送物（nx_type=portal）来往：走进去，或走近按 E。转场时格子一路变粗、蒙上雾色，新世界再一格格解析出来；
    现实与梦之间（入梦、醒来）不蒙色：粗到 32px 时两个世界按块交接，视野一路朝同一方向走（见 SLEEP）。
+   缝（nx_type=seam，src/seam.ts）：门洞那边的世界一直留在内存里，透过门洞画出来，走过门槛就换过去，不转场（家的大门 ↔ 门外的原野）。
+   循环的大地（atmosphere 的 nx_wrap）：走出方块从另一边回来。
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    开场：第一次从根地址进来时停在标题的机位上，「点击醒来」以后木条掉进虚空、视角滑到床边（src/intro.ts）；?intro=1 强制再放一次，?intro=0 不放
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?res=auto|full|half|quarter|eighth|sixteenth 世界的渲染分辨率  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
@@ -42,13 +45,16 @@ const ODD_WAKES = ['wake_white', 'wake_museum'];
 const wakeWorld = () => (Math.random() < 0.01 ? ODD_WAKES[Math.floor(Math.random() * ODD_WAKES.length)] : START);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.info.autoReset = false;
 renderer.setPixelRatio(1);
 /** 视野（竖直，度）；入梦、醒来时临时变（SLEEP.fovWide / fovNarrow） */
 const FOV = 68;
 const camera = new THREE.PerspectiveCamera(FOV, 16 / 9, 0.1, 400);
 camera.rotation.order = 'YXZ';
 const pipe = new Pipeline(renderer);
-const shadow = new SunShadow();
+let shadow = new SunShadow();
+/** 缝那边的世界自己的一张影子图：透过门洞看见的影子和走过去以后的一样（走过去时两张对调） */
+let farShadow = new SunShadow();
 const ui = new Ui(document.getElementById('ui') as HTMLCanvasElement);
 const fontReady = loadUiFont();
 const tag = new PromptTag(ui);
@@ -127,6 +133,83 @@ function prefetchNeighbours(l: Level) {
 prefetchNeighbours(level);
 items.attach(level, world);
 
+// ── 缝（nx_type=seam）：门洞那边的世界和这个一起留在内存里，透过门洞画出来，走过门槛就换过去（不转场） ──
+let beyond: { name: string; level: Level } | null = null;
+const through = new Through();
+/** 把这个世界的缝那边接上（换了世界就换；没有缝就放掉） */
+async function link() {
+  const to = level.seams[0]?.to ?? '';
+  if (beyond?.name === to) return;
+  if (beyond) disposeLevel(beyond.level);
+  beyond = null;
+  if (!to) return;
+  const l = await loadLevel(sceneUrl(to)).catch((err) => {
+    console.warn('[nexus] 缝那边接不上', to, err);
+    return null;
+  });
+  if (!l) return;
+  // 等它的时候已经去了别处：用不上了
+  if ((level.seams[0]?.to ?? '') !== to || beyond) {
+    disposeLevel(l);
+    return;
+  }
+  beyond = { name: to, level: l };
+  // 加载会改共享的天色与太阳，还给这个世界
+  level.apply();
+}
+/** 这边的缝与那边对上的缝 */
+function seamPair() {
+  if (!beyond) return null;
+  const name = beyond.name;
+  const hs = level.seams.find((s) => s.to === name);
+  const ts = beyond.level.seams.find((s) => s.to === world);
+  return hs && ts ? { hs, ts, there: beyond.level } : null;
+}
+const UP = new THREE.Vector3(0, 1, 0);
+/** 这一帧从 from 走到脚下：要是从缝的这一边、穿过门洞走到了那一边，就换到那个世界（位置、朝向、速度一起对过去） */
+function crossSeam(from: THREE.Vector3) {
+  const p = seamPair();
+  if (!p || travel || !beyond) return;
+  const a = seamSide(p.hs, from);
+  const b = seamSide(p.hs, player.feet);
+  if (!(a.along < 0 && b.along >= 0) || Math.abs(b.lateral) > p.hs.w / 2 || b.up < -0.6 || b.up > p.hs.h) return;
+  const turn = seamTurn(p.hs, p.ts);
+  player.shift(tmp.copy(player.feet).applyMatrix4(seamMatrix(p.hs, p.ts)).sub(player.feet));
+  player.yaw += turn;
+  player.vel.applyAxisAngle(UP, turn);
+  const old = { name: world, level };
+  [shadow, farShadow] = [farShadow, shadow];
+  level = p.there;
+  world = beyond.name;
+  beyond = old;
+  // 门（同名的 pose）在两边是同一扇
+  for (const g of level.poses.values()) {
+    const o = old.level.poses.get(g.name);
+    if (o) {
+      g.target = o.target;
+      g.k = o.k;
+    }
+  }
+  level.apply();
+  player.setCollider(level.collider);
+  lastArrival = '';
+  markVisited(world);
+  recordEdge(old.name, world);
+  noteSites();
+  items.attach(level, world);
+  prefetchNeighbours(level);
+  history.replaceState({ world, at: '' }, '', `?world=${encodeURIComponent(world)}`);
+}
+/** 循环的大地：走出方块就从另一边回来（四周画着复制，看不出挪过） */
+function wrapAround() {
+  const s = level.wrap;
+  if (!s) return;
+  const f = player.feet;
+  const dx = f.x > s / 2 ? -s : f.x < -s / 2 ? s : 0;
+  const dz = f.z > s / 2 ? -s : f.z < -s / 2 ? s : 0;
+  if (dx || dz) player.shift(tmp.set(dx, 0, dz));
+}
+
 function disposeLevel(l: Level) {
   for (const s of [l.scene, l.crystalScene])
     s.traverse((o) => {
@@ -154,6 +237,7 @@ function respawn() {
   arriveAt(lastArrival);
 }
 respawn();
+await link();
 
 interface Saved { x: number; y: number; z: number; yaw: number; pitch: number; world?: string }
 function restore(key: string) {
@@ -353,6 +437,7 @@ function stepTravel(dt: number) {
     noteSites();
     items.attach(level, world);
     prefetchNeighbours(level);
+    link();
     if (travel.push) history.pushState({ world, at: travel.at }, '', `?world=${encodeURIComponent(world)}`);
     travel.veilTo = fogSrgb();
     travel.phase = soft ? 'hand' : 'in';
@@ -813,14 +898,21 @@ function fieldOf(prompt: Promptable | null): Field {
 // ── 主循环 ──
 const clock = new THREE.Clock();
 let t = 0;
+/** 这一帧走之前脚在哪（看有没有穿过缝） */
+const stepFrom = new THREE.Vector3();
 let fps = 0;
 
 function frame(dt: number) {
+  // 渲染计数按整帧累计（__nexus.info）
+  renderer.info.reset();
   if (!frozen) t += dt;
   stepTravel(dt);
   // 停住的门（开着或关着）挡人；转到一半时不挡
   player.dynamic = level.blockers();
+  stepFrom.copy(player.feet);
   player.update(dt, !!entering || !!gaze || !!travel || book.active || items.locked || !!intro);
+  crossSeam(stepFrom);
+  wrapAround();
   if (player.feet.y < -40) respawn();
   player.eyePosition(eye);
   camera.position.copy(eye);
@@ -871,7 +963,19 @@ function frame(dt: number) {
   pipe.setLook(level.look.grid, level.look.mask);
   // 开场：标题是梦的画面，滑向床边时醒过来
   pipe.setDream(Math.max(intro?.dream ?? 0, travelDream));
-  pipe.render(level.scene, level.crystalScene, camera, field, items.hand);
+  // 缝在眼前：世界画完以后，透过门洞把那边也画进同一张世界图
+  const pair = travel ? null : seamPair();
+  const thru = pair && through.visible(pair.hs, camera)
+    ? (r: THREE.WebGLRenderer) => through.draw(r, camera, level, pair.hs, pair.there, pair.ts, { here: shadow, there: farShadow }, dt, t, frozen)
+    : undefined;
+  if (pair && thru) {
+    // 那边的影子图：用那边的太阳，跟着人对过去的位置
+    pair.there.apply();
+    farShadow.render(renderer, pair.there.scene, tmp.copy(player.feet).applyMatrix4(seamMatrix(pair.hs, pair.ts)));
+    level.apply();
+    shadow.bind();
+  }
+  pipe.render(level.scene, level.crystalScene, camera, field, items.hand, thru);
   book.render(renderer);
   ui.clear();
   tag.update(dt, intro || travel || entering || gaze || book.active || items.busy || items.ringActive ? null : prompt, camera);
@@ -918,6 +1022,8 @@ updateHud();
     armedFrom = player.feet.clone();
   },
   flags: pipe.flags,
+  /** 渲染计数：上一帧一共画了几次、多少三角形（影子、像素化、窗都算在内） */
+  info: () => ({ ...renderer.info.render }),
   /** 影子的计数：重画次数、动着的投影物 */
   shadow: shadow.stats,
   sky: (name: string) => level.sky.set(name),
@@ -950,6 +1056,8 @@ updateHud();
     resolve,
     entering: !!entering,
     world,
+    /** 缝那边接着的世界 */
+    beyond: beyond?.name ?? '',
     travelling: !!travel,
     travelKind: travel?.kind,
     travelPhase: travel?.phase,

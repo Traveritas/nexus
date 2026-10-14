@@ -21,7 +21,7 @@ P = {
     "green": 15,
 }
 
-PATTERN = {"grain": 0, "tiles": 1, "bands": 2, "stripes": 3, "plain": 4}
+PATTERN = {"grain": 0, "tiles": 1, "bands": 2, "stripes": 3, "plain": 4, "drift": 5}
 
 # 拼总图（blender/scenes/atlas.py）时由总图设置：
 # ATLAS=True 时，各场景的 spawn 变成路标（nx_type=waypoint，网页不认），sun / sky_sprite 不生效，只用总图自己的；
@@ -346,14 +346,16 @@ def export(name):
 
 # ── 天空主题 ───────────────────────────────────────────
 
-def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamps=False):
+def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamps=False, wrap=None):
     """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
-    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
+    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午 · meadow 原野（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
     seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1。
     style='clean'：这个世界是干净低模，管线不做像素化、落色板与描边（现实的世界）。
     grid：远处（没有晶体时）的格子是几级，默认 2（4px），3 ＝ 8px。
     palette：这个世界只落到这几枚色板色上（名字或编号的列表）；不给就是全部 16 色。
-    lamps=True：灯（lamp）一直亮着、照像素哑光，不等入夜"""
+    lamps=True：灯（lamp）一直亮着、照像素哑光，不等入夜。
+    wrap：循环的大地，方块边长（米，以原点为中心）。走出方块从另一边回来；网页在四周各画一份复制，
+    方块里的东西要首尾接得上（地形按 wrap 周期），也别跨过边界放；雾要在半个方块以内合上"""
     if ATLAS:
         return None
     obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
@@ -367,6 +369,8 @@ def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamp
         obj["nx_palette"] = ",".join(str(_pal(c)) for c in palette)
     if lamps:
         obj["nx_lamps"] = 1
+    if wrap:
+        obj["nx_wrap"] = float(wrap)
     return obj
 
 
@@ -383,6 +387,21 @@ def portal(name, loc, to, at="", mode="walk", title="", radius=0.9):
     obj["nx_mode"] = mode
     obj["nx_title"] = title
     obj["nx_radius"] = float(radius)
+    return obj
+
+
+def seam(name, loc, facing_deg, to, w, h, reach=None):
+    """缝：这个世界在一处门洞里和 to 接上（不传送、不转场，透过门洞看见的就是那边，走过门槛就到了那边）。
+    loc 是门洞底边的中点，facing_deg 是「从这边看过去」的方向（同 spawn），w、h 是门洞的宽、高。
+    to 那边也要有一道缝，to 写着这个世界；两道缝贴在一起，这一边缝前面的东西对上那一边缝后面的东西。
+    只有一面：从缝的背后看过去、走过去都是这个世界自己。放在门套外面一点（门扇关着时挡在缝前面）。
+    reach：从那边透过这道缝看进来时，只画到缝里面这么深（米）——屋里的缝写上它，门洞里看不见的远处房间就不画了"""
+    obj = _empty(name, loc, (0, 0, facing_deg), "SINGLE_ARROW", 1.0)
+    obj["nx_type"] = "seam"
+    obj["nx_to"] = to
+    obj["nx_size"] = f"{w:g},{h:g}"
+    if reach:
+        obj["nx_reach"] = float(reach)
     return obj
 
 

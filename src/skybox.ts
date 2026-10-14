@@ -769,6 +769,30 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
   if (s > 0.9988) col = ${lin('#fbf9f7')} * 1.2;
 }`,
   },
+
+  // ── 自由 · 原野：家的门外。淡紫的天从地平线的雾白一路深到天顶的淡蓝紫，什么也没有；
+  //    背着太阳的那一边，离地平线不远处泛一点粉（贴着地平线的那一圈留给雾，地才接得上） ──
+  meadow: {
+    label: '原野',
+    light: {
+      // 天顶不能太深：落色板后会在头顶压成一圈灰紫的「盖子」；停在雾白 → 淡紫 → 淡蓝之间
+      fog: '#e2deee',
+      zenith: '#c2c7ea',
+      sky: ['#d6d2f0', 0.5],
+      ground: ['#f0d2dc', 0.38],
+      sun: ['#fff0ea', 0.74],
+      glow: ['#f6c6e2', 0.85],
+      fogNear: 30,
+      fogFar: 150,
+    },
+    glsl: /* glsl */ `
+void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
+  vec2 h = normalize(d.xz + vec2(1e-5));
+  float away = max(-dot(h, normalize(uSun.xz + vec2(1e-5))), 0.0);
+  float band = smoothstep(0.02, 0.1, d.y) * (1.0 - smoothstep(0.12, 0.42, d.y));
+  col = mix(col, ${lin('#f3d6d6')}, away * away * band * 0.5);
+}`,
+  },
 };
 
 export const SKY_NAMES = Object.keys(THEMES);
