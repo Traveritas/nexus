@@ -514,7 +514,10 @@ const book = new Diary(ui, {
     player.sens = s.sens;
     resMode = s.res;
     applyRes();
-    hud.classList.toggle('off', !s.hud || q.get('hud') === '0');
+    // 调试信息关着时提示不出，调试键也不认（`?hud=0` 是发布用的硬关）；飞行跟着一起收起来
+    player.debugKeys = s.hud && q.get('hud') !== '0';
+    if (!player.debugKeys) player.fly = false;
+    hud.classList.toggle('off', !player.debugKeys);
   },
   world: () => world,
   visited,
@@ -549,16 +552,19 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && book.active && document.pointerLockElement !== canvas) book.close();
   // 日记摊开时，世界里的按键都不算
   if (book.active) return;
-  const f = pipe.flags;
-  if (e.code === 'Digit1') f.raw = !f.raw;
-  if (e.code === 'Digit2') f.field = !f.field;
-  if (e.code === 'Digit3') f.palette = !f.palette;
-  if (e.code === 'Digit4') f.outline = (f.outline + 1) % 3;
-  if (e.code === 'Digit5') f.lock = f.lock >= 2 ? -1 : f.lock + 1;
-  // 三色强度：默认 → 一半 → 全 → 关 → 默认
-  if (e.code === 'Digit6') { const r = [0.3, 0.5, 1, 0]; shared.uAutoRamp.value = r[(r.indexOf(shared.uAutoRamp.value) + 1) % r.length]; }
-  if (e.code === 'KeyH') hud.classList.toggle('off');
-  if (e.code === 'KeyK') level.sky.set(SKY_NAMES[(SKY_NAMES.indexOf(level.sky.name) + 1) % SKY_NAMES.length]);
+  // 调试键：调试信息关着时一个都不认（要开在日记「设置」里）
+  if (player.debugKeys) {
+    const f = pipe.flags;
+    if (e.code === 'Digit1') f.raw = !f.raw;
+    if (e.code === 'Digit2') f.field = !f.field;
+    if (e.code === 'Digit3') f.palette = !f.palette;
+    if (e.code === 'Digit4') f.outline = (f.outline + 1) % 3;
+    if (e.code === 'Digit5') f.lock = f.lock >= 2 ? -1 : f.lock + 1;
+    // 三色强度：默认 → 一半 → 全 → 关 → 默认
+    if (e.code === 'Digit6') { const r = [0.3, 0.5, 1, 0]; shared.uAutoRamp.value = r[(r.indexOf(shared.uAutoRamp.value) + 1) % r.length]; }
+    if (e.code === 'KeyH') hud.classList.toggle('off');
+    if (e.code === 'KeyK') level.sky.set(SKY_NAMES[(SKY_NAMES.indexOf(level.sky.name) + 1) % SKY_NAMES.length]);
+  }
   if (e.code === 'KeyR' && e.shiftKey) respawn();
   if (e.code === 'KeyE' && !e.repeat) interact = true;
   // Q：短按举起 / 收下手里的东西，按住使用（醒来在日记「记录」那页）

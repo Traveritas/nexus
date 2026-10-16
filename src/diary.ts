@@ -41,6 +41,7 @@ const P = (i: number) => PALETTE[i];
 
 export interface Settings {
   sens: number;
+  /** 调试信息：关着时提示不出，调试键（1–6 · G · H · K）也都不认。头一次进来是关的 */
   hud: boolean;
   /** 世界的渲染分辨率：自动（按屏幕大小，梦里再低一档）· 精细（全分辨率）· 流畅（半）· 极速（四分之一）；
       再往下是玩笑：马赛克（八分之一）· 印象派（十六分之一） */
@@ -50,7 +51,7 @@ export interface Settings {
 }
 
 export function loadSettings(): Settings {
-  const s: Settings = { sens: 1, hud: true, res: 'auto', lang };
+  const s: Settings = { sens: 1, hud: false, res: 'auto', lang };
   try {
     Object.assign(s, JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}'));
   } catch {

@@ -36,6 +36,8 @@ export class Player {
   grounded = false;
   fly = false;
   walked = 0;
+  /** 调试信息开着时调试键才认（G 穿墙飞行是其中之一）：跟着日记「设置」里那一栏，由外面设 */
+  debugKeys = false;
   /** 视线高度的平滑：迈台阶时镜头不瞬间抬高 */
   private eyeY = 0;
   /** 这一刻挡人的会动的东西（停住的门）：包围盒与三角形，每帧由外面换 */
@@ -61,7 +63,7 @@ export class Player {
         this.sinceJumpPress = 0;
         this.jumpHeld = true;
       }
-      if (e.code === 'KeyG') {
+      if (e.code === 'KeyG' && this.debugKeys) {
         this.fly = !this.fly;
         this.vel.set(0, 0, 0);
       }
