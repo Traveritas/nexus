@@ -394,21 +394,64 @@ def garden():
 
 # ── 出口 ──────────────────────────────────────────
 
+HOME_W, HOME_H, HOME_B = 1.8, 2.6, 0.12      # 地上那扇窗：外框 1.8 × 2.6，框宽 0.12
+PIT_Z = -3.6                                 # 窗底下的井底
+
+
+def home_hole():
+    """地上那扇窗的洞口（窗框里面那一块）：(x0, y0, x1, y1)"""
+    x, y = cx(HOME_CELL[0]), cx(HOME_CELL[1])
+    hw, hh = HOME_W / 2 - HOME_B, HOME_H / 2 - HOME_B
+    return x - hw, y - hh, x + hw, y + hh
+
+
+def floor():
+    """地板：一整块，只在地上那扇窗底下开一个洞（四块拼起来，彼此只贴边、不叠）"""
+    S = HALF + OUTER_T + 0.2
+    x0, y0, x1, y1 = home_hole()
+    for name, (a, b, c, d) in (("w", (-S, -S, x0, S)), ("e", (x1, -S, S, S)), ("s", (x0, -S, x1, y0)), ("n", (x0, y1, x1, S))):
+        nx.box(f"floor_{name}", (c - a, d - b, 1.0), ((a + c) / 2, (b + d) / 2, -1.0), **FLOOR)
+
+
 def home_window(x, y):
-    """回家：地上一块亮着的落地窗形（1.8 × 2.6，十字棂），对着家里客厅的落地窗；走进去回家"""
-    w, h, b = 1.8, 2.6, 0.12
-    pane = dict(collide=False, shadow=False, emit=1.0, a="pink_pale", b="gold", pattern="plain")
+    """回家：地上一扇亮着的落地窗（1.8 × 2.6，十字棂），对着家里客厅的落地窗。两扇窗扇是光做的，平躺着盖住地上一个洞；
+    走近按 E「推开窗」，两扇往下翻开、垂进洞里——底下是家里的夜。走上去就掉下去，落回客厅的落地窗前"""
+    w, h, b = HOME_W, HOME_H, HOME_B
+    pane = dict(shadow=False, emit=1.0, a="pink_pale", b="gold", pattern="plain")
     frame = dict(collide=False, shadow=False, a="gold", b="pink_pale", pattern="plain")
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            nx.box(f"home_pane{sx}{sy}", (w / 2 - b, h / 2 - b, 0.02), (x + sx * w / 4, y + sy * h / 4, 0.004), **pane)
+    # 外框：贴在洞口外的地上，不动
     nx.box("home_frame_s", (w + 2 * b, b * 2, 0.03), (x, y - h / 2, 0.008), **frame)
     nx.box("home_frame_n", (w + 2 * b, b * 2, 0.03), (x, y + h / 2, 0.008), **frame)
     nx.box("home_frame_w", (b * 2, h - 2 * b, 0.03), (x - w / 2, y, 0.008), **frame)
     nx.box("home_frame_e", (b * 2, h - 2 * b, 0.03), (x + w / 2, y, 0.008), **frame)
-    nx.box("home_mull_x", (w - 2 * b, b * 1.4, 0.032), (x, y, 0.008), **frame)
-    nx.box("home_mull_y", (b * 1.4, h - 2 * b, 0.034), (x, y, 0.010), **frame)
-    nx.portal("portal_home", (x, y, 0.9), "house", at="sunpatch", mode="walk", radius=0.9)
+    # 两扇窗扇：铰链在洞口的东西两条长边上（原点在铰链，地面高），各伸到正中；
+    # 光的窗格挡人（关着能站上去），横棂和中间那条竖棂（两扇各半条）压在上面
+    hw, L = w / 2 - b, h - 2 * b
+    for s in (-1, 1):
+        lw = hw - 0.004
+        glass, bars = fu.Kit(), fu.Kit()
+        glass.box((lw, L - 0.008, 0.02), (-s * lw / 2, 0, 0))
+        bars.box((lw - 0.006, b * 1.4, 0.032), (-s * lw / 2, 0, 0.002))
+        bars.box((b * 0.7, L - 0.014, 0.034), (-s * (lw - b * 0.35 - 0.003), 0, 0.002))
+        objs = [glass.build(f"home_leaf{s}", loc=(x + s * hw, y, 0.0), smooth=0, **pane),
+                bars.build(f"home_leaf{s}_bars", loc=(x + s * hw, y, 0.0), smooth=0, **frame)]
+        for o in objs:
+            nx.pose(o, "home_window", on="key", at=(x, y, 0.9), radius=2.0, rot=(0, -90 * s, 0), time=0.9,
+                    title="推开窗|关上窗")
+    # 洞底下：一口井（井壁接在地板底下），井底是夜里的颜色，落着一块斜斜的月光
+    x0, y0, x1, y1 = home_hole()
+    t, top = 0.2, -1.0
+    wall = dict(ramp=("ink", "violet_deep", "violet"), pattern="plain")
+    for name, size, loc in (("w", (t, y1 - y0 + 2 * t, top - PIT_Z), (x0 - t / 2, y, PIT_Z)),
+                            ("e", (t, y1 - y0 + 2 * t, top - PIT_Z), (x1 + t / 2, y, PIT_Z)),
+                            ("s", (x1 - x0, t, top - PIT_Z), (x, y0 - t / 2, PIT_Z)),
+                            ("n", (x1 - x0, t, top - PIT_Z), (x, y1 + t / 2, PIT_Z))):
+        nx.box(f"home_pit_{name}", size, loc, **wall)
+    nx.box("home_pit_floor", (x1 - x0 + 2 * t, y1 - y0 + 2 * t, 0.3), (x, y, PIT_Z - 0.3), a="ink", b="violet_deep", pattern="plain")
+    nx.box("home_pit_moon", (0.7, 1.3, 0.01), (x + 0.2, y - 0.3, PIT_Z + 0.002), rot=(0, 0, 18), collide=False, shadow=False,
+           emit=0.6, a="blue_pale", b="mist", pattern="plain")
+    # 掉进井里一截（脚低过 -0.9m）就回家；窗扇没推开到底不算
+    nx.portal("portal_home", (x, y, -1.3), "house", at="sunpatch", mode="walk", radius=min(hw, L / 2) - 0.02, need="home_window")
 
 
 def build(extent=EXTENT):
@@ -417,7 +460,7 @@ def build(extent=EXTENT):
     nx.atmosphere("umbra", grid=3, grid_lit=1, shadow_out=True, shadow_reach=70, sun_turn=TURN)
 
     nx.into("maze")
-    nx.box("floor", (2 * HALF + 2 * OUTER_T + 0.4, 2 * HALF + 2 * OUTER_T + 0.4, 1.0), (0, 0, -1.0), **FLOOR)
+    floor()
     opened, key = gen_maze()
     segs = build_walls(opened, key)
     outer_wall()

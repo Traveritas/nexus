@@ -583,20 +583,15 @@ def gate_window(here, loc, yaw=0.0, w=1.8, h=2.6, land=2.4):
 
 
 def gate_vase(here, loc, yaw=0.0, **kw):
-    """去花房：方台上一只插满花的大瓶，E「凑近」"""
-    plinth(f"vase_{here}_plinth", loc, 0.9, 0.9, h=0.5, yaw=yaw, a="white", b="mist", pattern="plain")
-    fu.vase(f"vase_{here}", (loc[0], loc[1], loc[2] + 0.5), 0.8, "round", flowers=9, seed=len(here),
-            style=dict(a="pink_pale", b="white", pattern="plain"))
-    _pair(f"vase_{here}", here, "glasshouse", loc, yaw, (loc[0], loc[1], loc[2] + 1.4), "key", "凑近", 0.9, **kw)
+    """去花房：一只齐腰高、插着花的大瓶直接立在地上，E「凑近」"""
+    fu.flower_vase(f"vase_{here}", loc, 1.05, flowers=7, seed=len(here), yaw=yaw, collide=True)
+    _pair(f"vase_{here}", here, "glasshouse", loc, yaw, (loc[0], loc[1], loc[2] + 1.4), "key", "凑近", 1.0, **kw)
 
 
 def gate_glass(here, loc, yaw=0.0, **kw):
-    """去浅滩：一只齐腰高的玻璃杯立在地上，盛着水，E「一杯水」"""
+    """去浅滩：一只齐腰高的玻璃杯立在地上，水浮在杯子上半截、杯底空着（同家里茶几上那杯），E「一杯水」"""
     x, y, z = loc
-    sh.tube(f"glass_{here}", 0.5, 0.44, 1.05, (x, y, z + 0.08), segments=20, a="blue_pale", b="white", pattern="plain")
-    nx.cylinder(f"glass_{here}_base", 0.52, 0.52, 0.08, (x, y, z), segments=20, a="white", b="blue_pale", pattern="plain")
-    nx.cylinder(f"glass_{here}_water", 0.43, 0.43, 0.7, (x, y, z + 0.08), segments=20, collide=False,
-                a="blue", b="blue_pale", pattern="bands")
+    fu.water_glass(f"glass_{here}", loc, r=0.42, h=1.15, collide=True)
     _pair(f"glass_{here}", here, "shoal", loc, yaw, (x, y, z + 1.3), "key", "一杯水", 0.9, **kw)
 
 

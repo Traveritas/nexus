@@ -15,7 +15,7 @@
   · 花瓶（A，E「凑近」）→ 家（house，落点 glasshouse）；从家来落在花瓶前（arrive house，也是出生点）
   · 玻璃门（B 北墙，走出去）→ 光斑（sunpatch，落点 glasshouse）；从光斑来落在门前（arrive sunpatch）
   · 一杯水（C，E「一杯水」）→ 浅滩（shoal，落点 glasshouse）；从浅滩来落在杯前（arrive shoal）
-  · 长影的花头（C 地上，走进去）→ 长影（longshadow，落点 glasshouse）；从长影来落在影子旁（arrive longshadow）
+  · 长影的花头（C 地上；影子里半空停着一串瓣，E「接住」）→ 长影（longshadow，落点 glasshouse）；从长影来落在影子旁（arrive longshadow）
 
 运行：node scripts/blender.cjs build glasshouse，网页 ?world=glasshouse
 """
@@ -542,7 +542,7 @@ def room_a():
     lotus("a_lotus2", (-2.9, -1.0, 0.4), 1.25, 11)
     # 东南一株比人高的（开到最大，瓣仰得陡，不挡东门进来的路）
     cup("a_cup_big", (4.6, -1.2, 0), 2.0, 21, n=7, lean=62)
-    # 回家：方台上插花的瓶
+    # 回家：地上插花的瓶
     loc, yaw = (3.6, -3.1, 0.0), 20
     vase_home(loc, yaw)
     p = pf._ahead(loc, yaw, 2.1)
@@ -554,24 +554,9 @@ def room_a():
 
 
 def vase_home(loc, yaw):
-    """方台上一只瓶，插着几枝花（直杆、杯形的花头，同家具里的瓶花；杆各自从瓶口的一点插下去，花头彼此隔开）"""
-    pf.plinth("vase_home_plinth", loc, 0.9, 0.9, h=0.5, yaw=yaw, a="white", b="mist", pattern="plain")
-    H = 0.8
-    fu.vase("vase_home", (loc[0], loc[1], 0.5), H, "round", flowers=0, seed=4, style=dict(a="pink_pale", b="white", pattern="plain"))
-    top = 0.5 + H
-    heads = [fu.Kit() for _ in range(3)]
-    HEAD = [(0.0, -0.04), (0.07, 0.0), (0.15, 0.1), (0.12, 0.12), (0.0, 0.07)]
-    for k, (az, lean, L) in enumerate(((20, 18, 0.6), (130, 28, 0.42), (250, 8, 0.72), (330, 32, 0.36))):
-        a, tl = math.radians(az + yaw), math.radians(lean)
-        d = (math.cos(a) * math.sin(tl), math.sin(a) * math.sin(tl), math.cos(tl))
-        s0 = (loc[0] + math.cos(a) * 0.08, loc[1] + math.sin(a) * 0.08, top + 0.02)   # 各自从瓶口的一点插下去，杆底不挤
-        s1 = (s0[0] + d[0] * L, s0[1] + d[1] * L, s0[2] + d[2] * L)
-        k_ = fu.Kit()
-        beam(k_, s0, s1, 0.025, 0.025)
-        k_.build(f"vase_home_stem{k}", smooth=0, collide=False, a="lilac_pale", b="mist", pattern="plain")
-        heads[k % 3].lathe(HEAD, s1, rot=(0, lean, az + yaw), seg=6, start=15 * k)
-    for i, (k_, st) in enumerate(zip(heads, (dict(a="pink", b="pink_pale"), dict(a="white", b="pink_pale"), dict(a="blue_pale", b="white")))):
-        k_.build(f"vase_home_head{i}", smooth=0, collide=False, pattern="plain", **st)
+    """地上立着一只齐腰高的瓶，插着几枝花（同家里边几上那只，大一号；杆是淡紫的，同花房里的花轴）"""
+    fu.flower_vase("vase_home", loc, 1.05, flowers=6, seed=4, yaw=yaw, collide=True,
+                   stem=dict(a="lilac_pale", b="mist", pattern="plain"))
     nx.portal("portal_vase_home", (loc[0], loc[1], 1.4), "house", at="glasshouse", mode="key", title="凑近", radius=0.9)
 
 
@@ -640,7 +625,7 @@ def room_c():
 
 def long_shadow(c_avoid):
     """C 里地上的一道长影：外面东南一株很高的花（只投影、找不到），影子从玻璃外斜伸进来，花头落在 C 的西南。
-    站进花头的影子 → 长影"""
+    花头的影子里半空停着一串瓣，E「接住」→ 长影"""
     nx.into("shadow")
     # 花头的影子要落在这里（C 的地上）
     hx, hy = C_C[0] - 0.5, C_C[1] - 2.1
@@ -670,7 +655,19 @@ def long_shadow(c_avoid):
         yaw = math.degrees(t)
         pf.plate(f"c_head_fall{i}", L, L * 0.34, thick=0.06, loc=(x, y, C_FLOOR + 0.034), rot=(0, 0, yaw),
                  collide=False, pattern="plain", **PETALS[i % len(PETALS)])
-    nx.portal("portal_longshadow", (hx, hy, C_FLOOR + 1.0), "longshadow", at="glasshouse", mode="walk", radius=0.8)
+    # 往花头那边的影子里，半空悬着一串正往下落、停住了的瓣：只在影子里看得见（lit_only="shade"），
+    # 伸出星形影子的那一截齐齐断掉——一道斜斜的、星形截面的光柱反过来，是一道瓣的柱。
+    # 只放到 1.5m 高、离影子中心 0.7m 以内：再高、再偏，花房那片看不见的顶（canopy）的影子也会让它们露出来
+    rnd = random.Random(31)
+    for i in range(22):
+        z = 0.25 + 1.25 * (i + rnd.uniform(0.0, 0.8)) / 22
+        kk = z / SUN.z
+        px, py = hx + SUN.x * kk + rnd.uniform(-0.7, 0.7), hy + SUN.y * kk + rnd.uniform(-0.7, 0.7)
+        L = rnd.uniform(0.32, 0.55)
+        pf.plate(f"c_head_hang{i}", L, L * 0.36, thick=0.03, loc=(px, py, C_FLOOR + z),
+                 rot=(rnd.uniform(-50, 50), rnd.uniform(-35, 35), rnd.uniform(0, 360)),
+                 collide=False, shadow=False, lit_only="shade", pattern="plain", **PETALS[i % len(PETALS)])
+    nx.portal("portal_longshadow", (hx, hy, C_FLOOR + 1.0), "longshadow", at="glasshouse", mode="key", title="接住", radius=1.0)
     # 落在影子旁，朝房间中心
     ax_, ay = hx + 1.6, hy + 0.4
     nx.arrive("longshadow", (ax_, ay, C_FLOOR), facing_deg=math.degrees(math.atan2(-(C_C[0] - ax_), C_C[1] - ay)))

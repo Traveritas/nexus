@@ -29,7 +29,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import furniture as fu  # noqa: E402
 import nx  # noqa: E402
 import prefabs as pf  # noqa: E402
-import shapes as sh  # noqa: E402
 
 EXTENT = 90
 CENTER = (5, 20)
@@ -305,16 +304,12 @@ def gates():
     nx.portal("portal_book", (bx, by, bz + 0.2), "stair", at="house", mode="key", title="翻开", radius=0.9)
     nx.arrive("stair", (1.7, 6.55, F + 0.02), facing_deg=-60)
     # 边几上插着花的瓶 → 花房（E「凑近」）
-    fu.vase("gate_vase", (0.4, 0.4, F + 0.6), 0.32, "round", flowers=5, seed=4, style=dict(a="pink_pale", b="white", pattern="plain"))
-    nx.portal("portal_vase", (0.4, 0.4, F + 0.95), "glasshouse", at="house", mode="key", title="凑近", radius=0.9)
+    fu.flower_vase("gate_vase", (0.4, 0.4, F + 0.6), 0.42, flowers=6, seed=4, yaw=30)
+    nx.portal("portal_vase", (0.4, 0.4, F + 1.05), "glasshouse", at="house", mode="key", title="凑近", radius=0.9)
     nx.arrive("glasshouse", (1.1, 1.45, F + 0.02), facing_deg=-45)
-    # 茶几上一杯水 → 浅滩（E「一杯水」）；旁边平放着罗盘
+    # 茶几上一杯水 → 浅滩（E「一杯水」）：水浮在杯子上半截，杯底空着；旁边平放着罗盘
     gx, gy, gz = 2.62, 2.36, F + 0.42
-    sh.tube("gate_glass", 0.075, 0.065, 0.2, (gx, gy, gz + 0.011), segments=16, collide=False, a="blue_pale", b="white", pattern="plain")
-    nx.cylinder("gate_glass_base", 0.075, 0.075, 0.01, (gx, gy, gz + 0.001), segments=16, collide=False,
-                a="white", b="blue_pale", pattern="plain")
-    nx.cylinder("gate_glass_water", 0.064, 0.064, 0.14, (gx, gy, gz + 0.012), segments=16, collide=False,
-                a="blue", b="blue_pale", pattern="bands")
+    fu.water_glass("gate_glass", (gx, gy, gz + 0.001), r=0.058, h=0.17)
     nx.portal("portal_glass", (gx, gy, gz + 0.35), "shoal", at="house", mode="key", title="一杯水", radius=0.9)
     nx.arrive("shoal", (2.6, 3.25, F + 0.02), facing_deg=180)
     nx.item("compass", (2.02, 2.2, gz + 0.02), "compass", get="pick")

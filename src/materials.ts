@@ -148,8 +148,8 @@ export interface MatteOpts {
   ramp?: [number, number, number];
   /** 自己发亮（0..1）：不受光照，取色板原色（亮着的灯罩、窗缝里漏进来的光） */
   emit?: number;
-  /** 只在光里：背着太阳、在影子里的纹素不画 */
-  litOnly?: boolean;
+  /** 1 只在光里：背着太阳、在影子里的纹素不画；-1 只在影子里：反过来，照着太阳的纹素不画 */
+  litOnly?: number;
   /** 虚像：[最浓, 近, 远]——离人近于「近」米时看不见，远于「远」米时按「最浓」半透（屏幕上按 Bayer 格子筛掉一部分像素，像素化时混成半透） */
   ghost?: [number, number, number];
   id?: number;
@@ -200,13 +200,13 @@ vec3 lampLight(vec3 p, vec3 n) {
 }
 `;
 
-export function matte({ a, b, pattern = 0, top, yRange = [0, 0], ramp, emit = 0, litOnly = false, ghost, id = newId() }: MatteOpts) {
+export function matte({ a, b, pattern = 0, top, yRange = [0, 0], ramp, emit = 0, litOnly = 0, ghost, id = newId() }: MatteOpts) {
   return new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     uniforms: {
       ...shared,
       uEmit: { value: emit },
-      uLitOnly: { value: litOnly ? 1 : 0 },
+      uLitOnly: { value: litOnly },
       uGhost: { value: new THREE.Vector3(...(ghost ?? [0, 0, 0])) },
       uA: { value: pal(a) },
       uB: { value: pal(b) },
@@ -344,7 +344,7 @@ void main() {
   vec3 s = sc.xyz / sc.w;
   // 接收面在影子图里的斜度（屏幕导数要在分支外面取）
   vec3 sdx = dFdx(s), sdy = dFdy(s);
-  if (uShadowOn > 0.5 && (ndl > 0.0 || uLitOnly > 0.5)) {
+  if (uShadowOn > 0.5 && (ndl > 0.0 || abs(uLitOnly) > 0.5)) {
     if (all(greaterThan(s, vec3(0.0))) && all(lessThan(s, vec3(1.0)))) {
       if (uPenumbra > 0.0) {
         // 半影：4 × 4 的规则网格铺满半影的宽度，每一点按影子图的四个纹素双线性地比（不是非黑即白），
@@ -379,6 +379,8 @@ void main() {
   }
   // 只在光里的东西：落在影子里的纹素不画（按位置算，背光的那一面照样在）
   if (uLitOnly > 0.5 && sh > 0.5) discard;
+  // 只在影子里的东西：照着太阳的纹素不画（伸出影子的那一截齐齐断掉）
+  if (uLitOnly < -0.5 && sh < 0.5) discard;
   if (ndl <= 0.0) sh = 0.0;
   band = mix(band, uShade.x, sh * uShade.y);
 

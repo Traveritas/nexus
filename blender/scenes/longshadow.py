@@ -7,10 +7,10 @@
 - 影子景象：一片影子树林（走进去光影斑驳）· 一架慢慢荡的秋千（会动的投影，nx_sway）· 一张长桌和一圈椅子 ·
   一段楼梯（影子斜铺到东边的坡上）· 一座格栅棚（地上一片格子光，正中浮着一枚晶体）· 一架竖琴（一排弦的影子）·
   一根挂着几片圆盘的转杆（影子绕着转）· 一只大花瓶 · 一扇悬空的窗框 · 一只衣柜。
-- 传送点都藏在影子里（走进去的 portal，落在地上那一块）：
-  · 花瓶影子的瓶口 → 花房（glasshouse）
-  · 窗框影子里左下那块亮格 → 光斑（sunpatch）
-  · 衣柜影子中间那道缝（两扇柜门之间透过来的一线光）→ 家（house）
+- 传送点都在影子里，各自落在影子主人身上的一件东西上：
+  · 花瓶影子的瓶颈里插着一丛真的花，只在影子里看得见（伸出瓶的轮廓就断掉），E「凑近」→ 花房（glasshouse）
+  · 窗框影子里左下那格是暗的（关着一扇看不见的窗扇），E「推开窗」亮出来，走进去 → 光斑（sunpatch）
+  · 衣柜的影子是整块的，E「打开柜门」，中间透出一线光，走进去 → 家（house）
 - 出生点在东边，朝西：太阳压在山脊上，桌椅、秋千、花瓶、树林的影子都朝人伸过来。
 
 运行：node scripts/blender.cjs build longshadow，网页 ?world=longshadow
@@ -295,16 +295,52 @@ def vase(x, y, h=7.0):
     k.lathe([(0.0, 0.0), (1.2, 0.0), (2.2, 0.25 * h), (2.0, 0.5 * h), (0.75, 0.72 * h), (0.6, 0.86 * h), (1.7, h), (0.0, h)],
             seg=14)
     nx.shade(k.build("vase", loc=(x, y, z - 0.1), smooth=0, collide=False))
-    # 瓶口：影子尖上那一团（瓶口最宽处的一圈，中心）
-    mx, my = shadow_point(x, y, h - 0.2)
-    nx.portal("portal_glasshouse", (mx, my, ground_at(mx, my) + 1.0), "glasshouse", at="longshadow", mode="walk", radius=1.1)
-    # 从花房回来：落在瓶口影子外边一点，回头朝着它
-    land(mx, my, mx - x, my - y, "glasshouse")
-    return mx, my
+    return vase_flowers(x, y)
+
+
+def vase_flowers(x, y, at_h=5.0):
+    """瓶里的花：一丛真的花，插在瓶颈的影子里，只在影子里看得见（lit_only="shade"）。
+    太阳的光是平行的：离地 z 高的一点，落在瓶身 at_h + z 高处的影子里——看得见的那一块正好是瓶颈往上、瓶口外翻的轮廓，
+    花杆从窄处起、花头在瓶口那么宽的地方张开，伸出轮廓的瓣、高过瓶口的那一截齐齐断掉。像一只看不见的瓶里插着花。
+    E「凑近」→ 花房；从花房回来落在影子旁的太阳里，朝着花"""
+    fx, fy = shadow_point(x, y, at_h)
+    fz = ground_at(fx, fy)
+    rnd = random.Random(14)
+    stems, heart = fu.Kit(), fu.Kit()
+    heads = [fu.Kit() for _ in range(3)]
+    n = 7
+    for k in range(n):
+        s = (k - (n - 1) / 2) / ((n - 1) / 2)       # 横着从一边排到另一边（-1..1，沿 P）
+        b0 = rnd.uniform(-0.25, 0.25)
+        base = (fx + P[0] * (s * 0.22 + rnd.uniform(-0.05, 0.05)) + D[0] * b0,
+                fy + P[1] * (s * 0.22 + rnd.uniform(-0.05, 0.05)) + D[1] * b0, fz - 0.05)
+        zt = rnd.uniform(1.4, 1.85)
+        off = s * 1.0 + rnd.uniform(-0.15, 0.15)
+        mid = (base[0] + P[0] * off * 0.3, base[1] + P[1] * off * 0.3, fz + zt * 0.6)
+        top = (base[0] + P[0] * off, base[1] + P[1] * off, fz + zt)
+        fu._rod(stems, base, mid, 0.05)
+        fu._rod(stems, mid, top, 0.05)
+        if k % 2:
+            yaw = math.degrees(math.atan2(P[1], P[0])) + (0 if s >= 0 else 180)
+            stems.leaf(0.42, 0.14, 0.03, (base[0], base[1], fz + zt * 0.32), rot=(0, -rnd.uniform(25, 40), yaw))
+        axis = (P[0] * s * 0.6, P[1] * s * 0.6, 1.0)
+        Lp = rnd.uniform(0.2, 0.26)
+        fu._petals(heads[k % 3], top, axis, 6, Lp, Lp * 0.62, rnd.uniform(28, 45), Lp * 0.16, start=rnd.uniform(0, 60), thick=0.025)
+        heart.lathe([(0.0, -0.01), (Lp * 0.24, 0.0), (Lp * 0.2, Lp * 0.14), (0.0, Lp * 0.2)], top, rot=fu._aim(axis), seg=6)
+    only = dict(smooth=0, collide=False, shadow=False, lit_only="shade", pattern="plain")
+    stems.build("vase_flower_stems", a="lilac_pale", b="mist", **only)
+    heart.build("vase_flower_hearts", a="pink_pale", b="white", **only)
+    for i, kt in enumerate(heads):
+        kt.build(f"vase_flower_heads{i}", **{**only, **fu.FLOWER_HEADS[i]})
+    nx.portal("portal_glasshouse", (fx, fy, fz + 1.0), "glasshouse", at="longshadow", mode="key", title="凑近", radius=1.5)
+    # 从花房回来：落在影子旁边的太阳里，回头朝着花
+    land(fx, fy, P[0], P[1], "glasshouse", d=3.0)
+    return fx, fy
 
 
 def window_frame(x, y, w=6.0, h=6.0, z0=3.0, t=0.45):
-    """一扇悬空的窗框，田字格，正对太阳；影子里四块亮格。左下那块（离窗最近的那一排、左手边）去光斑"""
+    """一扇悬空的窗框，田字格，正对太阳；影子里三块亮格、一块暗的：左下那格（离窗最近的那一排、左手边）关着一扇看不见的窗扇。
+    站在那块暗格里按 E「推开窗」，窗扇绕竖着的那条边转开，地上那块影子跟着转成一条细线，亮出第四格；走进这格 → 光斑"""
     z = ground_at(x, y) + z0
     g = nx.group("frame", (x, y, z), (0, 0, SUNWARD))
     bars = [(w, t, 0, 0), (w, t, 0, h - t), (t, h, -w / 2 + t / 2, 0), (t, h, w / 2 - t / 2, 0), (w, t, 0, h / 2 - t / 2),
@@ -316,21 +352,91 @@ def window_frame(x, y, w=6.0, h=6.0, z0=3.0, t=0.45):
     lx = -w / 4
     cx, cy = x + lx * math.cos(a), y + lx * math.sin(a)
     px, py = shadow_point(cx, cy, z0 + h / 4)
-    nx.portal("portal_sunpatch", (px, py, ground_at(px, py) + 1.0), "sunpatch", mode="walk", radius=1.0)
+    pz = ground_at(px, py)
+    # 窗扇：铰链在这格靠外的竖边上（本地 x = -w/2 + t），四边各伸进窗框 3cm（关着不漏光）；比窗框薄，虚像那份不和窗框共面
+    cw, ch = w / 2 - 1.5 * t + 0.06, h / 2 - 1.5 * t + 0.06
+    sash = fu.Kit()
+    sash.box((cw, 0.12, ch), (cw / 2, 0, 0))
+    leaf = nx.shade(sash.build("frame_sash", parent=g, loc=(-w / 2 + t - 0.03, 0, t - 0.03), smooth=0, collide=False))
+    nx.pose(leaf, "frame_sash", on="key", at=(px, py, pz + 1.0), radius=1.8, rot=(0, 0, 100), time=1.2, title="推开窗|关上窗")
+    nx.portal("portal_sunpatch", (px, py, pz + 1.0), "sunpatch", mode="walk", radius=0.9, need="frame_sash")
 
 
-def wardrobe(x, y, w=2.6, d=0.9, h=3.0, gap=0.4):
-    """一只衣柜（进来时是从衣柜）：两扇柜门之间留一道缝，缝顺着太阳穿过整个柜子——影子中间一线光。站进那道缝里回家"""
+def wardrobe(x, y, w=3.0, d=0.9, h=3.0, gap=0.5):
+    """一只衣柜（进来时是从衣柜）：柜身中间一道缝，顺着太阳穿过整个柜子；朝太阳那面两扇柜门关着，影子是整块的。
+    柜子看不见，柜里挂的一排衣服看得见——只在影子里画（lit_only="shade"），柜里本来就在柜子自己的影子里，
+    走近看见一排衣服悬在半空、围出一只柜子。柜门上两只把手是实的。
+    走到柜前按 E「打开柜门」，两扇门往太阳那边转开：地上门的影子张开、柜影中间透出一线光，缝前那一截横杆跟着不见。
+    从两扇门中间走进柜里回家（同家里那只：开柜门、走进去）"""
     z = ground_at(x, y)
     g = nx.group("wardrobe", (x, y, z), (0, 0, SUNWARD))   # 本地 +Y 朝太阳，x 是柜宽
+    a = math.radians(SUNWARD)
+
+    def world(lx, ly, lz):
+        return (x + lx * math.cos(a) - ly * math.sin(a), y + lx * math.sin(a) + ly * math.cos(a), z + lz)
+
     half = (w - gap) / 2
     for s in (-1, 1):
         sbox(f"wardrobe_half{s}", (half, d, h), (s * (gap / 2 + half / 2), 0, -0.2), parent=g)
     sbox("wardrobe_top", (w + 0.2, d + 0.1, 0.25), (0, 0, h - 0.2 + 0.0), parent=g)
     # 顶板盖住了缝的上头：缝的光只在柜顶以下，影子里是一条从柜脚伸出去、到柜顶影子为止的细光
-    mx, my = shadow_point(x, y, h * 0.5)
-    nx.portal("portal_home", (mx, my, ground_at(mx, my) + 1.0), "house", at="longshadow", mode="walk", radius=0.45)
-    return mx, my
+    clothes(g, w, d, h, gap)
+    # 柜门：贴在朝太阳那面外 1cm，铰链在两头，各宽半个柜子；门开着光才进得了缝。把手是实的，跟着门转，纸签系在把手上
+    front = world(0, d / 2 + 0.6, 1.2)
+    for s in (-1, 1):
+        k = fu.Kit()
+        k.box((w / 2, 0.06, h), (-s * w / 4, 0, 0))
+        door = nx.shade(k.build(f"wardrobe_door{s}", parent=g, loc=(s * w / 2, d / 2 + 0.04, -0.2), smooth=0, collide=False))
+        kx = -s * (w / 2 - 0.12)
+        kn = fu.Kit()
+        kn.box((0.05, 0.05, 0.32), (kx, 0.07, 1.25))
+        for zz in (1.29, 1.53):
+            kn.box((0.03, 0.06, 0.03), (kx, 0.035, zz))
+        knob = kn.build(f"wardrobe_knob{s}", parent=g, loc=(s * w / 2, d / 2 + 0.04, -0.2), smooth=0, collide=False,
+                        a="pink_pale", b="white", pattern="plain")
+        for o in (door, knob):
+            nx.pose(o, "wardrobe_doors", on="key", at=front, radius=2.0, rot=(0, 0, -100 * s), time=1.0,
+                    title="打开柜门|关上柜门", anchor=(kx, 0.1, 1.4) if o is knob and s < 0 else None)
+    cx, cy, cz = world(0, 0, 1.0)
+    nx.portal("portal_home", (cx, cy, cz), "house", at="longshadow", mode="walk", radius=0.45, need="wardrobe_doors")
+    return cx, cy
+
+
+def clothes(g, w, d, h, gap):
+    """柜里挂的一排衣服：一根横杆、一只只衣架、长短不一的衣裳（面朝柜门，薄的那面顺着横杆）。
+    都只在影子里画——伸出柜子的影子就没了；柜门开着时，中间那道缝进了光，缝前那一截横杆就不见了"""
+    rnd = random.Random(23)
+    only = dict(smooth=0, collide=False, shadow=False, lit_only="shade")
+    rail_z = h - 0.75
+    rail = fu.Kit()
+    rail.box((w - 0.3, 0.04, 0.04), (0, 0, rail_z))
+    cloth = [fu.Kit() for _ in range(4)]
+    looks = [dict(a="blue_pale", b="white", pattern="plain"), dict(a="pink", b="pink_pale", pattern="plain"),
+             dict(a="lilac", b="lilac_pale", pattern="plain"), dict(a="white", b="mist", pattern="plain")]
+    # 缝两边各空出 0.45m（低太阳的影子边是软的，缝里透进来的光会往两边晕开这么宽），缝里不挂
+    xs = []
+    for s in (-1, 1):
+        xc = gap / 2 + 0.45
+        while xc < w / 2 - 0.22:
+            xs.append(s * xc)
+            xc += rnd.uniform(0.17, 0.24)
+    for i, cx in enumerate(xs):
+        k = cloth[rnd.randrange(4)]
+        L = rnd.choice((0.75, 0.95, 1.25, 1.5))
+        t = rnd.uniform(0.05, 0.08)
+        lean = rnd.uniform(-4, 4)
+        top = rail_z - 0.12
+        # 衣架：一只钩、两条斜肩
+        rail.box((0.012, 0.012, 0.1), (cx, 0, top + 0.02))
+        for sd in (-1, 1):
+            rail.box((0.012, 0.24, 0.012), (cx, sd * 0.11, top - 0.04), rot=(sd * 18, 0, 0))
+        # 衣裳：肩一块、身子往下略收（两块叠着，宽在本地 Y）
+        k.box((t, 0.46, 0.22), (cx, 0, top - 0.24), rot=(0, lean, 0))
+        k.box((t * 0.9, 0.4, L - 0.2), (cx, 0, top - L), rot=(0, lean, 0))
+    rail.build("wardrobe_rail", parent=g, a="mist", b="white", pattern="plain", **only)
+    for i, k in enumerate(cloth):
+        if k.f:
+            k.build(f"wardrobe_clothes{i}", parent=g, **only, **looks[i])
 
 
 # ── 虚像 ──────────────────────────────────────────

@@ -84,9 +84,10 @@ def matte(obj, a="mist", b="lilac_pale", pattern="grain", collide=True, shadow=T
     ramp：(暗, 中, 亮) 三色明暗，受光档直接取这三色，可以跨色相（暗偏冷紫、亮偏暖粉/淡金）；给了就不用 a、b；
     emit：自己发亮（0..1），不受光照、取色板原色——亮着的灯罩、门缝里漏进来的光；
     lit_only：只在光里——落在太阳影子里的那部分不画（光斑爬过去，它从光的边上一格格长出来）。一般连同 shadow=False、collide=False；
+    lit_only="shade"：反过来，只在影子里——照着太阳的那部分不画（伸出影子的那一截齐齐断掉），同样连同 shadow=False；
     ghost=(最浓, 近, 远)：虚像——离人近于「近」米时看不见，远于「远」米时按「最浓」（0..1）半透，一般也连同 shadow=False、collide=False"""
     if lit_only:
-        obj["nx_lit_only"] = 1
+        obj["nx_lit_only"] = -1 if lit_only == "shade" else 1
     if ghost:
         obj["nx_ghost"] = ",".join(f"{v:g}" for v in ghost)
     if ramp is not None:

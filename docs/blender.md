@@ -57,7 +57,7 @@
 | `nx_collide` | 0 / 1 | 1 | |
 | `nx_shadow` | 0 / 1 | 1 | 是否投影（接收影子总是开的） |
 | `nx_ghost` | "最浓,近,远" | 无 | 虚像：离人近于「近」米时看不见，远于「远」米时按「最浓」（0..1）半透——屏幕上按 Bayer 格子筛掉一部分像素，像素化时混成半透。远远看得见、走近就散（长影里投影物的虚像、山脊上的虚像）。一般连同 `shadow=False`、`collide=False`（`nx.matte(..., ghost=(0.4, 14, 34))`） |
-| `nx_lit_only` | 0 / 1 | 0 | 只在光里：落在太阳影子里的纹素不画（按位置算，背光的那一面照样在）；光斑爬过去，它从光的边上一格格长出来。一般连同 `shadow=False`、`collide=False`（`nx.matte(..., lit_only=True)`） |
+| `nx_lit_only` | 0 / 1 / -1 | 0 | 1 只在光里：落在太阳影子里的纹素不画（按位置算，背光的那一面照样在）；光斑爬过去，它从光的边上一格格长出来。-1 反过来只在影子里：照着太阳的纹素不画，伸出影子的那一截齐齐断掉（长影瓶影里的花、花房花影里悬着的瓣）。一般连同 `shadow=False`、`collide=False`（`nx.matte(..., lit_only=True)` / `lit_only="shade"`） |
 | `nx_spin` | 度/秒 | 0 | 绕竖轴自转；会动的物体不参与碰撞 |
 | `nx_bob` | 米 | 0 | 上下浮动幅度 |
 | `nx_sway` | 度 | 0 | 绕物体本地 x 轴来回荡的幅度，原点放在挂点上（秋千）。`nx.behave(obj, sway=…)` |
@@ -172,7 +172,7 @@ NEXUS 是一组世界，像《梦日记》、Project Somnia、ENA：**现实的�
 
 ### 浅梦第二轮的原型
 
-`sunpatch`（光斑）与 `longshadow`（长影）：设计与现状见 [mockup/shallows-02](../mockup/shallows-02/README.md)。从家里的落地窗、衣柜进去。用到的引擎功能：`shade`、`lit_only`、atmosphere 的 `grid_lit` / `shadow_out` / `shadow_reach` / `sun_turn`，天空主题的 `shade` / `lift`（见上面的属性表与 sky.md）。
+`sunpatch`（光斑）与 `longshadow`（长影）：设计与现状见 [mockup/shallows-02](../mockup/shallows-02/README.md)。从家里的落地窗、衣柜进去。用到的引擎功能：`shade`、`lit_only`、atmosphere 的 `grid_lit` / `shadow_out` / `shadow_reach` / `sun_turn`，天空主题的 `shade` / `lift`（见上面的属性表与 sky.md）。只投影的东西（`nx.shade`）也能 `nx.pose`：看不见的门、窗扇转开，地上的影子跟着转开（长影的衣柜门、窗框的窗扇）。
 
 第三轮（[mockup/shallows-03](../mockup/shallows-03/README.md)）：`descent`（下沉 · 井）、`shoal`（浅滩 · 退潮的梯田）、`glasshouse`（花房）重写，新加 `stair`（断梯）。新的引擎功能：纹样 `flow`、天空主题 `ebb`、atmosphere 的 `fall_to` / `fall_at` / `fall_y`（断梯）。
 

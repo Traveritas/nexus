@@ -550,6 +550,8 @@ export async function loadLevel(url: string): Promise<Level> {
         b.baseRot.copy(m.rotation);
         behaviors.push(b);
       }
+      // 能开关的投影（看不见的柜门、窗扇）：门转开，地上的影子跟着转开
+      if (u.nx_pose !== undefined && !b) addPose(m, u);
       continue;
     }
 
@@ -627,7 +629,7 @@ export async function loadLevel(url: string): Promise<Level> {
         yRange: [box.min.y, box.max.y],
         ramp: rampOf(u.nx_ramp),
         emit: num(u.nx_emit, 0),
-        litOnly: bool(u.nx_lit_only, false),
+        litOnly: num(u.nx_lit_only, 0),
         ghost: ghostOf(u.nx_ghost),
         id: u.nx_id as number | undefined,
       });

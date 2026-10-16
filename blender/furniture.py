@@ -457,6 +457,116 @@ def vase(name, loc, height=0.4, kind="round", style=None, flowers=0, seed=0, par
     return p.done(styles, collide=False)
 
 
+# ── 传送物：插花的瓶、一杯水 ─────────────────────
+
+def _aim(d):
+    """让本地 +Z 指向 d 的 rot（先绕 Y 倾、再绕 Z 转到方位上）"""
+    d = Vector(d).normalized()
+    return (0, math.degrees(math.acos(max(-1.0, min(1.0, d.z)))), math.degrees(math.atan2(d.y, d.x)))
+
+
+def _rod(kit, a, b, w):
+    """一根方杆从 a 到 b，截面 w × w"""
+    a, b = Vector(a), Vector(b)
+    kit.box((w, w, (b - a).length), tuple(a), rot=_aim(b - a))
+
+
+def _petals(kit, c, axis, n, L, W, lift, r0, start=0.0, thick=0.01):
+    """一圈花瓣：围着 axis 一圈 n 片，各自从离 c r0 的根上往外伸，和 axis 的垂面夹 lift 度（往 axis 那边仰）"""
+    ax = Vector(axis).normalized()
+    u = ax.orthogonal().normalized()
+    v = ax.cross(u)
+    c = Vector(c)
+    outline = [(0, 0), (L * 0.22, W * 0.32), (L * 0.58, W * 0.5), (L * 0.9, W * 0.3), (L, 0),
+               (L * 0.9, -W * 0.3), (L * 0.58, -W * 0.5), (L * 0.22, -W * 0.32)]
+    m = len(outline)
+    tl = math.radians(lift)
+    for k in range(n):
+        a = math.radians(start) + math.tau * k / n
+        radial = u * math.cos(a) + v * math.sin(a)
+        d = radial * math.cos(tl) + ax * math.sin(tl)
+        side = ax.cross(radial).normalized()
+        nrm = d.cross(side)
+        root = c + radial * r0
+        verts = [tuple(root + d * x + side * y + nrm * (s * thick / 2)) for s in (-1, 1) for x, y in outline]
+        faces = [tuple(range(m - 1, -1, -1)), tuple(range(m, 2 * m))] + [(i, (i + 1) % m, m + (i + 1) % m, m + i) for i in range(m)]
+        kit._add(verts, faces)
+
+
+def _ring(kit, r_in, r_out, z0, z1, seg=14):
+    """一圈环（管口的沿）：内外两壁、上下两面，中间是空的"""
+    verts = []
+    for r, z in ((r_in, z0), (r_out, z0), (r_out, z1), (r_in, z1)):
+        verts += [(math.cos(math.tau * i / seg) * r, math.sin(math.tau * i / seg) * r, z) for i in range(seg)]
+    faces = []
+    for q in range(4):
+        a, b = q * seg, ((q + 1) % 4) * seg
+        faces += [(a + i, a + (i + 1) % seg, b + (i + 1) % seg, b + i) for i in range(seg)]
+    kit._add(verts, faces)
+
+
+# 瓶身（半径, 高，归一到高 1）：圈足、鼓肚、收肩、细颈、外翻的口；口里往下凹一截（看得见瓶口是空的）
+FLOWER_VASE = [(0.0, 0.0), (0.2, 0.0), (0.25, 0.035), (0.38, 0.2), (0.42, 0.36), (0.36, 0.55), (0.2, 0.72),
+               (0.135, 0.84), (0.16, 0.94), (0.22, 1.0), (0.17, 1.0), (0.11, 0.93), (0.0, 0.9)]
+FLOWER_HEADS = [dict(a="pink", b="pink_pale", pattern="plain"), dict(a="white", b="pink_pale", pattern="plain"),
+                dict(a="blue_pale", b="white", pattern="plain")]
+
+
+def flower_vase(name, loc, height=0.4, flowers=5, seed=0, yaw=0.0, style=None, stem=None, collide=False, parent=None):
+    """插着花的瓶（去花房的那只）：瓶自己站在地上 / 桌上，不垫台子。
+    花杆从瓶口里插下去，两截，越往上越往外弯；花头顺着杆的方向仰着，一圈尖瓣、一粒花心；有几枝杆上带一片叶。
+    尺寸都跟着瓶高走（小瓶放桌上，大瓶齐腰）"""
+    H = height
+    p = Piece(name, loc, yaw, parent)
+    p["vase"].lathe([(r * H, z * H) for r, z in FLOWER_VASE], seg=12)
+    p["mouth"].cyl(0.105 * H, 0.012 * H, (0, 0, 0.928 * H), seg=12)
+    r = random.Random(seed)
+    w = max(0.012, 0.036 * H)
+    up = Vector((0, 0, 1))
+    for k in range(flowers):
+        az = math.radians(360 * k / flowers + r.uniform(-20, 20))
+        out = Vector((math.cos(az), math.sin(az), 0))
+        L = H * r.uniform(0.6, 0.95)
+        lean1, lean2 = math.radians(r.uniform(5, 16)), math.radians(r.uniform(22, 40))
+        a = Vector((0, 0, 0.9 * H)) + out * 0.04 * H
+        m = a + (up * math.cos(lean1) + out * math.sin(lean1)) * L * 0.62
+        d2 = up * math.cos(lean2) + out * math.sin(lean2)
+        b = m + d2 * L * 0.38
+        _rod(p["stem"], a, m, w)
+        _rod(p["stem"], m, b, w)
+        if k % 2 == 0:
+            q = a + (m - a) * r.uniform(0.45, 0.7)
+            el = r.uniform(25, 45)
+            p["stem"].leaf(H * 0.22, H * 0.08, max(0.008, w * 0.6), tuple(q), rot=(0, -el, math.degrees(az) + r.choice((-70, 70))))
+        axis = (d2 + up * 0.5).normalized()
+        Lp = H * r.uniform(0.18, 0.22)
+        _petals(p[f"head{k % 3}"], b, axis, r.choice((6, 7)), Lp, Lp * 0.66, r.uniform(38, 55), Lp * 0.16,
+                start=r.uniform(0, 60), thick=max(0.008, Lp * 0.1))
+        p["heart"].lathe([(0.0, -Lp * 0.05), (Lp * 0.24, 0.0), (Lp * 0.2, Lp * 0.14), (0.0, Lp * 0.2)], tuple(b), rot=_aim(axis), seg=6)
+    styles = {"vase": style or dict(a="pink_pale", b="white", pattern="plain"), "mouth": INK, "stem": stem or LEAF,
+              "heart": dict(a="pink_pale", b="white", pattern="plain")}
+    styles.update({f"head{i}": FLOWER_HEADS[i] for i in range(3)})
+    return p.done(styles, collide=False, vase=dict(collide=collide))
+
+
+GLASS_LOOK = dict(a="white", b="blue_pale", pattern="plain", ghost=(0.35, 0.0, 0.05))
+
+
+def water_glass(name, loc, r=0.05, h=0.15, water=(0.5, 0.86), collide=False, parent=None):
+    """一杯水：薄壁、厚底、杯口略敞；玻璃半透（按格子筛掉一半像素），杯口一圈实的沿。
+    水不在杯底：浮在杯子的上半截（water 是水的底、顶占杯高的几成），底下是空的——浅滩「水在头顶」的小样"""
+    p = Piece(name, loc, 0, parent)
+    rb, t, hb = r * 0.84, max(0.004, r * 0.07), h * 0.1
+    inner = lambda z: (rb - t * 0.6) + (r - t - (rb - t * 0.6)) * (z - hb) / (h - hb)
+    p["glass"].lathe([(0.0, 0.0), (rb, 0.0), (rb * 1.02, hb * 0.6), (r, h), (r - t, h), (rb - t * 0.6, hb), (0.0, hb)], seg=14)
+    _ring(p["rim"], r - t - 0.0015, r + 0.0015, h - max(0.006, h * 0.03), h + 0.002)
+    z0, z1 = water[0] * h, water[1] * h
+    p["water"].lathe([(0.0, z0), (inner(z0) - 0.0015, z0), (inner(z1) - 0.0015, z1), (0.0, z1)], seg=14)
+    return p.done({"glass": GLASS_LOOK, "rim": dict(a="white", b="mist", pattern="plain", emit=0.4),
+                   "water": dict(ramp=("lilac_dark", "blue", "blue_pale"), pattern="bands")},
+                  collide=False, glass=dict(shadow=False, collide=collide))
+
+
 def plant(name, loc, height=1.1, kind="potted", pot=None, seed=0, parent=None):
     """盆栽：kind=potted 一蓬向外张的叶 · tall 一根直茎、叶沿茎互生 · tuft 矮的一丛（种在槽里，不带盆）"""
     p = Piece(name, loc, 0, parent)

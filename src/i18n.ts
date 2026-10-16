@@ -100,6 +100,8 @@ const SCENE: Record<string, string> = {
   一杯水: 'A glass of water',
   翻开: 'Open',
   凑近: 'Lean in',
+  接住: 'Catch',
+  抓住: 'Hold on',
   睡: 'Sleep',
   开灯: 'Lights on',
   关灯: 'Lights off',
