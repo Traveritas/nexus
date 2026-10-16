@@ -15,6 +15,7 @@ import { clamp01, ease } from '../stage';
 import { C, UI_SCALE, paper, paperMask, paperShadow, scratch, text, type Ui } from '../ui';
 import { itemDef, type HeldModel, type ItemCtx, type ItemDef, type Shown } from './item';
 import { isReality } from '../worlds';
+import { l, t } from '../i18n';
 
 const STORE_KEY = 'nexus:items';
 const P = (i: number) => PALETTE[i];
@@ -194,7 +195,7 @@ export class ItemSystem {
     this.level.scene.add(holder);
     // 纸签系在东西上：装置系在它浮着的那一点
     const at = shown ? place.pos.clone().setY(place.pos.y + 0.32) : place.pos;
-    this.places.push({ place, def, holder, shown, prompt: { pos: at, title: '拾起' } });
+    this.places.push({ place, def, holder, shown, prompt: { pos: at, get title() { return t('pickUp'); } } });
   }
 
   /** 走近按 E 拾起的那几件（谁挂纸签由外面和别的可按的东西一起挑） */
@@ -437,7 +438,7 @@ export class ItemSystem {
         const dw = Math.max(1, Math.round(W * sx));
         const dh = Math.max(1, Math.round(H * sy));
         g.drawImage(back ? cardBack(r.card) : r.card, Math.round(x - dw / 2), Math.round(y - dh / 2), dw, dh);
-        if (r.t >= R_IN && r.t < R_HOLD) drawTag(g, [text('得到了', P(2)), text(r.def.name, C.ink)], Math.round(c.x), Math.round(c.y + H / 2 + 8));
+        if (r.t >= R_IN && r.t < R_HOLD) drawTag(g, [text(t('got'), P(2)), text(l(r.def.name), C.ink)], Math.round(c.x), Math.round(c.y + H / 2 + 8));
       } else if (Math.floor((r.t - R_OUT) * 6) % 2 === 0) {
         // 日记那里闪三下
         drawBook(g, corner.x - 6, corner.y - 5);
@@ -447,13 +448,13 @@ export class ItemSystem {
       const f = this.focusScreen(camera);
       if (f && this.focus) {
         const def = itemDef(this.focus.id)!;
-        const parts = [text(def.name, C.ink)];
-        parts.push(text(this.focus.id === this.held ? '手里' : '松开 F 拿起', P(this.focus.id === this.held ? 9 : 3)));
+        const parts = [text(l(def.name), C.ink)];
+        parts.push(text(this.focus.id === this.held ? t('inHand') : t('releaseToHold'), P(this.focus.id === this.held ? 9 : 3)));
         drawTag(g, parts, Math.round(f.x), Math.round(f.y + 34));
       }
     }
-    if (this.emptyT > 0) drawTag(g, [text('身上还没有东西', P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
-    if (this.sealedT > 0) drawTag(g, [text('醒着，什么也没带出来', P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
+    if (this.emptyT > 0) drawTag(g, [text(t('carryingNothing'), P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
+    if (this.sealedT > 0) drawTag(g, [text(t('awakeNothing'), P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
   }
 }
 

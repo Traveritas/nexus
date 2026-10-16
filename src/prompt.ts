@@ -3,6 +3,7 @@
    移开视线：压扁成一条边，收走。转头时纸签跟着线晃一下，慢半拍。按 E，键帽按下去。 */
 import * as THREE from 'three';
 import type { Promptable } from './items/system';
+import { tr } from './i18n';
 import { C, inkRows, line, paper, paperMask, paperShadow, scratch, text, type Ui } from './ui';
 
 const PAD_X = 4;
@@ -65,7 +66,7 @@ export class PromptTag {
   update(dt: number, want: Promptable | null, camera: THREE.Camera) {
     this.pressT = Math.max(0, this.pressT - dt);
     // 同一件东西换了字（按 E 开了门，「开门」变「关门」）：等键帽弹起来，翻一下换成新的
-    const stale = !!want && want === this.cur && this.face?.text !== (want.title || '……') && this.pressT === 0;
+    const stale = !!want && want === this.cur && this.face?.text !== tr(want.title || '……') && this.pressT === 0;
     if (want !== this.cur || stale) {
       if (this.cur && this.phase !== 'hidden') this.phase = 'out';
       else if (want) this.show(want, camera);
@@ -100,7 +101,7 @@ export class PromptTag {
 
   private show(p: Promptable, camera: THREE.Camera) {
     this.cur = p;
-    this.face = this.build(p.title || '……');
+    this.face = this.build(tr(p.title || '……'));
     this.phase = 'in';
     this.ang = 270;
     // 从结那里升起来

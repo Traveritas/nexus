@@ -548,7 +548,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyK') level.sky.set(SKY_NAMES[(SKY_NAMES.indexOf(level.sky.name) + 1) % SKY_NAMES.length]);
   if (e.code === 'KeyR' && e.shiftKey) respawn();
   if (e.code === 'KeyE' && !e.repeat) interact = true;
-  // 按住 Q：把手里的东西举到眼前、捏紧；松开放下（醒来在日记的目录里）
+  // 按住 Q：把手里的东西举到眼前、捏紧；松开放下（醒来在日记「记录」那页）
   if (e.code === 'KeyQ' && !e.repeat) items.use(true);
   // 按住 F：身上的东西排成一道弧围在眼前；松开拿起正看着的那件
   if (e.code === 'KeyF' && !e.repeat) items.showRing(true, camera);

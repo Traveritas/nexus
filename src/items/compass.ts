@@ -152,8 +152,11 @@ function held(): HeldModel {
 
 export const compass: ItemDef = {
   id: 'compass',
-  name: '罗盘',
-  desc: '一根浮着的针，外面套着三道环，自己转着。左右各有一枚小菱形，可以捏紧。',
+  name: { zh: '罗盘', en: 'Compass' },
+  desc: {
+    zh: '一根浮着的针，外面套着三道环，自己转着。左右各有一枚小菱形，可以捏紧。',
+    en: 'A needle floating in three turning rings. The two small diamonds can be squeezed.',
+  },
   kind: 'need',
   icon,
   world,

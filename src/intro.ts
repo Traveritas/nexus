@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { Intro } from './level';
 import { PALETTE } from './palette';
 import { UI_SCALE, text } from './ui';
+import { t } from './i18n';
 
 const SEEN_KEY = 'nexus:woke';
 const EYE = 1.6;
@@ -50,7 +51,7 @@ export function stripIntro(intro: Intro | null) {
 /* 「点击醒来」：还在梦里，所以是像素字（和纸签同一套字），不是现实的平滑字。
    像素层不许半透明，所以不淡入淡出，走色板的档：一个字一个字从浅档浮出来（雾 → 淡紫 → 墨）；
    之后每个字在墨的三档之间慢慢呼吸，相位一个错一个，像一口气从左走到右；醒来时跟着木条一个个退回浅档、收走 */
-const HINT = '点击醒来';
+const hint = () => t('clickToWake');
 /** 字与字之间多空几个 UI 像素 */
 const HINT_GAP = 1;
 /** 浮出：从开场起多久出第一个字、之后每隔多久一个、每个字走完浅档要多久 */
@@ -65,10 +66,20 @@ const HINT_INK = [PALETTE[1], PALETTE[2], PALETTE[3]];
 class Hint {
   private g: CanvasRenderingContext2D;
   private x: number[] = [];
+  /** 排好的是哪一句（换了语言就重排） */
+  private laid = '';
 
   constructor(private el: HTMLCanvasElement) {
+    this.g = el.getContext('2d')!;
+    this.layout();
+  }
+
+  private layout() {
+    const el = this.el;
+    this.laid = hint();
+    this.x = [];
     let w = 0;
-    for (const ch of HINT) {
+    for (const ch of this.laid) {
       this.x.push(w);
       w += text(ch).width + HINT_GAP;
     }
@@ -84,9 +95,10 @@ class Hint {
 
   /** clock：开场的钟；gone：醒来以后过了多久（没醒是 -1） */
   draw(clock: number, gone: number) {
+    if (this.laid !== hint()) this.layout();
     const g = this.g;
     g.clearRect(0, 0, this.el.width, this.el.height);
-    [...HINT].forEach((ch, i) => {
+    [...this.laid].forEach((ch, i) => {
       // v：0 看不见，0..1 在浅档里，1 是墨
       let v = (clock - HINT_AT - i * HINT_STEP) / HINT_RISE;
       if (gone >= 0) v = Math.min(v, 1 - (gone - DROP_AT - i * DROP_GAP * 2) / HINT_RISE);

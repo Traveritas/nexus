@@ -1,29 +1,30 @@
-/* 世界：中文名、星座图上的位置，以及「走过的连接」「有站点的世界」的存档（罗盘的地图用）。 */
+/* 世界：名字（中英）、星座图上的位置，以及「走过的连接」「有站点的世界」的存档（罗盘的地图用）。 */
+import { l, type L } from './i18n';
 
-/** 世界的中文名；没写的显示原名 */
-export const WORLD_NAMES: Record<string, string> = {
+/** 世界的名字；没写的显示原名 */
+export const WORLD_NAMES: Record<string, L> = {
   // 浅梦（mockup/shallows-05）：家是中枢
-  house: '家',
-  house_out: '家 · 门外',
-  sunpatch: '光斑',
-  longshadow: '长影',
-  descent: '下沉',
-  glasshouse: '花房',
-  shoal: '浅滩',
-  stair: '断梯',
-  stair_b: '断梯 · 那边',
-  isles: '云阶',
+  house: { zh: '家', en: 'Home' },
+  house_out: { zh: '家 · 门外', en: 'Home · Outside' },
+  sunpatch: { zh: '光斑', en: 'Sunpatch' },
+  longshadow: { zh: '长影', en: 'Longshadow' },
+  descent: { zh: '下沉', en: 'Descent' },
+  glasshouse: { zh: '花房', en: 'Glasshouse' },
+  shoal: { zh: '浅滩', en: 'Shoal' },
+  stair: { zh: '断梯', en: 'Broken Stair' },
+  stair_b: { zh: '断梯 · 那边', en: 'Broken Stair · Beyond' },
+  isles: { zh: '云阶', en: 'Cloud Steps' },
   // 现实
-  wake_fragment: '残片',
-  wake_white: '白井',
-  wake_museum: '陈列',
+  wake_fragment: { zh: '残片', en: 'Fragment' },
+  wake_white: { zh: '白井', en: 'White Well' },
+  wake_museum: { zh: '陈列', en: 'Exhibit' },
   // 旧的（legacy）：不接进网里，不在星图上占位置；留着，也许以后作为彩蛋出现
-  home: '旧家',
-  procession: '回廊',
-  room: '无墙之屋',
+  home: { zh: '旧家', en: 'Old Home' },
+  procession: { zh: '回廊', en: 'Cloister' },
+  room: { zh: '无墙之屋', en: 'Wallless Room' },
 };
 
-export const worldName = (w: string) => WORLD_NAMES[w] ?? w;
+export const worldName = (w: string) => (WORLD_NAMES[w] ? l(WORLD_NAMES[w]) : w);
 
 /** 现实：醒着的那几间（干净低模的世界）。它们自成一处，不在梦的网里——
     不进罗盘的星座、不记连接、不列进日记的「去过」；在这里身上的东西拿不出来（看不了、拿不起、用不了） */

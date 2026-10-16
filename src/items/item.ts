@@ -3,6 +3,7 @@
    效果目前只改「自己」：拿在手里的东西、看到的东西、移动与视角。
    模型一律以米为单位，用世界的材质（会动的用 materials.ts 的 charm），由管线统一像素化、落色板、描边。 */
 import type * as THREE from 'three';
+import type { L } from '../i18n';
 import { compass } from './compass';
 
 export interface ItemCtx {
@@ -26,9 +27,9 @@ export interface HeldModel {
 
 export interface ItemDef {
   id: string;
-  name: string;
+  name: L;
   /** 日记「拾得」页上的说明 */
-  desc: string;
+  desc: L;
   /** need 必要的（好拿）· collect 收藏品（藏得深、条件难） */
   kind: 'need' | 'collect';
   /** 像素画：得到时的卡片、日记都用它；没写 world() 时也是世界里的纸片（每米 16 像素） */

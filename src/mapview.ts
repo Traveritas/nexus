@@ -3,7 +3,7 @@
      亮起时先闪一下再落定。星光落到暗下去的世界上是像素的：星的周围按格子撤回一两档暗（pipeline 的 glow）。
    - 本世界：每个出入口（传送物、缝）与站点（晶体）一颗星，隔着墙也看得见；不标物品。
        站点：金，大，另有一对慢慢转的斜芒 · 去过的世界的出口：白，雾蓝的晕 · 没去过的：暗紫，一点微光，没有芒。
-       远处的小一号；画面外的贴在屏幕边上。正看着的那颗挂一张纸签：「→ 浅滩 · 一杯水」，没去过的「→ ？」；
+       远处的小一号；画面外的贴在屏幕边上。正看着的那颗挂一张纸签，只写通往哪里：「→ 浅滩」，没去过的「→ ？」；
        站点的名字连着真实的站点，是「现实的字」（#maplabel，src/realtext.ts），换到它时对一次焦。
    - 抬头看天：去过的世界是天上的星座，走过的连接是星与星之间两头渐隐的细线，展开时一笔画出来；有站点的世界旁边一颗小金星。
    - 开着时照常走、转头；再捏到底一次收起来（暗色缩回手边）；换世界时直接收起。
@@ -15,6 +15,7 @@ import { ease } from './stage';
 import { UI_SCALE, paper, paperMask, paperShadow, text, C, type Ui } from './ui';
 import { RealName } from './realtext';
 import { starAt, worldName } from './worlds';
+import { t } from './i18n';
 
 const OPEN_TIME = 0.9;
 const CLOSE_TIME = 0.5;
@@ -223,18 +224,17 @@ export class MapView {
     const all: Star[] = [];
     for (const e of c.level.entrances) {
       if (!e.url) continue;
-      all.push(this.place(e.crystal.mesh.position, camera, LOOK.site, e.title || '站点', true, seed++, e.url));
+      all.push(this.place(e.crystal.mesh.position, camera, LOOK.site, e.title || t('site'), true, seed++, e.url));
     }
     for (const p of c.level.portals) {
       const seen = c.visited.includes(p.to);
-      const what = p.title ? ` · ${p.title}` : '';
-      all.push(this.place(p.pos, camera, seen ? LOOK.seen : LOOK.unseen, `→ ${seen ? worldName(p.to) : '？'}${what}`, false, seed++));
+      all.push(this.place(p.pos, camera, seen ? LOOK.seen : LOOK.unseen, `→ ${seen ? worldName(p.to) : '？'}`, false, seed++));
     }
     // 缝（家的大门）也是出入口：星在门洞正中
     for (const s of c.level.seams) {
       const seen = c.visited.includes(s.to);
       tmp.copy(s.pos).setY(s.pos.y + s.h / 2);
-      all.push(this.place(tmp.clone(), camera, seen ? LOOK.seen : LOOK.unseen, `→ ${seen ? worldName(s.to) : '？'} · 门`, false, seed++));
+      all.push(this.place(tmp.clone(), camera, seen ? LOOK.seen : LOOK.unseen, `→ ${seen ? worldName(s.to) : '？'}`, false, seed++));
     }
     let best = 60;
     const margin = 10;
@@ -372,7 +372,7 @@ export class MapView {
     this.nameF = named ? Math.min(1, this.nameF + 1 / 30) : 0;
     this.name.focus(ease(this.nameF));
     const sf = this.skyFocus;
-    if (sf && this.lookingUp) tag(ui, sf.here ? `此刻 · ${worldName(sf.wld)}` : worldName(sf.wld), Math.round(sf.x), Math.round(sf.y) + 14);
+    if (sf && this.lookingUp) tag(ui, sf.here ? `${t('here')} · ${worldName(sf.wld)}` : worldName(sf.wld), Math.round(sf.x), Math.round(sf.y) + 14);
   }
 
   private place(pos: THREE.Vector3, camera: THREE.PerspectiveCamera, look: Look, label: string, site: boolean, seed: number, url?: string): Star {

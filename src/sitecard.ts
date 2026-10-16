@@ -3,6 +3,7 @@
    字体、留白取站点自己的样子（博客：衬线标题、等宽小字、一道细线），字色跟着窗里的天走（WindowSky.tone）。
    浮现而不是弹出：淡入、细线从左往右延展；换一处时往换的方向滑开一点再淡回来。 */
 import type { Outlook } from './level';
+import { t } from './i18n';
 
 export class SiteCard {
   private root: HTMLDivElement;
@@ -28,12 +29,17 @@ export class SiteCard {
     this.desc = div('desc', this.root);
     this.idx = div('idx', this.root);
     this.keys = div('sitekeys', document.body);
-    this.keys.innerHTML =
-      '<span class="sw"><b>A</b><b>D</b>换一处</span><span><b>E</b>进入</span><span><b>S</b>退回</span>';
-    this.switchKeys = this.keys.querySelector('.sw')!;
+    this.switchKeys = this.labelKeys();
+  }
+
+  /** 按键提示跟着语言走：每次浮出来时重写一遍 */
+  private labelKeys() {
+    this.keys.innerHTML = `<span class="sw"><b>A</b><b>D</b>${t('switchPlace')}</span><span><b>E</b>${t('enter')}</span><span><b>S</b>${t('back')}</span>`;
+    return this.keys.querySelector<HTMLSpanElement>('.sw')!;
   }
 
   private fill(o: Outlook, i: number, n: number) {
+    this.switchKeys = this.labelKeys();
     let host = o.url;
     try {
       // 域名带路径（github.com/Traveritas），不带协议和末尾的斜杠

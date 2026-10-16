@@ -28,6 +28,8 @@ srv.listen(0, '127.0.0.1', async () => {
   });
   const page = await browser.newPage();
   page.on('pageerror', (e) => console.log('[pageerror]', e.message));
+  // NEXUS_LANG=en|zh：先存进设置，纸签按这种语言出
+  if (process.env.NEXUS_LANG) await page.evaluateOnNewDocument((lang) => localStorage.setItem('nexus:settings', JSON.stringify({ lang })), process.env.NEXUS_LANG);
   await page.setViewport({ width: 1280, height: 720 });
   for (const w of worlds) {
     await page.goto(`http://127.0.0.1:${srv.address().port}/?hud=0&world=${w}`, { waitUntil: 'load' });
