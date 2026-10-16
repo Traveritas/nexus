@@ -3,7 +3,7 @@
 人走在一片**干的海底**上，**水面是头顶一整块平的天花板**（z=0，不动、不挡人）。
 抬头看见的是**倒过来的海底**：脚下这片洞穴沿水面翻上去的倒影，隔着一层慢慢流动的蓝水面。
 倒影里多出几样地上没有的东西（一座塔、一跑楼梯、一圈柱子、一扇门），走到那样东西的正下方，
-地上有一圈沙纹，那里是出入口。正上方一处**圆窗**（水面在那里不反光），透出水面上的天；亮沿上垂下来一根水，抓住它就回家。
+地上有一圈沙纹，那里是出入口。正上方一处**圆窗**（水面在那里不反光），透出水面上的天；圆窗下那圈光的正中立着一只杯子，水浮在杯子上半截——那是回家的路。
 
 - **地**：几块平的海底（厅），用缓坡的沟连着，铺沙纹；只有平面和坡，没有噪声。
 - **墙**：地升进水里的地方。墙是沿可走区域的边拉起来的几排大块面（脚下近乎直立，往上往外倾，
@@ -15,7 +15,7 @@
   潟湖底下的水不反光，从下面看得见岛的底和天。
 
 出入口（来回成对，落点名＝对方世界的 id）：
-- 圆窗亮沿上垂下来的一根水，E「抓住」→ house（at="shoal"）；从家来落在旁边（到达点 house，也是出生点）。
+- 圆窗下那圈光正中的一杯水，E「一杯水」→ house（at="shoal"）；从家来落在旁边（到达点 house，也是出生点）。
 - 岛上的花瓶，E「凑近」→ glasshouse（pf.gate_vase）。
 - 最深那条沟尽头的黑坑 → seeping（占位，世界还没有）。
 - 倒影里那座塔的正下方：一圈沙纹，中间一枚晶体（站点先空着）。
@@ -977,31 +977,18 @@ def sand_ring(name, x, y, z, r, rings=3):
 SPAWN = (-4.0, 38.5, 196.0)
 
 
-def home_thread():
-    """回家：圆窗的亮沿上垂下来一根水，细细的一根一直垂到地上，不滴、不断（水在头顶，这一根往下多走了几步）。
-    挂在亮沿朝出生点的那一边，从出生点一眼看得见；E「抓住」→ 家（茶几上那杯水旁边）"""
-    cx, cy = WIN_C
-    sx, sy, _ = SPAWN
-    d = math.hypot(sx - cx, sy - cy)
-    ux, uy = (sx - cx) / d, (sy - cy) / d
-    tx, ty = cx + ux * (WIN_R + 0.05), cy + uy * (WIN_R + 0.05)
-    tz = floor_at(tx, ty)
-    top = SEA - 0.1
-    look = dict(collide=False, shadow=False, ramp=("blue", "blue_pale", "white"), pattern="flow", emit=0.35)
-    k = fu.Kit()
-    # 从亮沿底下鼓出一小团，收成一根细线往下垂，近地处略粗一点、底下圆着收住（离地 3cm，不落地）
-    k.lathe([(0.0, top + 0.02), (0.2, top), (0.12, top - 0.25), (0.06, top - 0.8), (0.05, tz + 0.6), (0.075, tz + 0.18),
-             (0.06, tz + 0.06), (0.0, tz + 0.03)][::-1], (tx, ty, 0), seg=8)
-    k.build("home_thread", smooth=30, **look)
-    # 地上它垂着的那一点：一圈潮了的深色沙
-    nx.cylinder("home_thread_wet", 0.5, 0.5, 0.015, (tx, ty, tz + 0.004), segments=14, collide=False, shadow=False,
-                a="lilac_dark", b="blue", pattern="plain")
-    nx.portal("portal_home", (tx, ty, tz + 1.2), "house", at="shoal", mode="key", title="抓住", radius=1.2)
+def home_glass():
+    """回家：圆窗正下方那圈光的正中，立着一只到膝盖高的玻璃杯（同家里茶几上那杯、花房那只的样子）：水浮在杯子上半截，杯底空着——
+    这里的缩影，头顶是水、脚下是干的，抬头那个圆洞也像一只杯的口。E「一杯水」→ 家（茶几上那杯水旁边）"""
+    lx, ly, lz = LIT
+    # 光斑那块亮圆片厚 3cm，杯子立在它上面
+    fu.water_glass("home_glass", (lx, ly, lz + 0.032), r=0.2, h=0.56, collide=True)
+    nx.portal("portal_home", (lx, ly, lz + 0.9), "house", at="shoal", mode="key", title="一杯水", radius=1.1)
 
 
 def exits():
     nx.into("places")
-    home_thread()
+    home_glass()
     sx, sy, yaw = SPAWN
     nx.spawn((sx, sy, floor_at(sx, sy)), facing_deg=yaw)
     nx.arrive("house", (sx, sy, floor_at(sx, sy)), facing_deg=yaw)

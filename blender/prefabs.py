@@ -589,10 +589,10 @@ def gate_vase(here, loc, yaw=0.0, **kw):
 
 
 def gate_glass(here, loc, yaw=0.0, **kw):
-    """去浅滩：一只齐腰高的玻璃杯立在地上，水浮在杯子上半截、杯底空着（同家里茶几上那杯），E「一杯水」"""
+    """去浅滩：一只到膝盖高的玻璃杯立在地上，水浮在杯子上半截、杯底空着（同家里茶几上那杯），E「一杯水」"""
     x, y, z = loc
-    fu.water_glass(f"glass_{here}", loc, r=0.42, h=1.15, collide=True)
-    _pair(f"glass_{here}", here, "shoal", loc, yaw, (x, y, z + 1.3), "key", "一杯水", 0.9, **kw)
+    fu.water_glass(f"glass_{here}", loc, r=0.2, h=0.56, collide=True)
+    _pair(f"glass_{here}", here, "shoal", loc, yaw, (x, y, z + 0.9), "key", "一杯水", 1.0, **kw)
 
 
 def gate_vessel(here, loc, yaw=0.0, R=2.5, length=5.5):
