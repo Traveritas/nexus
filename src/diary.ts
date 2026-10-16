@@ -285,7 +285,7 @@ const controlsRight: Draw = (g) => {
     ['Shift', 'kHurry'],
     ['E', 'kUse'],
     ['Tab', 'kDiary'],
-    ['Q', 'kSqueeze'],
+    ['Q', 'kItem'],
     ['F', 'kCarried'],
     ['Esc', 'kFree'],
   ];

@@ -12,7 +12,7 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #ecdde6; }
   body { display: grid; place-items: center; }
   #stage, #glow, #ui { grid-area: 1 / 1; display: block; image-rendering: pixelated; }
-  /* 连续的光（罗盘地图的星）：全分辨率，按「滤色」叠在世界上，纸签在它上面，见 src/mapview.ts */
+  /* 连续的光（一片夜的地图的星）：全分辨率，按「滤色」叠在世界上，纸签在它上面，见 src/mapview.ts */
   #glow { pointer-events: none; image-rendering: auto; mix-blend-mode: screen; }
   #stage { cursor: crosshair; }
   /* UI 画布：一个 UI 像素 ＝ 2 个屏幕像素，见 src/ui.ts */
@@ -47,7 +47,7 @@
   .sitekeys b { display: inline-block; min-width: 1.6em; padding: 3px 0; margin-right: 0.5em; text-align: center; font-weight: 400;
     letter-spacing: 0; border: 1px solid var(--ink); border-radius: 2px; }
   .sitekeys b + b { margin-left: -0.2em; }
-  /* 现实的字（src/realtext.ts）：连着真实站点的名字——晶体（#label），罗盘地图上的站点（#maplabel）。
+  /* 现实的字（src/realtext.ts）：连着真实站点的名字——晶体（#label），一片夜的地图上的站点（#maplabel）。
      和纸签相对：没有纸、没有墨线和影子，四角一副发丝细的取景角，一圈光晕；不翻面，是对焦——
      --f 从 0 到 1：虚 → 清楚，字距收拢，取景角合上来；--a 是在不在（不透明度）。上一行等宽的域名，下一行衬线的站名，拉丁字与汉字分开排 */
   .real {
@@ -77,7 +77,7 @@
   .real .han { font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', SimSun, serif; letter-spacing: calc(0.14em + (1 - var(--f)) * 0.4em); }
   .real .sep { margin: 0 0.2em; opacity: 0.5; font-family: 'Palatino Linotype', Palatino, Georgia, serif; }
   #label { left: 50%; bottom: 12vh; }
-  /* 罗盘地图上的站点跟着星星走，夜里是浅墨 */
+  /* 一片夜的地图上的站点跟着星星走，夜里是浅墨 */
   #maplabel { --ink: #fbf9f7; --glow: #3a3350; text-shadow: 0 0 4px #1d1a2b, 0 0 12px var(--glow); }
   /* 开场（src/intro.ts）：标题机位下方的「点击醒来」，像素字（还在梦里），一个 UI 像素 ＝ 2 个屏幕像素；开场时不显示调试信息与晶体名 */
   #intro { position: fixed; left: 50%; bottom: 14vh; transform: translateX(-50%); pointer-events: none; image-rendering: pixelated; }

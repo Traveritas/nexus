@@ -1,4 +1,4 @@
-/* 世界：名字（中英）、所在的主域、星座图上的位置，以及「走过的连接」「有站点的世界」的存档（罗盘的地图用）。 */
+/* 世界：名字（中英）、所在的主域、星座图上的位置，以及「走过的连接」「有站点的世界」的存档（一片夜的地图用）。 */
 import { l, type L } from './i18n';
 
 /** 世界的名字；没写的显示原名 */
@@ -28,13 +28,13 @@ export const WORLD_NAMES: Record<string, L> = {
 export const worldName = (w: string) => (WORLD_NAMES[w] ? l(WORLD_NAMES[w]) : w);
 
 /** 现实：醒着的那几间（干净低模的世界）。它们自成一处，不在梦的网里——
-    不进罗盘的星座、不记连接、不列进日记的「去过」；在这里身上的东西拿不出来（看不了、拿不起、用不了） */
+    不进地图的星座、不记连接、不列进日记的「去过」；在这里身上的东西拿不出来（看不了、拿不起、用不了） */
 export const REALITY = new Set(['wake_fragment', 'wake_white', 'wake_museum']);
 export const isReality = (w: string) => REALITY.has(w);
 /** 梦里去过的（日记、星座用） */
 export const dreamt = (visited: string[]) => visited.filter((w) => !isReality(w));
 
-/** 主域：风格差别大的一大片梦，里面有多个世界（docs/realms.md）。罗盘头顶的星图只画此刻所在的主域；
+/** 主域：风格差别大的一大片梦，里面有多个世界（docs/realms.md）。地图头顶的星图只画此刻所在的主域；
     通往别的主域的出入口另有一种星。现实不在任何主域里；没写进来的世界（样板、测试）也不在 */
 export const REALMS: Record<string, { name: L; worlds: string[] }> = {
   shallows: {

@@ -69,7 +69,7 @@ const STR = {
   kHurry: { zh: '快走', en: 'Hurry' },
   kUse: { zh: '互动', en: 'Use' },
   kDiary: { zh: '日记', en: 'Diary' },
-  kSqueeze: { zh: '捏住手里的', en: 'Squeeze' },
+  kItem: { zh: '举起 · 用', en: 'Raise/Use' },
   kCarried: { zh: '看看身上的', en: 'Look over' },
   kFree: { zh: '放开鼠标', en: 'Free mouse' },
   // 物品
@@ -78,7 +78,7 @@ const STR = {
   releaseToHold: { zh: '松开 F 拿起', en: 'Let go of F to hold' },
   carryingNothing: { zh: '身上还没有东西', en: 'Not carrying anything' },
   awakeNothing: { zh: '醒着，什么也没带出来', en: 'Awake. Nothing came with you' },
-  // 罗盘的地图
+  // 一片夜的地图
   site: { zh: '站点', en: 'Site' },
   here: { zh: '此刻', en: 'Now' },
   // 窗前的站点卡片

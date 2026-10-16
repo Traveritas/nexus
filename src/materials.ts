@@ -73,9 +73,13 @@ export const shared = {
   /** 水波光斑（atmosphere 的 nx_caustics）：x 强度（0 ＝ 关）、y 水面高（three 的 y）、z 一格网纹多大（米）、w 离水面多深亮线细一半（米）。
       水面以下、照得到太阳的面上一层慢慢流动的亮网纹（沿太阳方向从水面投下来） */
   uCaustic: { value: new THREE.Vector4(0, 0, 3, 12) },
+  /** 远处一格在世界图上占几个像素（2^格子级数 >> 世界图缩了几级）：自己按格子画的东西（一片夜）跟管线的格子对齐 */
+  uCellPx: { value: 4 },
+  /** 世界图多大（像素）：自己按格子画的东西把视空间的点换算到格子上用 */
+  uViewPx: { value: new THREE.Vector2(1, 1) },
 };
 
-const COMMON = /* glsl */ `
+export const COMMON = /* glsl */ `
 vec2 octEncode(vec3 n) {
   n /= abs(n.x) + abs(n.y) + abs(n.z);
   return n.z >= 0.0 ? n.xy : (1.0 - abs(n.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0, n.y >= 0.0 ? 1.0 : -1.0);
@@ -479,7 +483,7 @@ void main() {
 
 /** 器物：会动的小东西（物品的装置、拿在手里的、环绕展示的）。三档受光直接取 ramp 的暗、中、亮三色，
     不铺世界空间的纹素格——跟着镜头走、自己转都不会让纹样游动。像素化、落色板、描边照样由管线做。
-    glow 0..1：整体往亮处挪（1 ＝ 全亮），捏到底时发光用 */
+    glow 0..1：整体往亮处挪（1 ＝ 全亮），用到底时发光用 */
 export function charm(ramp: [number, number, number], id = newId()) {
   return new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,

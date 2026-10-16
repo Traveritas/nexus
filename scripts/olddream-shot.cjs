@@ -1,7 +1,7 @@
 /* 旧梦的入口与主域星图：先 npm run build，再 node scripts/olddream-shot.cjs
    1. 家家家里那扇转了 32° 的孤门：关着时穿过门框不算；推开以后穿过去 → 旧家
-   2. 旧家里捏罗盘：本世界的星、头顶只剩旧梦的星座
-   3. 回到家里捏罗盘：通往旧梦的那颗星带环；头顶浅梦的星座外伸出一截通往旧梦的线
+   2. 旧家里用一片夜：本世界的星、头顶只剩旧梦的星座
+   3. 回到家里用一片夜：通往旧梦的那颗星带环；头顶浅梦的星座外伸出一截通往旧梦的线
    输出 .shots/olddream-* */
 const path = require('path');
 const fs = require('fs');
@@ -83,7 +83,7 @@ srv.listen(0, '127.0.0.1', async () => {
   console.log('now in', await world());
   await shot('home');
 
-  // 旧家里捏罗盘
+  // 旧家里用一片夜
   await page.evaluate(() => { window.__nexus.player.pitch = -0.2; });
   await key('KeyQ', true);
   await wait(850);

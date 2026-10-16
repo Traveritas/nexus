@@ -1,8 +1,8 @@
-/* 物品系统：世界里摆着的物品、怎么得到、得到时的演出、存档、拿在手里与「捏」、环绕展示（F）。
+/* 物品系统：世界里摆着的物品、怎么得到、得到时的演出、存档、拿在手里与使用、环绕展示（F）。
    - 摆放来自场景（nx_type=item）；已经有了的不再摆出来。物品有 world() 就摆它自己的装置，没有就是一张浮着的纸片。
    - pick：走近、看着它，纸签「拾起」，按 E；reach：走进范围就得到；custom：物品自己的 check() 满足就得到。
    - 默认演出：东西变成一张卡片，翻过来飞到眼前，四周一下子解析清楚；停一会儿，缩小飞进右下角，日记那里闪一下。
-   - 拿着的东西平时收着；按住 Q 从画面右下（手边）举起来、捏紧，松开放下。它是 3D 的，画在手边场景（hand）里，
+   - 拿着的东西平时收着；短按 Q 从画面右下（手边）举起来 / 收下，按住 Q（过了短按的时间窗）使用，松开回到按下前的样子。它是 3D 的，画在手边场景（hand）里，
      和世界一起像素化、落色板、描边（见 pipeline 的 overlay）。
    - 按住 F：身上的东西排成一道弧，围在眼前齐眼高的地方；世界犯困，正看着的那件清醒过来、挂上名字；松开 F 拿起它。 */
 import * as THREE from 'three';
@@ -57,6 +57,8 @@ const R_END = 3.4;
 
 /** 手里的东西：离眼睛多远、往右往下偏多少（米），缩放 */
 const HAND = { fwd: 0.5, right: 0.19, down: 0.11, scale: 0.75 };
+/** 短按 Q 的时间窗（秒）：这么快松开算「举起 / 收下」，再长算「按住用」 */
+const TAP = 0.22;
 /** 环绕：半径、相邻两件隔多少弧度、比眼睛低多少、缩放 */
 const RING = { radius: 0.95, step: 0.7, drop: 0.3, scale: 0.85 };
 
@@ -78,7 +80,7 @@ function showOf(def: ItemDef): Shown {
     const s = def.world();
     s.object.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.isMesh) m.userData.shadowMat ??= shadowVariant(m.material as THREE.ShaderMaterial);
+      if (m.isMesh && !m.userData.noShadow) m.userData.shadowMat ??= shadowVariant(m.material as THREE.ShaderMaterial);
     });
     return s;
   }
@@ -100,7 +102,11 @@ export class ItemSystem {
   private world = '';
   private reveal: Reveal | null = null;
   private model: { id: string; m: HeldModel } | null = null;
-  private want = false;
+  /** 举着（短按 Q 切换）；按着 Q、按了多久、按下前举没举着 */
+  private up = false;
+  private key = false;
+  private keyT = 0;
+  private wasUp = false;
   private raise = 0;
   private press = 0;
   // 环绕
@@ -113,7 +119,7 @@ export class ItemSystem {
   /** 在现实里：身上的东西拿不出来——不能举、不能环绕，拿着的那件也收着；按 F 只出一张纸签 */
   private sealed = false;
   private sealedT = 0;
-  /** 捏到底时（主循环接上罗盘的地图） */
+  /** 用到底时（主循环接上一片夜的地图） */
   onBloom?: (id: string) => void;
 
   constructor(
@@ -149,7 +155,7 @@ export class ItemSystem {
   /** 拿起一件（null ＝ 收起来） */
   hold(id: string | null) {
     this.held = id && this.has(id) ? id : null;
-    this.want = false;
+    this.stow();
     this.save();
   }
 
@@ -170,7 +176,7 @@ export class ItemSystem {
     this.world = world;
     this.sealed = isReality(world);
     if (this.sealed) {
-      this.want = false;
+      this.stow();
       this.ringWant = false;
     }
     for (const place of level.items) this.place(place);
@@ -243,9 +249,24 @@ export class ItemSystem {
     return ease(this.ringE);
   }
 
-  /** 按住 Q：举起来捏；松开放下 */
+  /** Q：短按（TAP 秒内松开）举起 / 收下；按住超过 TAP 开始用，松开回到按下前的样子。按下时就先举起来，不等判断 */
   use(down: boolean) {
-    this.want = down && !this.sealed && !!this.held && !this.reveal && !this.ringActive;
+    if (down) {
+      if (this.sealed || !this.held || this.reveal || this.ringActive) return;
+      this.key = true;
+      this.keyT = 0;
+      this.wasUp = this.up;
+      this.up = true;
+    } else if (this.key) {
+      this.key = false;
+      this.up = this.keyT < TAP ? !this.wasUp : this.wasUp;
+    }
+  }
+
+  /** 收下：手里的东西放回去，按着的 Q 也不算了（打开日记、换世界、环绕时） */
+  stow() {
+    this.up = false;
+    this.key = false;
   }
 
   /** 按住 F：环绕展示；松开时拿起正看着的那一件 */
@@ -260,7 +281,7 @@ export class ItemSystem {
         this.emptyT = 1.4;
         return;
       }
-      this.want = false;
+      this.stow();
       this.ringWant = true;
       for (const r of this.ring) r.shown.object.removeFromParent();
       camera.getWorldDirection(fwd);
@@ -281,7 +302,7 @@ export class ItemSystem {
   update(dt: number, ctx: ItemCtx, camera: THREE.Camera) {
     // 摆着的：纸片浮动、朝人；装置自己动；到达型与条件型在这里判断
     for (const pl of [...this.places]) {
-      if (pl.shown) pl.shown.update?.(dt, ctx.t);
+      if (pl.shown) pl.shown.update?.(dt, ctx);
       else this.drift(pl, ctx.t, camera);
       if (this.reveal) continue;
       if (pl.place.mode === 'reach' && ctx.feet.distanceTo(pl.place.pos) < pl.place.radius + 0.9) this.acquire(pl, camera);
@@ -313,10 +334,11 @@ export class ItemSystem {
       this.model.m.object.scale.setScalar(HAND.scale);
       this.hand.add(this.model.m.object);
     }
-    this.raise = this.want ? Math.min(1, this.raise + dt / 0.3) : Math.max(0, this.raise - dt / 0.25);
-    // 举到位了才开始捏
-    const squeezing = this.want && this.raise > 0.8;
-    this.press = squeezing ? Math.min(1, this.press + dt / 0.5) : Math.max(0, this.press - dt / 0.25);
+    if (this.key) this.keyT += dt;
+    this.raise = this.up ? Math.min(1, this.raise + dt / 0.3) : Math.max(0, this.raise - dt / 0.25);
+    // 按住过了短按的时间窗、举到位了才开始用
+    const active = this.key && this.keyT >= TAP && this.raise > 0.8;
+    this.press = active ? Math.min(1, this.press + dt / 0.8) : Math.max(0, this.press - dt / 0.25);
     if (!this.model) return;
     const o = this.model.m.object;
     o.visible = this.raise > 0;
@@ -329,7 +351,7 @@ export class ItemSystem {
       .addScaledVector(right, HAND.right)
       .addScaledVector(up, -HAND.down - (1 - e) * 0.3);
     o.quaternion.copy(camera.quaternion).multiply(tilt);
-    if (this.model.m.update(dt, this.press, ctx.t)) {
+    if (this.model.m.update(dt, this.press, ctx)) {
       itemDef(this.model.id)?.bloom?.();
       this.onBloom?.(this.model.id);
     }
@@ -350,7 +372,7 @@ export class ItemSystem {
       o.position.set(-Math.sin(r.angle), 0, -Math.cos(r.angle)).multiplyScalar(RING.radius * e).add(camera.position);
       o.position.y += -RING.drop - 0.32 * RING.scale;
       o.rotation.set(0, r.angle, 0);
-      r.shown.update?.(dt, ctx.t);
+      r.shown.update?.(dt, ctx);
       if (this.ringWant) {
         tmp.copy(o.position).setY(o.position.y + 0.32 * RING.scale).sub(camera.position).normalize();
         const a = Math.acos(THREE.MathUtils.clamp(tmp.dot(fwd), -1, 1));

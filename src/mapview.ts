@@ -1,4 +1,4 @@
-/* 罗盘的地图：捏到底，世界从手边那一点暗下去（pipeline 的 dim），星星一颗颗亮起来。
+/* 一片夜的地图：用到底，世界从手边那一点暗下去（pipeline 的 dim），星星一颗颗亮起来。
    - 星是连续的光：画在全分辨率的 #glow 画布上（叠加发亮），一颗亮核、一团光晕、细长的星芒；亮度慢慢呼吸，偶尔星芒一长。
      亮起时先闪一下再落定。星光落到暗下去的世界上是像素的：星的周围按格子撤回一两档暗（pipeline 的 glow）。
    - 本世界：每个出入口（传送物、缝）与站点（晶体）一颗星，隔着墙也看得见；不标物品。
@@ -8,7 +8,7 @@
        站点的名字连着真实的站点，是「现实的字」（#maplabel，src/realtext.ts），换到它时对一次焦。
    - 抬头看天：只画此刻所在的主域——去过的世界是天上的星座，走过的连接是星与星之间两头渐隐的细线，展开时一笔画出来；
      有站点的世界旁边一颗小金星。走过的、通往别的主域的连接：从那颗星往星座外面伸出一截冷绿的线，末端一颗带环的星。
-   - 开着时照常走、转头；再捏到底一次收起来（暗色缩回手边）；换世界时直接收起。
+   - 开着时照常走、转头；再用到底一次收起来（暗色缩回手边）；换世界时直接收起。
    每帧先 layout（世界画之前，像素的星光要用），再 draw。 */
 import * as THREE from 'three';
 import type { Level } from './level';
@@ -77,6 +77,31 @@ interface SkyStar {
   seed: number;
   /** 星座外面那颗：通往别的主域（wld 是那边的世界） */
   gate?: boolean;
+}
+
+/** 本世界的一个出入口：站点（晶体）· 去过的 · 没去过的 · 通往别的主域的 */
+export interface Exit {
+  pos: THREE.Vector3;
+  kind: 'site' | 'seen' | 'unseen' | 'cross';
+  /** 通往的世界（站点没有） */
+  to: string;
+  title?: string;
+  url?: string;
+}
+
+/** 本世界的出入口：地图上的星、一片夜里的小星都按它 */
+export function exitsOf(level: Level, world: string, visited: string[]): Exit[] {
+  const out: Exit[] = [];
+  for (const e of level.entrances) if (e.url) out.push({ pos: e.crystal.mesh.position, kind: 'site', to: '', title: e.title, url: e.url });
+  const realm = realmOf(world);
+  const exit = (pos: THREE.Vector3, to: string) => {
+    const other = realmOf(to);
+    out.push({ pos, to, kind: realm && other && other !== realm ? 'cross' : visited.includes(to) ? 'seen' : 'unseen' });
+  };
+  for (const p of level.portals) exit(p.pos, p.to);
+  // 缝（家的大门）也是出入口：星在门洞正中
+  for (const s of level.seams) exit(s.pos.clone().setY(s.pos.y + s.h / 2), s.to);
+  return out;
 }
 
 const tmp = new THREE.Vector3();
@@ -197,6 +222,11 @@ export class MapView {
     this.name = new RealName(label);
   }
 
+  /** 开着（或正要开）：收起的那一下已经不算 */
+  get open() {
+    return this.want;
+  }
+
   get active() {
     return this.want || this.e > 0;
   }
@@ -257,23 +287,16 @@ export class MapView {
     // ── 本世界 ──
     let seed = 1;
     const all: Star[] = [];
-    for (const e of c.level.entrances) {
-      if (!e.url) continue;
-      all.push(this.place(e.crystal.mesh.position, camera, LOOK.site, e.title || t('site'), true, seed++, e.url));
-    }
     const realm = realmOf(c.world);
-    const exit = (pos: THREE.Vector3, to: string) => {
-      const seen = c.visited.includes(to);
-      const other = realmOf(to);
-      if (realm && other && other !== realm) {
-        const s = this.place(pos, camera, LOOK.cross, `→ ${realmName(other)} · ${seen ? worldName(to) : '？'}`, false, seed++);
+    for (const x of exitsOf(c.level, c.world, c.visited)) {
+      const name = x.kind === 'unseen' || !c.visited.includes(x.to) ? '？' : worldName(x.to);
+      if (x.kind === 'site') all.push(this.place(x.pos, camera, LOOK.site, x.title || t('site'), true, seed++, x.url));
+      else if (x.kind === 'cross') {
+        const s = this.place(x.pos, camera, LOOK.cross, `→ ${realmName(realmOf(x.to)!)} · ${name}`, false, seed++);
         s.cross = true;
         all.push(s);
-      } else all.push(this.place(pos, camera, seen ? LOOK.seen : LOOK.unseen, `→ ${seen ? worldName(to) : '？'}`, false, seed++));
-    };
-    for (const p of c.level.portals) exit(p.pos, p.to);
-    // 缝（家的大门）也是出入口：星在门洞正中
-    for (const s of c.level.seams) exit(tmp.copy(s.pos).setY(s.pos.y + s.h / 2).clone(), s.to);
+      } else all.push(this.place(x.pos, camera, LOOK[x.kind], `→ ${name}`, false, seed++));
+    }
     let best = 60;
     const margin = 10;
     for (const s of all) {

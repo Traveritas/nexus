@@ -1,5 +1,5 @@
 /* 物品截图：先 npm run build，再 node scripts/items-shot.cjs
-   清空物品存档，走到家里茶几上的罗盘怀表跟前：纸签 → 按 E 拾起 → 得到的演出 → 按住 Q 举起、捏紧 → 按住 F 环绕展示 → 日记「拾得」页。输出 .shots/items-* */
+   清空物品存档，走到家里茶几上的一片夜跟前：纸签 → 按 E 拾起 → 得到的演出 → 按住 Q 举起、使用 → 按住 F 环绕展示 → 日记「拾得」页。输出 .shots/items-* */
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -37,7 +37,7 @@ srv.listen(0, '127.0.0.1', async () => {
   await wait(600);
   const shot = (name) => page.screenshot({ path: path.join(OUT, `items-${name}.png`) });
 
-  // 家里客厅的茶几上摆着罗盘怀表（blender/scenes/home.py）；站在茶几南边低头看它
+  // 家里客厅的茶几上浮着一片夜（blender/scenes/home.py）；站在茶几南边低头看它
   for (let i = 0; i < 3; i++) { await wait(500); await shot('world-' + i); }
   await page.evaluate(() => window.__nexus.keys('KeyE', true));
   for (let i = 0; i < 5; i++) { await wait(90); await shot(`get-${i}`); }

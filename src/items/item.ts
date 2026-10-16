@@ -4,25 +4,33 @@
    模型一律以米为单位，用世界的材质（会动的用 materials.ts 的 charm），由管线统一像素化、落色板、描边。 */
 import type * as THREE from 'three';
 import type { L } from '../i18n';
-import { compass } from './compass';
+import type { Exit } from '../mapview';
+import { nightPiece } from './night';
 
 export interface ItemCtx {
   world: string;
   feet: THREE.Vector3;
+  /** 眼睛在哪（一片夜朝着人，星按「从人看过去」摆） */
+  eye: THREE.Vector3;
+  camera: THREE.PerspectiveCamera;
   t: number;
+  /** 本世界的出入口（一片夜里的小星按它摆） */
+  exits: Exit[];
+  /** 地图开着（一片夜碎开了、等着合回来） */
+  mapOpen: boolean;
 }
 
 /** 一个摆出来的样子：模型，加上每帧的动画（可选） */
 export interface Shown {
   object: THREE.Object3D;
-  update?(dt: number, t: number): void;
+  update?(dt: number, ctx: ItemCtx): void;
 }
 
-/** 拿在手里：画在手边（画面右下），按住 Q 时举起来、捏紧 */
+/** 拿在手里：画在手边（画面右下），按住 Q 时举起来、使用。怎么用（捏、按、转……）由各件自己的动作表现 */
 export interface HeldModel {
   object: THREE.Object3D;
-  /** press：捏紧的程度 0..1（按住 Q 时往 1 走）。返回 true ＝ 这一帧捏到了底 */
-  update(dt: number, press: number, t: number): boolean;
+  /** press：用到了几成 0..1（按住 Q 时往 1 走）。返回 true ＝ 这一帧用到了底 */
+  update(dt: number, press: number, ctx: ItemCtx): boolean;
 }
 
 export interface ItemDef {
@@ -38,12 +46,12 @@ export interface ItemDef {
   world?(): Shown;
   /** nx_get=custom 时：条件满足就得到 */
   check?(ctx: ItemCtx): boolean;
-  /** 拿在手里的样子与「捏」的动作（原点在装置的中心） */
+  /** 拿在手里的样子与使用时的动作（原点在装置的中心） */
   held(): HeldModel;
-  /** 捏到底时发生的事（没写就只有模型自己的反应） */
+  /** 用到底时发生的事（没写就只有模型自己的反应） */
   bloom?(): void;
 }
 
-export const ITEMS: ItemDef[] = [compass];
+export const ITEMS: ItemDef[] = [nightPiece];
 
 export const itemDef = (id: string) => ITEMS.find((d) => d.id === id);

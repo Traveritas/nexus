@@ -9,7 +9,7 @@ import { Ui, UI_SCALE, loadUiFont } from './ui';
 import { PromptTag } from './prompt';
 import { Diary, night, type Settings } from './diary';
 import { ItemSystem, type Promptable } from './items/system';
-import { MapView } from './mapview';
+import { MapView, exitsOf } from './mapview';
 import { SiteCard } from './sitecard';
 import { dreamt, edges, isReality, recordEdge, recordSite, sites } from './worlds';
 import { RealName } from './realtext';
@@ -24,7 +24,7 @@ import { Through, seamMatrix, seamSide, seamTube, seamTurn } from './seam';
    晶体（入口）通往真实的站点：走进去，整屏解析到底、化白。
    开场：第一次从根地址进来时停在标题的机位上，「点击醒来」以后木条掉进虚空、视角滑到床边（src/intro.ts）；?intro=1 强制再放一次，?intro=0 不放
    查询串：?pos=x,y,z（脚底）&yaw=度&pitch=度  ?freeze=1  ?hud=0  ?res=auto|full|half|quarter|eighth|sixteenth 世界的渲染分辨率  ?sky=主题（覆盖世界里的，见 docs/sky.md）  ?ramp=0..1 自动三色明暗的强度（默认 0.3）
-   键：E 互动 · Q 按住捏手里的东西 · F 按住看看身上的 · Tab 日记（醒来、回到开场的 NEXUS 在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
+   键：E 互动 · Q 短按举起 / 收下手里的东西、按住使用 · F 按住看看身上的 · Tab 日记（醒来、回到开场的 NEXUS 在日记里） · 1 原始世界 · 2 解析度场染色 · 3 色板 · 4 描边（关 / 格 / 细线） · 5 锁级 · 6 自动三色明暗强度 · G 飞行 · H 提示 · K 换天
    window.__nexus 供截图、测试脚本用 */
 
 const q = new URLSearchParams(location.search);
@@ -59,7 +59,7 @@ const ui = new Ui(document.getElementById('ui') as HTMLCanvasElement);
 const fontReady = loadUiFont();
 const tag = new PromptTag(ui);
 const items = new ItemSystem(ui, night);
-/** 罗盘的地图：捏到底开、再捏到底收 */
+/** 一片夜的地图：用到底开、再用到底收 */
 const map = new MapView(ui, document.getElementById('maplabel')!, document.getElementById('glow') as HTMLCanvasElement);
 items.onBloom = (id) => {
   if (id === 'compass') map.toggle(camera);
@@ -120,7 +120,7 @@ function markVisited(name: string) {
   }
 }
 markVisited(world);
-/** 这个世界有站点（晶体）就记下来：罗盘的星座图在它旁边点一颗金星 */
+/** 这个世界有站点（晶体）就记下来：地图的星座在它旁边点一颗金星 */
 function noteSites() {
   if (level.entrances.some((e) => e.url)) recordSite(world);
 }
@@ -322,7 +322,7 @@ interface Travel {
   ready: Level | null | undefined;
   veilFrom: THREE.Color;
   veilTo: THREE.Color;
-  /** 从哪个世界来；是不是穿过传送物来的（是的话记一条走过的连接，罗盘的星座图用） */
+  /** 从哪个世界来；是不是穿过传送物来的（是的话记一条走过的连接，地图的星座用） */
   from: string;
   via: boolean;
   /** 到了以后停在开场的标题上（日记里点 NEXUS） */
@@ -528,7 +528,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Tab') {
     e.preventDefault();
     if (!e.repeat && !travel && !entering && !items.busy && !items.ringActive) {
-      items.use(false);
+      items.stow();
       book.toggle();
     }
     return;
@@ -548,7 +548,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyK') level.sky.set(SKY_NAMES[(SKY_NAMES.indexOf(level.sky.name) + 1) % SKY_NAMES.length]);
   if (e.code === 'KeyR' && e.shiftKey) respawn();
   if (e.code === 'KeyE' && !e.repeat) interact = true;
-  // 按住 Q：把手里的东西举到眼前、捏紧；松开放下（醒来在日记「记录」那页）
+  // Q：短按举起 / 收下手里的东西，按住使用（醒来在日记「记录」那页）
   if (e.code === 'KeyQ' && !e.repeat) items.use(true);
   // 按住 F：身上的东西排成一道弧围在眼前；松开拿起正看着的那件
   if (e.code === 'KeyF' && !e.repeat) items.showRing(true, camera);
@@ -559,7 +559,7 @@ addEventListener('keyup', (e) => {
   if (e.code === 'KeyF') items.showRing(false, camera);
 });
 addEventListener('blur', () => {
-  items.use(false);
+  items.stow();
   items.showRing(false, camera);
 });
 
@@ -950,7 +950,7 @@ function frame(dt: number) {
   camera.updateMatrixWorld();
   stepGaze(dt);
 
-  items.update(dt, { world, feet: player.feet, t }, camera);
+  items.update(dt, { world, feet: player.feet, eye: camera.position, t, exits: exitsOf(level, world, dreamt(visited())), mapOpen: map.open, camera }, camera);
   checkPortals();
   // 纸签挂在正对着的那一件上；按 E 用的就是它
   const opt = pickFocus();
@@ -975,6 +975,8 @@ function frame(dt: number) {
   pipe.setClean(level.style === 'clean');
   // 世界自己的格子粗细与色板子集（家的室外：8px、只用几枚冷色）
   pipe.setLook(level.look.grid, level.look.mask, level.look.lit, level.look.black);
+  shared.uCellPx.value = Math.max(1, (1 << level.look.grid) >> pipe.worldShift);
+  shared.uViewPx.value.set(pipe.size.w >> pipe.worldShift, pipe.size.h >> pipe.worldShift);
   // 开场：标题是梦的画面，滑向床边时醒过来
   pipe.setDream(Math.max(intro?.dream ?? 0, travelDream));
   // 缝在眼前：世界画完以后，透过门洞把那边也画进同一张世界图
@@ -1007,7 +1009,7 @@ function updateHud() {
   hud.textContent =
     `NEXUS · ${world}   ${fps.toFixed(0)} fps   ${pipe.size.w}×${pipe.size.h}${pipe.worldShift ? ` · 世界 1/${1 << pipe.worldShift}` : ''}   ` +
     `脚底 ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}  朝向 ${((player.yaw / deg) % 360).toFixed(0)}°${player.fly ? '  飞行' : ''}\n` +
-    `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 按住捏手里的 · F 按住看看身上的 · Tab 日记 · Esc 释放 · Shift+R 回到到达处\n` +
+    `点击画面锁定视角 · WASD / 滚轮 行走 · Space 跳 · Shift 快走 · E 互动 · Q 举起（按住用） · F 按住看看身上的 · Tab 日记 · Esc 释放 · Shift+R 回到到达处\n` +
     `1 原始 ${on(f.raw)} · 2 场 ${on(f.field)} · 3 色板 ${on(f.palette)} · 4 描边 ${['关', '格', '细线'][f.outline]} · 5 锁级 ${f.lock < 0 ? '自动' : f.lock} · 6 三色 ${shared.uAutoRamp.value} · G 飞行 · H 隐藏 · K 天：${skyLabel(level.sky.name)}`;
 }
 

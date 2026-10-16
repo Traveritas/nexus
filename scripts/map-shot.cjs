@@ -1,5 +1,5 @@
-/* 罗盘地图截图：先 npm run build，再 node scripts/map-shot.cjs
-   预置存档（去过的世界、走过的连接、手里拿着罗盘），在家里捏到底：暗圈扩散 → 本世界的星 → 抬头看星座 → 去回廊看站点。输出 .shots/map-* */
+/* 一片夜的地图截图：先 npm run build，再 node scripts/map-shot.cjs
+   预置存档（去过的世界、走过的连接、手里拿着一片夜），在家里用到底：暗圈扩散 → 本世界的星 → 抬头看星座 → 去回廊看站点。输出 .shots/map-* */
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
