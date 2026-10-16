@@ -291,6 +291,13 @@ export class Player {
       pos.set(this.seg.start.x, this.seg.start.y - R, this.seg.start.z);
       if (!moved) break;
     }
+    // 卡在窄缝里：两边棱各自都太陡、不算能站，但水平推力互相抵掉、合起来把人托住了。
+    // 合起来的推出方向够朝上，就也算站着（能跳、能迈出去）；单独一面陡坡的合力仍是斜的，照样滑
+    if (!grounded) {
+      const net = pos.clone().sub(p);
+      const len = net.length();
+      if (len > 1e-6 && net.y / len > PLAYER.floorY) grounded = true;
+    }
     return { pos, grounded };
   }
 }
