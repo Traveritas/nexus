@@ -294,13 +294,13 @@ def gates():
     nx.portal("portal_bed", (2.5, 8.11, F + 0.8), "descent", at="house", mode="key", title="睡", radius=1.3)
     nx.arrive("descent", (3.75, 7.5, F + 0.02), facing_deg=180)
     nx.arrive("wake", (3.1, 6.2, F + 0.02), facing_deg=50)
-    # 书桌上摊开一本书 → 断梯（E「翻开」）：台灯照着的那块
+    # 书桌上摊开一本书 → 断梯（E「翻开」）：台灯照着的那块。椅子在 +X、人朝 −X 坐，书脊沿 X 朝着人
     bx, by, bz = 0.38, 7.32, F + 0.74
-    nx.box("book_cover", (0.26, 0.36, 0.012), (bx, by, bz + 0.002), collide=False, a="violet", b="violet_deep", pattern="plain")
+    nx.box("book_cover", (0.36, 0.26, 0.012), (bx, by, bz + 0.002), collide=False, a="violet", b="violet_deep", pattern="plain")
     for s in (-1, 1):
-        nx.box(f"book_page{s}", (0.115, 0.33, 0.014), (bx + s * 0.064, by, bz + 0.016), rot=(0, s * -6, 0), collide=False,
+        nx.box(f"book_page{s}", (0.33, 0.115, 0.014), (bx, by + s * 0.064, bz + 0.016), rot=(s * 6, 0, 0), collide=False,
                a="white", b="mist", pattern="bands")
-    nx.box("book_ribbon", (0.012, 0.012, 0.1), (bx + 0.02, by - 0.17, bz - 0.09), collide=False, a="pink", b="rose", pattern="plain")
+    nx.box("book_ribbon", (0.07, 0.012, 0.003), (bx + 0.21, by + 0.004, bz + 0.001), collide=False, a="pink", b="rose", pattern="plain")
     nx.portal("portal_book", (bx, by, bz + 0.2), "stair", at="house", mode="key", title="翻开", radius=0.9)
     nx.arrive("stair", (1.7, 6.55, F + 0.02), facing_deg=-60)
     # 边几上插着花的瓶 → 花房（E「凑近」）

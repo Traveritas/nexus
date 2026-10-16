@@ -201,11 +201,12 @@ def build(extent=EXTENT):
     for i, (dx, dy) in enumerate([(-0.33, -0.72), (-0.33, 0.72), (0.33, -0.72), (0.33, 0.72)]):
         nx.box(f"desk_leg{i}", (0.07, 0.07, 0.72), (-8.45 + dx, 2.2 + dy, F), **WOOD_DARK)
     top = F + 0.77
-    # 摊开的书：两页微微拱起
-    nx.box("book_cover", (0.36, 0.52, 0.02), (-8.4, 2.25, top), rot=(0, 0, 8), collide=False, a="violet", b="violet_deep", pattern="plain")
+    # 摊开的书：两页微微拱起；椅子在 +X、人朝 −X 坐，书脊沿 X 朝着人
+    nx.box("book_cover", (0.52, 0.36, 0.02), (-8.4, 2.25, top), rot=(0, 0, 8), collide=False, a="violet", b="violet_deep", pattern="plain")
+    sn, cs = math.sin(math.radians(8)), math.cos(math.radians(8))
     for s in (-1, 1):
-        nx.box(f"book_page{s}", (0.17, 0.48, 0.03), (-8.4 + s * 0.085, 2.25, top + 0.02), rot=(0, s * -6, 8), collide=False,
-               a="white", b="mist", pattern="bands")
+        nx.box(f"book_page{s}", (0.48, 0.17, 0.03), (-8.4 - s * 0.085 * sn, 2.25 + s * 0.085 * cs, top + 0.02), rot=(s * 6, 0, 8),
+               collide=False, a="white", b="mist", pattern="bands")
     nx.portal("portal_book", (-8.4, 2.25, top + 0.3), "procession", at="home", mode="key", title="翻开", radius=0.9)
     nx.arrive("procession", (-6.4, 2.2, F), facing_deg=90)
     fu.desk_lamp("desk_lamp", (-8.6, 1.6, top), -13)
