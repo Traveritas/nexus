@@ -17,7 +17,7 @@
 出入口（来回成对，落点名＝对方世界的 id）：
 - 圆窗下那圈光正中的一杯水，E「一杯水」→ house（at="shoal"）；从家来落在旁边（到达点 house，也是出生点）。
 - 岛上的花瓶，E「凑近」→ glasshouse（pf.gate_vase）。
-- 最深那条沟尽头的黑坑 → seeping（占位，世界还没有）。
+- 最深那条沟尽头的黑坑：沁泫池（seeping）的位置，坑先留着当景，世界还没做、通往那边的传送物也先不放。
 - 倒影里那座塔的正下方：一圈沙纹，中间一枚晶体（站点先空着）。
 
 运行：node scripts/blender.cjs build shoal，网页 ?world=shoal
@@ -998,13 +998,13 @@ def exits():
     sand_ring("ring_tower", tx, ty, tz, 2.6)
     nx.entrance("crystal_shoal", (tx, ty, tz + 1.6), "", "")
 
+    # 沁泫池（seeping）的坑先当景留着；通往那边的传送物不放（世界还没做，放了也是原路退回）
     gx, gy = HALLS["S"][0]
     gz = floor_at(gx, gy)
     nx.cylinder("seep_hole", 2.0, 2.0, 0.6, (gx, gy, gz - 0.58), segments=32,
                 ramp=("ink", "ink", "violet_deep"), pattern="plain")
     nx.torus("seep_rim", 2.15, 0.16, (gx, gy, gz + 0.04), major_seg=32, minor_seg=6,
              collide=False, shadow=False, ramp=("violet_deep", "violet", "lilac_dark"), pattern="plain")
-    nx.portal("portal_seeping", (gx, gy, gz + 1.0), "seeping", at="shoal", mode="walk", radius=1.2)
 
 
 def build(extent=EXTENT):
