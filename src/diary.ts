@@ -42,7 +42,7 @@ const P = (i: number) => PALETTE[i];
 export interface Settings {
   sens: number;
   hud: boolean;
-  /** 世界的渲染分辨率：自动（按屏幕大小）· 精细（全分辨率）· 流畅（半）· 极速（四分之一）；
+  /** 世界的渲染分辨率：自动（按屏幕大小，梦里再低一档）· 精细（全分辨率）· 流畅（半）· 极速（四分之一）；
       再往下是玩笑：马赛克（八分之一）· 印象派（十六分之一） */
   res: 'auto' | 'full' | 'half' | 'quarter' | 'eighth' | 'sixteenth';
   /** 没存过时 i18n 按浏览器的语言挑 */

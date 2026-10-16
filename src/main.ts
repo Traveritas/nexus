@@ -70,14 +70,19 @@ let diary: Diary | undefined;
 /** 世界的渲染分辨率（日记 · 设置 · 画面）；?res=full|half|quarter|eighth|sixteenth 覆盖 */
 let resMode: Settings['res'] = 'auto';
 const RES_SHIFT = { full: 0, half: 1, quarter: 2, eighth: 3, sixteenth: 4 };
-/** 自动：画布超过约 1920×1200 按半分辨率画世界，超过约 3200×1800（4K）按四分之一（像素化是填充率受限的，开销跟像素数成正比） */
+/** 自动：画布超过约 1920×1200 按半分辨率画世界，超过约 3200×1800（4K）按四分之一（像素化是填充率受限的，开销跟像素数成正比）；梦里再多降一档，见 dreamCap */
 const AUTO_HALF_PIXELS = 1920 * 1200;
 const AUTO_QUARTER_PIXELS = 3200 * 1800;
+/** 梦里自动最多再降到几级（每帧按世界设；-1 ＝ 干净的世界或还没加载，不多降）。
+    梦里本来就粗：多降一档，但世界图要比满屏最常见的格子（锁级 › 亮处的级 › 远处的级）细一级，
+    一格仍是 2×2 纹素的平均——降到和格子一样大就成了点采样，转头时纹样会游 */
+let dreamCap = -1;
 function applyRes() {
   const { w, h } = pipe.size;
   const mode = (q.get('res') as typeof resMode | null) ?? resMode;
   const px = w * h;
-  pipe.setShift(mode === 'auto' ? (px > AUTO_QUARTER_PIXELS ? 2 : px > AUTO_HALF_PIXELS ? 1 : 0) : RES_SHIFT[mode] ?? 0);
+  const screen = px > AUTO_QUARTER_PIXELS ? 2 : px > AUTO_HALF_PIXELS ? 1 : 0;
+  pipe.setShift(mode === 'auto' ? Math.max(screen, Math.min(screen + 1, dreamCap)) : RES_SHIFT[mode] ?? 0);
 }
 
 function resize() {
@@ -983,6 +988,9 @@ function frame(dt: number) {
   pipe.setClean(level.style === 'clean');
   // 世界自己的格子粗细与色板子集（家的室外：8px、只用几枚冷色）
   pipe.setLook(level.look.grid, level.look.mask, level.look.lit, level.look.black);
+  const f = pipe.flags;
+  dreamCap = level.style === 'clean' ? -1 : (f.lock >= 0 ? f.lock : level.look.lit >= 0 ? level.look.lit : level.look.grid) - 1;
+  applyRes();
   shared.uCellPx.value = Math.max(1, (1 << level.look.grid) >> pipe.worldShift);
   shared.uViewPx.value.set(pipe.size.w >> pipe.worldShift, pipe.size.h >> pipe.worldShift);
   // 开场：标题是梦的画面，滑向床边时醒过来
