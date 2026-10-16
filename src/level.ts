@@ -151,6 +151,8 @@ export interface Level {
   /** 现在窗外是第几处 */
   outlook: number;
   showOutlook(i: number): void;
+  /** 别的几处窗景（天与点缀）的替身，交给 Pipeline.warm 预先编译：第一次换过去时不卡 */
+  outlookStands(): THREE.Group;
   poses: Map<string, Pose>;
   /** 开场（有 nx_type=intro 的世界才有） */
   intro: Intro | null;
@@ -850,6 +852,20 @@ export async function loadLevel(url: string): Promise<Level> {
       return night;
     },
     showOutlook, poses, intro, style, look, apply, update,
+    outlookStands() {
+      const g = new THREE.Group();
+      outlooks.forEach((ol, j) => {
+        if (j === outlook || !windowSky) return;
+        g.add(windowSky.stand(ol.sky));
+        for (const p of ol.props) {
+          // 浅复制：几何与材质共用，只是这一份看得见
+          const c = p.clone();
+          c.visible = true;
+          g.add(c);
+        }
+      });
+      return g;
+    },
     blockers() {
       const out: Blocker[] = [];
       for (const g of poses.values()) {

@@ -476,7 +476,8 @@ export class ItemSystem {
       }
     }
     if (this.emptyT > 0) drawTag(g, [text(t('carryingNothing'), P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
-    if (this.sealedT > 0) drawTag(g, [text(t('awakeNothing'), P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
+    // 残片（醒着的家）里另有一句
+    if (this.sealedT > 0) drawTag(g, [text(t(this.world === 'wake_fragment' ? 'awakeForgot' : 'awakeNothing'), P(2))], Math.round(this.ui.w / 2), Math.round(this.ui.h * 0.62));
   }
 }
 

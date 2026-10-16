@@ -669,6 +669,17 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
     this.pixMat.uniforms.uDream.value = k;
   }
 
+  /** 预先编译 obj 里的材质：和画进世界图时一样的状态（多目标输出、灯光取 scene 的），不画出来。
+      浏览器支持时在后台编译，不卡这一帧 */
+  warm(obj: THREE.Object3D, scene: THREE.Scene, camera: THREE.Camera) {
+    const r = this.renderer;
+    const prev = r.getRenderTarget();
+    r.setRenderTarget(this.rtWorld);
+    const done = r.compileAsync(obj, camera, scene);
+    r.setRenderTarget(prev);
+    return done;
+  }
+
   /** 把上一帧像素化的结果存下来，留给马赛克交接（下一帧起 rtPix 画新的） */
   holdFrame() {
     [this.rtPix, this.rtHold] = [this.rtHold, this.rtPix];

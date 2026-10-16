@@ -131,6 +131,12 @@ function prefetchNeighbours(l: Level) {
   for (const to of new Set([...l.portals.map((p) => p.to), ...(l.fall ? [l.fall.to] : [])])) fetch(sceneUrl(to)).catch(() => {});
 }
 prefetchNeighbours(level);
+/** 窗外别的几处先编译好：第一次换窗景时着色器不在那一下现编（构造的天尤其重） */
+function warmWindows(l: Level) {
+  if (l.outlooks.length < 2) return;
+  pipe.warm(l.outlookStands(), l.scene, camera).catch((err) => console.warn('[nexus] 窗景预编译没成', err));
+}
+warmWindows(level);
 items.attach(level, world);
 
 // ── 缝（nx_type=seam）：门洞那边的世界和这个一起留在内存里，透过门洞画出来，走过门槛就换过去（不转场） ──
@@ -154,6 +160,7 @@ async function link() {
     return;
   }
   beyond = { name: to, level: l };
+  warmWindows(l);
   // 加载会改共享的天色与太阳，还给这个世界
   level.apply();
 }
@@ -432,6 +439,7 @@ function stepTravel(dt: number) {
     if (travel.dream && level.intro) intro = new IntroPlayer(level.intro, document.getElementById('intro') as HTMLCanvasElement);
     else stripIntro(level.intro);
     level.apply();
+    warmWindows(level);
     world = travel.to;
     player.setCollider(level.collider);
     lastArrival = travel.at;

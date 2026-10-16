@@ -78,6 +78,7 @@ const STR = {
   releaseToHold: { zh: '松开 F 拿起', en: 'Let go of F to hold' },
   carryingNothing: { zh: '身上还没有东西', en: 'Not carrying anything' },
   awakeNothing: { zh: '醒着，什么也没带出来', en: 'Awake. Nothing came with you' },
+  awakeForgot: { zh: '你记得些什么，却忘记了很多', en: 'You remember something, but forgot so much' },
   // 一片夜的地图
   site: { zh: '站点', en: 'Site' },
   here: { zh: '此刻', en: 'Now' },

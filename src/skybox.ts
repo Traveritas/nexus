@@ -1034,6 +1034,8 @@ export interface WindowSky {
   name: string;
   set(spec: string): void;
   update(camera: THREE.Camera): void;
+  /** 一个只用来预编译的替身：同一个球，套着 spec 那处的材质（不进场景） */
+  stand(spec: string): THREE.Mesh;
   /** 此刻窗里的底色与墨色（CSS 色）：窗前的站点卡片按它配字色 */
   tone(t: number): { bg: string; ink: string; dark: boolean };
 }
@@ -1074,6 +1076,10 @@ export function makeWindowSky(): WindowSky {
     },
     update(camera) {
       mesh.position.copy(camera.position);
+    },
+    stand(spec) {
+      const name = spec.split(':')[0];
+      return new THREE.Mesh(mesh.geometry, material(THEMES[name] ? name : 'blank', true));
     },
     tone: (t) => toneOf(box.name, win.uSeed.value, t),
   };
