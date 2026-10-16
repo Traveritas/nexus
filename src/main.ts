@@ -11,7 +11,7 @@ import { Diary, night, type Settings } from './diary';
 import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
 import { SiteCard } from './sitecard';
-import { dreamt, edges, isReality, LEGACY, recordEdge, recordSite, sites } from './worlds';
+import { dreamt, edges, isReality, recordEdge, recordSite, sites } from './worlds';
 import { RealName } from './realtext';
 import { IntroPlayer, introSeen, stripIntro } from './intro';
 import { Through, seamMatrix, seamSide, seamTube, seamTurn } from './seam';
@@ -850,8 +850,10 @@ function checkPortals() {
   // 刚到 / 刚被放下时若正站在某个走进型的传送物里，要先走出来（留 0.3m 余量）才上膛
   if (armedFrom && !level.portals.some((p) => p.mode === 'walk' && inside(p, 0.3))) armedFrom = null;
   if (armedFrom) return;
+  // 要门开着的：门没开到底（还关着、正在开）就不算
+  const open = (p: Portal) => !p.need || (level.poses.get(p.need)?.k ?? 0) > 0.85;
   for (const p of level.portals) {
-    if (p.mode === 'walk' && inside(p)) {
+    if (p.mode === 'walk' && open(p) && inside(p)) {
       go(p.to, p.at, true, true);
       return;
     }
@@ -968,7 +970,7 @@ function frame(dt: number) {
   field.drowse = Math.max(book.drowse, items.drowse);
   map.update(dt);
   field.dim = map.dim(items.handScreen(camera, pipe.size.w, pipe.size.h), pipe.size.w, pipe.size.h);
-  field.glow = map.layout(camera, { level, world, visited: dreamt(visited()).filter((w) => !LEGACY.has(w)), edges: edges().filter(([a, b]) => !LEGACY.has(a) && !LEGACY.has(b)), sites: sites() }, book.active || items.ringActive || !!travel);
+  field.glow = map.layout(camera, { level, world, visited: dreamt(visited()), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
   // 世界自己的格子粗细与色板子集（家的室外：8px、只用几枚冷色）
@@ -1043,6 +1045,12 @@ updateHud();
   /** 窗里的天（测试用，如 overnight:3 错开时刻） */
   windowSky: (spec: string) => level.windowSky?.set(spec),
   poses: () => [...level.poses.values()].map((g) => ({ name: g.name, on: g.on, k: g.k })),
+  /** 拨一个能开关的东西（测试用：开门、关门） */
+  pose(name: string, on: boolean) {
+    const g = level.poses.get(name);
+    if (g) g.target = on ? 1 : 0;
+    return !!g;
+  },
   /** 昼夜：不给参数就读（0 白天 … 1 夜里）；给 true / false 就像拨了开关（测试用） */
   night(on?: boolean) {
     const g = [...level.poses.values()].find((p) => p.night);

@@ -15,6 +15,7 @@
 然后是 3 × 4 间和卧室一样大的房间（4.2 × 4.6m），全是家里的家具，越往北、越往两边越错乱——
 多了一把椅子、换了位置、转了、浮起来、斜着、倒挂在天花板上；最深处西北角那间和卧室一模一样（门关着）。
 东边一扇循环口（打得开，门外先挡着），最北那间的北门后面又是一串更小更歪的门，最后一扇过不去。
+倒挂的那间地上一扇没有墙、转了 32° 的孤门：推开，从门框里走过去 → 旧梦的旧家（只有这一个入口，没有回来的路）。
 
 布局（俯视，x 向右、y 向上＝北）：核心 x 0…8.8、y −1.8…10；过道 y 10…24；房间网格 x −1.2…11.4、y 24…42.4。
 运行：node scripts/blender.cjs build house，网页 ?world=house
@@ -664,7 +665,8 @@ def rooms_things(rnd):
     fu.floor_lamp("i_lamp", (0, 0, 0), lit=True, parent=g)
     nx.lamp("i_lamp_light", P(c, r, 2.4, 2.6, F + 0.4), WARM, 3.0, 1.6, leak=1.0, box=box_of(c, r))
 
-    # (2,2) 倒挂：一间卧室整个贴在天花板上；地上只有一扇没有墙的门（也能开关）
+    # (2,2) 倒挂：一间卧室整个贴在天花板上；地上只有一扇没有墙的门（也能开关）。
+    #   推开它从门框里走过去 → 旧梦的旧家（落在出生点）；门关着不算，绕到门框外面也不算
     c, r = 2, 2
     hc = cell_h(c, r)
     g = tilt("h_ceiling", P(c, r, 0, 0, F + hc), (180, 0, 0))
@@ -678,6 +680,8 @@ def rooms_things(rnd):
     pf.frame("h_lonedoor", (0, 0, 0), 0, w=0.86, h=2.06, depth=0.18, t=0.07, kind="door", parent=g, **TRIM)
     pf.door("h_lonedoor_door", (-0.43 - LAP, 0.09 + 0.0245, 0.01), 0, 95, w=0.86 + 2 * LAP, h=2.05 + LAP,
             at=(loc[0], loc[1], F + 1.2), parent=g)
+    # 门框正中，半径比半个门洞小：只有穿过门洞才碰得到（门框两边的门套挡着）
+    nx.portal("portal_olddream", (loc[0], loc[1], F + 1.0), "home", mode="walk", radius=0.3, need="h_lonedoor_door")
 
     # (1,3) 散开：东西都浮在头顶上，各转各的
     c, r = 1, 3

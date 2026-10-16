@@ -109,16 +109,16 @@ srv.listen(0, '127.0.0.1', async () => {
     }
   }
 
-  // 3. 转场中途截图、醒来（日记目录里的「醒来」）、后退
+  // 3. 转场中途截图、醒来（日记「记录」页的「醒来」）、后退
   await goWorld('procession');
   await sleep(500);
   await press('Tab');
   await sleep(1100);
   await page.evaluate(() => {
-    // 目录左页第 5 行（醒来）：UI 像素 ＝ 屏幕 ÷ 2，书页 148×196 居中
+    // 记录页左页第 9 行（醒来）：UI 像素 ＝ 屏幕 ÷ 2，书页 148×196 居中；横线第一条在 36、行距 14
     const w = (Math.floor(innerWidth / 8) * 8) / 2;
     const h = (Math.floor(innerHeight / 8) * 8) / 2;
-    window.__nexus.diary.moveTo(w / 2 - 148 + 40, h / 2 - 98 + 100);
+    window.__nexus.diary.moveTo(w / 2 - 148 + 40, h / 2 - 98 + 36 + 9 * 14 - 6);
   });
   // 悬停下一帧才更新，等一下再点
   await sleep(120);

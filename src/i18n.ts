@@ -52,6 +52,8 @@ const STR = {
   res: { zh: '画面', en: 'Picture' },
   language: { zh: '语言', en: 'Language' },
   hud: { zh: '调试信息', en: 'Debug info' },
+  clearSave: { zh: '清除存档', en: 'Clear save' },
+  clearConfirm: { zh: '再点一下清除', en: 'Click again' },
   on: { zh: '开', en: 'on' },
   off: { zh: '关', en: 'off' },
   resAuto: { zh: '自动', en: 'Auto' },

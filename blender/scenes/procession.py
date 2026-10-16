@@ -2,9 +2,9 @@
 框一道比一道大、一道比一道斜、颜色一道比一道浅；走着走着，像是被一层层「显影」出来。
 - 堤两侧是浅水，纸的路灯一对一对站在堤边。
 - 半路一方小院：四面拱框朝里，头顶一组慢慢转的环；院里立着一扇落地窗（走出去 → 云阶）。
-- 堤的尽头是一扇花形的门：梯子走上去，穿过花心就是晶体（→ 博客）。
+- 堤的尽头是一扇花形的门：梯子走上去，花心里以前是晶体（→ 博客），归旧梦以后去掉了，门里空着。
 - 堤外一处侧园：立着的残环，环边一朵莲。
-- 出生点背后一盏路灯（E「关灯」→ 家）。出入口三个：灯、窗、晶体；从哪儿去的，回来就落在哪儿。
+- 出生点背后一盏路灯（E「关灯」→ 家）。出入口两个：灯、窗；从哪儿去的，回来就落在哪儿。
 运行：node scripts/blender.cjs build procession
 """
 import math
@@ -74,7 +74,7 @@ def build(extent=EXTENT):
     ent = pf.halo_gate("gate", (0, 82, F), 0, size=5.2, seed=4,
                        styles=[dict(a="white", b="pink_pale"), dict(a="pink_pale", b="pink"), dict(a="mist", b="white")])
     nx.box("gate_floor", (12, 12, F + 0.01), (0, 80, 0), a="white", b="mist", pattern="tiles")
-    nx.entrance("entrance_gate", ent, "https://traveritas.github.io/", "AveritA的昼梦叙集")
+    # 晶体（→ 博客）归旧梦以后去掉了：旧梦里不放站点
     pf.bloom("gate_drift", (0, 80, 2), kind="drift", size=4, seed=5, petals=8)
 
     # ── 侧园：立着的残环 ──

@@ -1,13 +1,14 @@
-"""家：NEXUS 的起点。醒来在床边。去别的世界的不是门，而是家里的东西：
-- 床（E「睡」）→ 下沉            · 卧室的落地窗（走出去）→ 云阶
+"""旧家（旧梦的中心）：以前的家，现在从家家家里那扇转了 32° 的孤门推开、走过去才到（落在出生点）。没有回去的路，只能醒来。
+去别的世界的不是门，而是家里的东西（都在旧梦里）：
+- 床（E「睡」）→ 旧下沉          · 卧室的落地窗（走出去）→ 云阶
 - 衣柜（走进去，拨开衣服）→ 无墙之屋  · 书房桌上摊开的书（E「翻开」）→ 回廊（博客在那里）
-- 客厅边几上的花瓶（E「凑近」）→ 花房  · 餐桌上一杯水（E）→ 浅滩
+花瓶、餐桌上那杯水以前通往花房、浅滩（浅梦），已经断开，只是摆设。
 唯一一扇真正的门是前门：开向院子，院子就是院子。
 客厅茶几上放着罗盘怀表（物品，走近按 E 拾起）。
 
 布局（俯视，x 向右、y 向上）：西北卧室、西南书房、东边一整间客厅兼餐厅（头顶天窗）；南墙前门 → 门廊 → 小径 → 院门。
 到达点按「从哪个世界回来」命名，就在通往那个世界的东西旁边：wake（床边，也是出生点，日记里「醒来」落在这里）、
-descent（床边）、isles（落地窗内）、room（衣柜前）、procession（书桌旁）、glasshouse（花瓶旁）、shoal（餐桌旁）。
+descent_old（床边）、isles（落地窗内）、room（衣柜前）、procession（书桌旁）。
 各世界回家是一盏灯（E「关灯」），见 prefabs.gate_home；这里的传送物都落在那边名为 home 的到达点（灯前）。
 运行：node scripts/blender.cjs build home
 """
@@ -179,8 +180,8 @@ def build(extent=EXTENT):
     # ── 卧室（西北）：床、床头柜、衣柜、落地窗 ──
     nx.into("bedroom")
     fu.bed("bed", (-5.6, 8.55, F))  # 床头板要让开北墙和窗台（窗台伸进屋里约 0.23m）
-    nx.portal("portal_bed", (-5.6, 8.4, F + 0.8), "descent", at="home", mode="key", title="睡", radius=1.3)
-    nx.arrive("descent", (-4.0, 6.9, F), facing_deg=-120)
+    nx.portal("portal_bed", (-5.6, 8.4, F + 0.8), "descent_old", at="home", mode="key", title="睡", radius=1.3)
+    nx.arrive("descent_old", (-4.0, 6.9, F), facing_deg=-120)
     for i, x in enumerate([-7.4, -3.8]):
         nx.box(f"nightstand{i}", (0.55, 0.45, 0.55), (x, 9.45, F), **WOOD)
         nx.box(f"nightstand{i}_drawer", (0.45, 0.02, 0.16), (x, 9.21, F + 0.3), collide=False, a="rose_deep", b="rose", pattern="plain")
@@ -218,14 +219,12 @@ def build(extent=EXTENT):
 
     # ── 客厅兼餐厅（东） ──
     nx.into("living")
-    # 餐桌在天窗下，桌上一杯水
+    # 餐桌在天窗下，桌上一杯水（以前通往浅滩，已断开）
     nx.cylinder("table_leg", 0.1, 0.18, 0.7, (4.0, 5.3, F), segments=14, **WOOD_DARK)
     nx.cylinder("table_top", 0.85, 0.85, 0.06, (4.0, 5.3, F + 0.7), segments=36, **WOOD)
     nx.cylinder("glass", 0.075, 0.085, 0.2, (4.2, 5.15, F + 0.76), segments=14, collide=False, shadow=False,
                 a="blue_pale", b="white", pattern="plain")
     nx.cylinder("plate", 0.18, 0.18, 0.02, (3.75, 5.5, F + 0.76), segments=20, collide=False, a="white", b="mist", pattern="plain")
-    nx.portal("portal_cup", (4.2, 5.15, F + 0.9), "shoal", at="home", mode="key", title="一杯水", radius=0.9)
-    nx.arrive("shoal", (4.0, 3.3, F), facing_deg=0)
     for i, ang in enumerate([200, 320, 80]):
         a = math.radians(ang)
         fu.chair(f"dining_chair{i}", (4.0 + math.cos(a) * 1.25, 5.3 + math.sin(a) * 1.25, F), ang + 90, "dining", fabric="blue")
@@ -238,11 +237,9 @@ def build(extent=EXTENT):
     fu.vase("coffee_bowl", (6.85, 7.85, F + 0.38), 0.1, "bowl", style=WHITE)
     # 茶几前沿平放着一块罗盘怀表（物品：地图；样子在网页的 src/items/compass.ts）
     nx.item("compass", (6.62, 7.6, F + 0.38), "compass", get="pick")
-    # 边几上的花瓶：凑近去闻 → 花房
+    # 边几上的花瓶
     nx.box("side_table", (0.55, 0.55, 0.65), (8.45, 9.4, F), **WOOD)
     fu.vase("vase", (8.45, 9.4, F + 0.65), 0.42, "round", flowers=6, seed=3)
-    nx.portal("portal_vase", (8.45, 9.4, F + 1.05), "glasshouse", at="home", mode="key", title="凑近", radius=0.9)
-    nx.arrive("glasshouse", (7.2, 7.2, F), facing_deg=225)
     # 进门处：长凳、衣帽架、落地钟、盆栽
     fu.bench("bench", (1.6, 0.5, F), 0)
     nx.cylinder("coat_pole", 0.04, 0.05, 1.8, (6.0, 0.5, F), segments=8, **WOOD_DARK)

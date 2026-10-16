@@ -5,7 +5,7 @@
 - 这一半越往上踏步越大（0.30 → 0.42 → 0.55 → 0.70），最后几级是**巨踏步**（每级高 0.85、比人还高），
   要跳上去；旁边并排浮着一座只到脚踝的迷你楼梯，一直通到很远。
 - 回家：掉下去脚底到 −14m 就去家里书桌前（到达点 `stair`），和下半那座一样。
-- 顶上去「高处」：最后一级上方 `portal_heights`（暂指云阶 `isles`）。晶体在这半的一条岔路尽头。
+- 顶上：最后一级是一块发亮的平台，暂时不通往哪里（以前通往云阶，云阶已归旧梦）。晶体在这半的一条岔路尽头。
 
 运行：node scripts/blender.cjs build stair_b，网页 ?world=stair_b
 """
@@ -137,7 +137,6 @@ def build(extent=EXTENT):
     fx, fy = fwd(tyaw)
     lx, ly = tx + fx * 1.6, ty + fy * 1.6
     nx.box("last_step", (3.2, 3.2, 0.14), (lx, ly, tz - 0.14), (0, 0, tyaw), collide=True, shadow=False, **GLOW)
-    nx.portal("portal_heights", (lx, ly, tz + 0.9), "isles", mode="walk", radius=0.9)
     nx.into("echo")
     nx.box("echo_page_l", (7.0, 13.6, 0.5), (-3.7, 2.0, 42.0), (16, 0, 24), **stair.PAGE)
     nx.box("echo_page_r", (7.0, 13.6, 0.5), (3.7, 2.0, 42.0), (16, 0, 24), **stair.PAGE)

@@ -45,6 +45,8 @@ export interface Portal {
   title: string;
   radius: number;
   pos: THREE.Vector3;
+  /** 门开着时才算数（nx_need：一扇能开关的门的组名）；空 ＝ 总是算数 */
+  need: string;
 }
 
 /** 缝：这个世界在一处门洞里和另一个世界接上（nx_type=seam，见 seam.ts）。透过它看见的是那个世界，走过去就到了那边，不转场 */
@@ -372,6 +374,7 @@ export async function loadLevel(url: string): Promise<Level> {
         title: String(u.nx_title ?? ''),
         radius: num(u.nx_radius, 0.9),
         pos: wpos.clone(),
+        need: String(u.nx_need ?? ''),
       });
       continue;
     }

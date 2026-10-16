@@ -67,6 +67,16 @@ function saveSettings(s: Settings) {
   }
 }
 
+/** 调试：清掉存档（localStorage 里 nexus: 开头的，设置除外；这一夜的记号也清掉），重新载入后从头开始 */
+function clearSave() {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('nexus:') && k !== SETTINGS_KEY) localStorage.removeItem(k);
+    sessionStorage.removeItem(NIGHTS_KEY);
+  } catch {
+    /* 清不了就算了 */
+  }
+}
+
 /** 第几夜：每次新开一个标签页算一夜 */
 export function night(): number {
   try {
@@ -93,6 +103,8 @@ interface Region {
 
 interface PageCtx {
   hover: string | null;
+  /** 清除存档点过一下，等着再点一下确认 */
+  clearArmed: boolean;
   settings: Settings;
   world: string;
   visited: string[];
@@ -258,6 +270,8 @@ const settingsLeft: Draw = (g, c) => {
   opt('res', t('res'), t(RES_LABEL[c.settings.res] ?? RES_LABEL.auto), 4);
   opt('lang', t('language'), LANG_LABEL[c.settings.lang], 5);
   opt('hud', t('hud'), c.settings.hud ? t('on') : t('off'), 6);
+  // 调试：清除存档（去过的、走过的连接、站点、物品、第几夜），设置留着。调试信息开着时才有，要点两下
+  if (c.settings.hud) r.push(item(g, c, 'clear', c.clearArmed ? t('clearConfirm') : t('clearSave'), 34, 7));
   // 回到开场：木条重新拼成 NEXUS，再醒一次。用名字本身，不写「返回主界面」
   r.push(item(g, c, 'title', 'NEXUS', 34, 9));
   return r;
@@ -465,6 +479,7 @@ export class Diary {
   private stage = new Stage(STACK_T);
   private cursor = new THREE.Vector2();
   private hover: string | null = null;
+  private clearArmed = false;
   private night = night();
   settings: Settings;
 
@@ -550,6 +565,7 @@ export class Diary {
   }
 
   close() {
+    this.clearArmed = false;
     this.want = 0;
     this.hover = null;
   }
@@ -592,6 +608,14 @@ export class Diary {
         s.sens = SENS_STEPS[j];
         break;
       }
+      case 'clear':
+        if (!this.clearArmed) {
+          this.clearArmed = true;
+          break;
+        }
+        clearSave();
+        location.reload();
+        return;
       case 'hud':
         s.hud = !s.hud;
         break;
@@ -618,6 +642,7 @@ export class Diary {
     const world = this.host.world();
     return {
       hover: this.hover,
+      clearArmed: this.clearArmed,
       settings: this.settings,
       world,
       visited: dreamt(this.host.visited()),
@@ -643,6 +668,7 @@ export class Diary {
   }
 
   private turnTo(to: Spread) {
+    this.clearArmed = false;
     if (to === this.spread || this.turn) return;
     const dir = ORDER.indexOf(to) > ORDER.indexOf(this.spread) ? 1 : -1;
     this.hover = null;

@@ -423,10 +423,11 @@ def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamp
 
 # ── 世界之间 ───────────────────────────────────────────
 
-def portal(name, loc, to, at="", mode="walk", title="", radius=0.9):
+def portal(name, loc, to, at="", mode="walk", title="", radius=0.9, need=""):
     """传送物：去另一个世界。loc 放在物件的「门洞」中心（大约齐腰高）。
     mode="walk" 走进 radius 米内就走（门、框、窗）；mode="key" 走近按 E（杯、床、灯……），title 是提示文字。
-    to 是目标世界（public/scenes/<to>.glb），at 是那边的到达点名字（空 ＝ 那边的出生点）"""
+    to 是目标世界（public/scenes/<to>.glb），at 是那边的到达点名字（空 ＝ 那边的出生点）。
+    need：一扇能开关的门（nx.pose 的组名）；门开着时这个传送物才算数（门关着，贴着门站也不走）"""
     obj = _empty(name, loc, (0, 0, 0), "SPHERE", radius)
     obj["nx_type"] = "portal"
     obj["nx_to"] = to
@@ -434,6 +435,8 @@ def portal(name, loc, to, at="", mode="walk", title="", radius=0.9):
     obj["nx_mode"] = mode
     obj["nx_title"] = title
     obj["nx_radius"] = float(radius)
+    if need:
+        obj["nx_need"] = need
     return obj
 
 

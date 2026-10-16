@@ -59,9 +59,9 @@ srv.listen(0, '127.0.0.1', async () => {
   await wait(400);
   await shot('sky');
   await page.evaluate(() => { window.__nexus.player.pitch = -0.1; });
-  // 去回廊：站点
-  await page.evaluate(() => window.__nexus.go('procession'));
-  await page.waitForFunction(() => window.__nexus.state().world === 'procession' && !window.__nexus.state().travelling, { timeout: 15000 });
+  // 去下沉：站点
+  await page.evaluate(() => window.__nexus.go('descent'));
+  await page.waitForFunction(() => window.__nexus.state().world === 'descent' && !window.__nexus.state().travelling, { timeout: 15000 });
   await wait(600);
   await key('KeyQ', true);
   await wait(1100);
@@ -72,8 +72,10 @@ srv.listen(0, '127.0.0.1', async () => {
     await wait(300);
     await shot(`site-${i}`);
   }
-  // 正对着晶体：站点的名字是全分辨率的平滑字
-  await page.evaluate(() => {
+  // 正对着晶体：站点的名字是全分辨率的平滑字（梦里的晶体都还没接站点时跳过）
+  const hasSite = await page.evaluate(() => window.__nexus.state().sitesHere.length > 0);
+  if (!hasSite) console.log('这里没有接了站点的晶体，跳过 site-focus');
+  else await page.evaluate(() => {
     const n = window.__nexus;
     const site = n.state().sitesHere[0];
     const f = n.state().feet;
@@ -82,7 +84,7 @@ srv.listen(0, '127.0.0.1', async () => {
     n.player.pitch = Math.atan2(dy, Math.hypot(dx, dz));
   });
   await wait(300);
-  await shot('site-focus');
+  if (hasSite) await shot('site-focus');
   console.log('done');
   await browser.close();
   srv.close();
