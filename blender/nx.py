@@ -366,7 +366,7 @@ def export(name):
 
 def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamps=False, wrap=None,
                grid_lit=None, shadow_out=False, shadow_reach=None, sun_turn=None, penumbra=None,
-               fall_to=None, fall_at="", fall_y=-12.0, caustics=None):
+               fall_to=None, fall_at="", fall_y=-12.0, caustics=None, black=False):
     """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
     dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午 · meadow 原野 · umbra 暗处 · lowsun 斜阳 · ebb 退潮（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
     seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1。
@@ -384,7 +384,8 @@ def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamp
     fall_to / fall_at / fall_y：掉进别处——脚底掉到 fall_y 米以下，不回出生点，而是去 fall_to 世界的到达点 fall_at
     （空＝那边的出生点）；变粗时人照样往下掉，到了从到达点上方落下（断梯掉下去回家）
     caustics：水波光斑——水面以下、照得到太阳的面上一层慢慢流动的亮网纹（从水面沿太阳方向投下来）。
-    dict(strength=0.5, y=水面高, size=3.0 一格网纹多大（米）, depth=12.0 多深亮线细一半（米））；默认关"""
+    dict(strength=0.5, y=水面高, size=3.0 一格网纹多大（米）, depth=12.0 多深亮线细一半（米））；默认关
+    black=True：色板最暗的墨色压成近黑 #0e0c16，只在物件外沿和折角留一道很淡的细线（暗处几乎全黑的世界，光斑）"""
     if ATLAS:
         return None
     obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
@@ -415,6 +416,8 @@ def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamp
         obj["nx_caustics_y"] = float(caustics.get("y", 0.0))
         obj["nx_caustics_size"] = float(caustics.get("size", 3.0))
         obj["nx_caustics_depth"] = float(caustics.get("depth", 12.0))
+    if black:
+        obj["nx_black"] = 1
     if fall_to:
         obj["nx_fall_to"] = fall_to
         obj["nx_fall_at"] = fall_at

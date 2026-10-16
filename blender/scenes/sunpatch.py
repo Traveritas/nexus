@@ -2,7 +2,7 @@
 
 一座有边的迷宫（N × N 格、每格 CELL 米，路宽 5.6m，墙 2.8m、格点上一根高一点的柱），四周一圈高墙。
 头顶 ROOF_Z 米一整片看不见的顶（nx.shade），开着好几扇形状不同的天窗；太阳在转（sun_turn），
-好几块光斑同时在迷宫里绕着各自的天窗正下方画圈。暗处不全黑：看得见墙和路的轮廓，格子粗（8px）；光里清楚（2px）。
+好几块光斑同时在迷宫里飞快地绕着各自的天窗正下方画圈（两分钟一圈）。暗处几乎全黑（black），只留一道淡淡的轮廓线，光斑里才看得清；光里清楚（2px）。
 
 - 光里才显出来的（lit_only）：岔路口地上的箭头和记号（三种：窗形 → 回家、花形 → 花房、菱形 → 晶体，
   箭头指着该拐的方向）、墙上的纹样带、中间大厅地上一圈刻度（光斑沿着它走，像一只钟）、东南角一片软垫。
@@ -42,7 +42,7 @@ ROOF_Z = 34.0
 ROOF_T = 0.4
 ELEV = 72.0
 AZ0 = 0.0         # 一开始太阳在东
-TURN = 30.0       # 度每分：十二分钟一圈
+TURN = 180.0      # 度每分：两分钟一圈
 R = ROOF_Z / math.tan(math.radians(ELEV))   # 光斑绕的圈的半径（约 11m）：中间那扇的光斑一直在大厅里
 
 # 天窗：(中心 x, y, 宽, 长, 十字窗棂)。坐标取整，顶按 1m 的格子开洞
@@ -457,7 +457,7 @@ def home_window(x, y):
 def build(extent=EXTENT):
     nx.into("env")
     nx.sun(sun_dir(AZ0))
-    nx.atmosphere("umbra", grid=3, grid_lit=1, shadow_out=True, shadow_reach=70, sun_turn=TURN)
+    nx.atmosphere("umbra", grid=3, grid_lit=1, shadow_out=True, shadow_reach=70, sun_turn=TURN, black=True)
 
     nx.into("maze")
     floor()

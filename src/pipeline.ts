@@ -161,6 +161,8 @@ uniform float uRaw, uPaletteOn, uOutline, uFieldView, uLock, uDissolve, uDrowse,
 uniform float uBase;
 // 亮处的格子是几级（-1 ＝ 不按亮度）：一块 8×8 的平均亮度够亮就用它（光斑：光里细、暗里粗）
 uniform float uLit;
+// 墨色压成近黑（暗处几乎全黑的世界）：#0e0c16，比墨色暗一半，不是纯黑；轮廓留一道很淡的细线
+uniform float uBlack;
 out vec4 fragColor;
 ${COMMON}
 vec3 toSrgb(vec3 c) {
@@ -349,7 +351,8 @@ void main() {
     float far = id > 8999.5 ? 0.0 : depth < 70.0 ? 0.0 : depth < 160.0 ? 1.0 : 2.0;
     int st = int(max((edge > 0.5 ? 2.0 : crease > 0.5 ? 1.0 : 0.0) - far, 0.0));
     // 暗下去的地方不描亮棱：让给星光
-    bool lit = edge < 0.5 && crease < 0.5 && ridge > 0.5 && far < 1.0 && !dimmed;
+    // 全黑的暗处也不描亮棱：黑里不该冒出亮边
+    bool lit = edge < 0.5 && crease < 0.5 && ridge > 0.5 && far < 1.0 && !dimmed && !(uBlack > 0.5 && ci == 0);
     if (ci >= 0) {
       for (int i = 0; i < 2; i++) if (i < st) ci = int(uDark[ci]);
       if (lit) ci = int(uLight[ci]);
@@ -400,8 +403,27 @@ void main() {
     vec3 dim = ci >= 0 ? uPalRgb[int(uDark[ci])] : outc * vec3(0.75, 0.74, 0.8);
     vec3 light = ci >= 0 ? uPalRgb[int(uLight[ci])] : mix(outc, vec3(1.0), 0.3);
     outc = mix(outc, dim, cr * 0.6 * f * (1.0 - cov));
-    outc = mix(outc, light, rd * (dimmed ? 0.0 : 0.45) * f * (1.0 - cov));
+    outc = mix(outc, light, rd * (dimmed || (uBlack > 0.5 && ci == 0) ? 0.0 : 0.45) * f * (1.0 - cov));
     outc = mix(outc, dark, cov * 0.92);
+  }
+
+  if (uBlack > 0.5 && ci == 0) {
+    outc = vec3(14.0, 12.0, 22.0) / 255.0;
+    // 近黑里略微带点轮廓：物件的外沿（后面是更远的另一样东西）和折角描一道细线，亮度在近黑与墨色正中（按屏幕像素，不按格子），
+    // 二十米外按格子抖着淡掉，五十米外没有
+    vec4 d0 = texelFetch(tData, wpx, 0);
+    float fade = clamp((d0.z - 20.0) / 30.0, 0.0, 1.0);
+    if (fade < 1.0 && bayer4(px) >= fade) {
+      vec3 n0 = octDecode(d0.xy);
+      ivec2 dirs[4] = ivec2[4](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1));
+      bool edge = false;
+      for (int k = 0; k < 4; k++) {
+        vec4 q = texelFetch(tData, clamp(wpx + dirs[k], ivec2(0), whi), 0);
+        if (abs(q.w - d0.w) > 0.5) edge = edge || q.z > d0.z * 1.01;
+        else edge = edge || (d0.w > 0.5 && dot(octDecode(q.xy), n0) < 0.6);
+      }
+      if (edge) outc = mix(outc, uPalRgb[0], 0.5);
+    }
   }
 
   if (uFieldView > 0.5) {
@@ -483,6 +505,7 @@ export class Pipeline {
         uDream: { value: 0 },
         uBase: { value: 2 },
         uLit: { value: -1 },
+        uBlack: { value: 0 },
         uDim: { value: new THREE.Vector3() },
         uGlow: { value: Array.from({ length: MAX_GLOW }, () => new THREE.Vector3()) },
         uGlowCount: { value: 0 },
@@ -621,10 +644,11 @@ void main() { fragColor = vec4(uVeilCol, uVeil); }`,
   }
 
   /** 世界的样子：grid 远处的格子是几级（2 ＝ 4px，3 ＝ 8px）；mask 只落到哪几枚色板色上（第 i 位 ＝ 第 i 色）。
-      换世界时按 level.look 设。暗一档 / 亮一档（犯困、星光、描边用）也跟着收进这几色里 */
-  setLook(grid: number, mask: number, lit = -1) {
+      换世界时按 level.look 设。暗一档 / 亮一档（犯困、星光、描边用）也跟着收进这几色里；black：墨色压成近黑 */
+  setLook(grid: number, mask: number, lit = -1, black = false) {
     this.pixMat.uniforms.uBase.value = grid;
     this.pixMat.uniforms.uLit.value = lit;
+    this.pixMat.uniforms.uBlack.value = black ? 1 : 0;
     if (mask === this.mask) return;
     this.mask = mask;
     this.quantMat.uniforms.uPalMask.value = mask;

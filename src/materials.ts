@@ -381,7 +381,8 @@ void main() {
   if (uLitOnly > 0.5 && sh > 0.5) discard;
   // 只在影子里的东西：照着太阳的纹素不画（伸出影子的那一截齐齐断掉）
   if (uLitOnly < -0.5 && sh < 0.5) discard;
-  if (ndl <= 0.0) sh = 0.0;
+  // 背光的面照常是最暗一档；影子压到底的世界（光斑）背光就是在影子里
+  if (ndl <= 0.0) sh = uShade.y >= 1.0 ? 1.0 : 0.0;
   band = mix(band, uShade.x, sh * uShade.y);
 
   vec3 amb = mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5);

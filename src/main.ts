@@ -974,7 +974,7 @@ function frame(dt: number) {
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
   // 世界自己的格子粗细与色板子集（家的室外：8px、只用几枚冷色）
-  pipe.setLook(level.look.grid, level.look.mask, level.look.lit);
+  pipe.setLook(level.look.grid, level.look.mask, level.look.lit, level.look.black);
   // 开场：标题是梦的画面，滑向床边时醒过来
   pipe.setDream(Math.max(intro?.dream ?? 0, travelDream));
   // 缝在眼前：世界画完以后，透过门洞把那边也画进同一张世界图

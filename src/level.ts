@@ -315,7 +315,7 @@ export async function loadLevel(url: string): Promise<Level> {
   scene.add(sky.mesh);
   let skyName = 'blank';
   let style = 'pixel';
-  const look: Look = { grid: 2, mask: 0xffff, lamps: false, lit: -1 };
+  const look: Look = { grid: 2, mask: 0xffff, lamps: false, lit: -1, black: false };
   let wrap = 0;
   /** 影子：图外面算不算暗、图盖多远（米）；太阳绕竖轴转多快（度每分） */
   let shadowOut = 0;
@@ -457,6 +457,7 @@ export async function loadLevel(url: string): Promise<Level> {
       look.lamps = bool(u.nx_lamps, false);
       wrap = Math.max(0, num(u.nx_wrap, 0));
       look.lit = u.nx_grid_lit === undefined ? -1 : THREE.MathUtils.clamp(Math.round(num(u.nx_grid_lit, 1)), 0, 4);
+      look.black = bool(u.nx_black, false);
       shadowOut = bool(u.nx_shadow_out, false) ? 1 : 0;
       penumbra = Math.max(0, num(u.nx_penumbra, 0));
       shadowReach = Math.max(0, num(u.nx_shadow_reach, 0));
@@ -800,16 +801,17 @@ export async function loadLevel(url: string): Promise<Level> {
   }
 
   const sunDir = shared.uSun.value.clone();
-  // 太阳转（nx_sun_turn，度每分）：绕竖轴，从 Blender 里摆的方向起。按 SUN_STEP 秒一步跳，
-  // 影子图不用每帧重画（光斑一步挪不到一个纹素）
+  // 太阳转（nx_sun_turn，度每分）：绕竖轴，从 Blender 里摆的方向起。一步跳 SUN_DEG 度（转得快的步子密，
+  // 最密 SUN_MIN 秒一步），影子图不用每帧重画（光斑一步挪不到一个纹素）
   const sunBase = sunDir.clone();
   let sunTime = Number(new URLSearchParams(location.search).get('suntime')) || 0;
   let sunStep = NaN;
+  const sunStepSec = sunTurn ? Math.max(SUN_MIN, (SUN_DEG * 60) / Math.abs(sunTurn)) : 1;
   const turnSun = () => {
-    const k = Math.floor(sunTime / SUN_STEP);
+    const k = Math.floor(sunTime / sunStepSec);
     if (k === sunStep) return;
     sunStep = k;
-    sunDir.copy(sunBase).applyAxisAngle(UP, (k * SUN_STEP * sunTurn * Math.PI) / (60 * 180));
+    sunDir.copy(sunBase).applyAxisAngle(UP, (k * sunStepSec * sunTurn * Math.PI) / (60 * 180));
     shared.uSun.value.copy(sunDir);
   };
   if (sunTurn) turnSun();
@@ -898,7 +900,9 @@ function ghostOf(v: unknown): [number, number, number] | undefined {
 }
 const SWAY_AXIS = new THREE.Vector3(1, 0, 0);
 /** 太阳转的时候隔多少秒跳一步 */
-const SUN_STEP = 0.25;
+/** 会转的太阳一步走几度、最快几秒一步 */
+const SUN_DEG = 0.125;
+const SUN_MIN = 0.05;
 /** 只投影的东西（nx_mat=shade）：主画面里不画，影子图里照常写深度 */
 const HIDDEN = new THREE.MeshBasicMaterial({ visible: false });
 const SHADE_ONLY = shadowVariant(new THREE.ShaderMaterial({ uniforms: {} }));
@@ -912,6 +916,8 @@ export interface Look {
   lamps: boolean;
   /** 亮处的格子是几级（atmosphere 的 nx_grid_lit）；-1 ＝ 不按亮度 */
   lit: number;
+  /** 墨色压成近黑（atmosphere 的 nx_black）：暗处几乎全黑的世界 */
+  black: boolean;
 }
 /** 昼夜换一次要几秒 */
 const NIGHT_TIME = 1.6;
