@@ -15,3 +15,9 @@ mockup/*/glb/
 mockup/*/resolved/
 mockup/*/scenes/
 dist-*/
+
+# 本地的零碎：编辑器配置、旧版本的场景源与导出、临时走路脚本
+.zcodeignore
+archive/shallows-04-var/blend/
+archive/shallows-04-var/glb/
+scripts/_walk_shoal.cjs
