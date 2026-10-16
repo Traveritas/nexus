@@ -22,18 +22,50 @@ interface Face {
   title: HTMLCanvasElement;
   key: HTMLCanvasElement;
   capW: number;
+  /** E 在键帽里左右居中时的横向偏移 */
+  keyX: number;
 }
 
-/** 竖直排版：汉字的墨迹在纸签里上下居中；键帽比汉字上下各多一格，底下再多一格厚度；E 在键帽里居中 */
+/** 竖直排版：汉字的墨迹在纸签里上下居中；键帽照 E 的大小——比 E 上下各多一格，底下再多一格厚度，
+   键帽面的中心对着汉字墨迹的中心；E 在键帽里居中 */
 let layout: { titleY: number; capY: number; capH: number; keyY: number } | null = null;
 function vertical(key: HTMLCanvasElement) {
   const [t, b] = inkRows(text('国'));
   const titleY = Math.floor((H - (b - t + 1)) / 2) - t;
-  const capY = titleY + t - 1;
-  const capH = b - t + 4;
   const [kt, kb] = inkRows(key);
-  const keyY = capY + Math.floor((capH - 1 - (kb - kt + 1)) / 2) - kt;
+  const faceH = kb - kt + 3;
+  const capH = faceH + 1;
+  const capY = Math.round(titleY + (t + b) / 2 - (faceH - 1) / 2);
+  const keyY = capY + Math.floor((faceH - (kb - kt + 1)) / 2) - kt;
   return { titleY, capY, capH, keyY };
+}
+
+/** 键帽上的 E：不用字体里的（一格细线，在墨色键帽上发虚），手画一个粗的——竖笔两格、横笔一格，横与横之间空两格，中间一横短一格 */
+const KEY_E = ['#####', '##...', '##...', '####.', '##...', '##...', '#####'];
+let keyE: HTMLCanvasElement | null = null;
+function keyGlyph(rows: string[], color: string) {
+  const c = document.createElement('canvas');
+  c.width = rows[0].length;
+  c.height = rows.length;
+  const g = c.getContext('2d')!;
+  g.fillStyle = color;
+  rows.forEach((r, y) => [...r].forEach((ch, x) => ch === '#' && g.fillRect(x, y, 1, 1)));
+  return c;
+}
+
+/** 字的墨迹占哪几列 */
+function inkCols(c: HTMLCanvasElement): [number, number] {
+  const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+  let l = c.width;
+  let r = -1;
+  for (let x = 0; x < c.width; x++)
+    for (let y = 0; y < c.height; y++)
+      if (d[(y * c.width + x) * 4 + 3]) {
+        l = Math.min(l, x);
+        r = x;
+        break;
+      }
+  return r < 0 ? [0, -1] : [l, r];
 }
 
 const v = new THREE.Vector3();
@@ -112,10 +144,14 @@ export class PromptTag {
 
   private build(title: string): Face {
     const t = text(title, C.ink);
-    const key = text('E', C.paper);
-    const capW = key.width + 5;
+    const key = (keyE ??= keyGlyph(KEY_E, C.paper));
+    // 键帽面近乎方的：宽不小于高，E 左右至少各留两格
+    const L = (layout ??= vertical(key));
+    const [kl, kr] = inkCols(key);
+    const capW = Math.max(kr - kl + 5, L.capH - 1);
+    const keyX = Math.floor((capW - (kr - kl + 1)) / 2) - kl;
     const w = PAD_X + capW + 4 + t.width + PAD_X;
-    return { text: title, w, mask: paperMask(w, H, title), title: t, key, capW };
+    return { text: title, w, mask: paperMask(w, H, title), title: t, key, capW, keyX };
   }
 
   /** 东西在 UI 画布上的位置；在身后就没有 */
@@ -154,7 +190,7 @@ export class PromptTag {
       g.fillStyle = C.paper;
       g.fillRect(cx, cy, 1, 1);
       g.fillRect(cx + f.capW - 1, cy, 1, 1);
-      g.drawImage(f.key, cx + 3, L.keyY + down);
+      g.drawImage(f.key, cx + f.keyX, L.keyY + down);
       g.drawImage(f.title, PAD_X + f.capW + 4, L.titleY);
     }
 
