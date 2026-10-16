@@ -172,6 +172,8 @@ export interface Level {
   shadowReach: number;
   /** 太阳转到哪一刻（秒；atmosphere 写了 nx_sun_turn 才有用）。可以拨 */
   sunTime: number;
+  /** 掉进别处（atmosphere 的 nx_fall_to）：脚底掉到 y 以下就去 to 世界的到达点 at，不回出生点 */
+  fall: { to: string; at: string; y: number } | null;
 }
 
 const num = (v: unknown, d: number) => (v === undefined || v === null || v === '' ? d : Number(v));
@@ -318,6 +320,9 @@ export async function loadLevel(url: string): Promise<Level> {
   let penumbra = 0;
   let shadowReach = 0;
   let sunTurn = 0;
+  /** 水波光斑：强度、水面高、网纹大小、线变细的深度（见 materials.ts 的 uCaustic） */
+  const caustic = new THREE.Vector4(0, 0, 3, 12);
+  let fall: Level['fall'] = null;
 
   const nodes: THREE.Object3D[] = [];
   root.traverse((o) => nodes.push(o));
@@ -453,6 +458,9 @@ export async function loadLevel(url: string): Promise<Level> {
       penumbra = Math.max(0, num(u.nx_penumbra, 0));
       shadowReach = Math.max(0, num(u.nx_shadow_reach, 0));
       sunTurn = num(u.nx_sun_turn, 0);
+      if (u.nx_caustics !== undefined)
+        caustic.set(num(u.nx_caustics, 0), num(u.nx_caustics_y, 0), num(u.nx_caustics_size, 3), num(u.nx_caustics_depth, 12));
+      if (u.nx_fall_to) fall = { to: String(u.nx_fall_to), at: String(u.nx_fall_at ?? ''), y: num(u.nx_fall_y, -12) };
       continue;
     }
 
@@ -805,6 +813,7 @@ export async function loadLevel(url: string): Promise<Level> {
     shared.uWrap.value = wrap;
     shared.uShadowOut.value = shadowOut;
     shared.uPenumbra.value = penumbra;
+    shared.uCaustic.value.copy(caustic);
     sky.set(sky.spec);
     applyLamps();
     lampOn();
@@ -814,9 +823,11 @@ export async function loadLevel(url: string): Promise<Level> {
   shared.uWrap.value = wrap;
   shared.uShadowOut.value = shadowOut;
   shared.uPenumbra.value = penumbra;
+  shared.uCaustic.value.copy(caustic);
   return {
     shadowOut,
     shadowReach,
+    fall,
     get sunTime() {
       return sunTime;
     },

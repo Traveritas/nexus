@@ -242,7 +242,7 @@ def bed():
     t["throw"].cushion(-0.84, 0.86, -0.86, -0.42, 0.45, 0.64, 6, 2, puff=0.02, seed=6, edge=0.01)
     t.done({"walnut": C["walnut"], "sheet": C["sheet"], "quilt": C["quilt"], "pillow": C["pillow"],
             "pillow2": C["pillow2"], "throw": C["throw"]})
-    nx.portal("portal_bed", (0.6, 1.9, 0.8), "home", at="wake", mode="key", title="睡", radius=1.3)
+    nx.portal("portal_bed", (0.6, 1.9, 0.8), "house", at="wake", mode="key", title="睡", radius=1.3)
 
 
 def nightstand():

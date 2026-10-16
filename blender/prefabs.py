@@ -414,7 +414,7 @@ def halo_gate(name, loc, yaw, size=5.0, seed=0, styles=None, stair_style=None):
 # 东西本身、传送物（去 to，落在 to 里名为 here 的到达点）、到达点（名字是 to，在东西正前方，背对它）。
 # 东西的正面朝本地 +Y（yaw 同 nx.spawn），人从正面来、也从正面离开。
 # 走进去的两样（衣柜、窗）洞口里有一层膜（nx.veil），走近时铺满，颜色是要去的世界的。
-VEIL = {"room": ("pink", "pink_pale"), "isles": ("blue_pale", "white")}
+VEIL = {"room": ("pink", "pink_pale"), "isles": ("blue_pale", "white"), "longshadow": ("lilac", "violet")}
 
 
 def _ahead(loc, yaw, d, side=0.0):

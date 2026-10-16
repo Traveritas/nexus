@@ -281,6 +281,13 @@ def mobile(x, y, h=9.0):
     obj["nx_spin"] = 7.0
 
 
+def land(px, py, dx, dy, name, d=2.6):
+    """到达点：从传送点 (px, py) 顺着 (dx, dy) 再走 d 米，回头朝着传送点"""
+    n = math.hypot(dx, dy) or 1.0
+    ax, ay = px + dx / n * d, py + dy / n * d
+    nx.arrive(name, (ax, ay, ground_at(ax, ay)), facing_deg=facing(-dx, -dy))
+
+
 def vase(x, y, h=7.0):
     """一只大花瓶：圆肚、细颈、外翻的瓶口。瓶口的影子落在影子的最远处——站进瓶口的影子里去花房"""
     z = ground_at(x, y)
@@ -290,7 +297,9 @@ def vase(x, y, h=7.0):
     nx.shade(k.build("vase", loc=(x, y, z - 0.1), smooth=0, collide=False))
     # 瓶口：影子尖上那一团（瓶口最宽处的一圈，中心）
     mx, my = shadow_point(x, y, h - 0.2)
-    nx.portal("portal_glasshouse", (mx, my, ground_at(mx, my) + 1.0), "glasshouse", mode="walk", radius=1.1)
+    nx.portal("portal_glasshouse", (mx, my, ground_at(mx, my) + 1.0), "glasshouse", at="longshadow", mode="walk", radius=1.1)
+    # 从花房回来：落在瓶口影子外边一点，回头朝着它
+    land(mx, my, mx - x, my - y, "glasshouse")
     return mx, my
 
 
@@ -320,7 +329,7 @@ def wardrobe(x, y, w=2.6, d=0.9, h=3.0, gap=0.4):
     sbox("wardrobe_top", (w + 0.2, d + 0.1, 0.25), (0, 0, h - 0.2 + 0.0), parent=g)
     # 顶板盖住了缝的上头：缝的光只在柜顶以下，影子里是一条从柜脚伸出去、到柜顶影子为止的细光
     mx, my = shadow_point(x, y, h * 0.5)
-    nx.portal("portal_home", (mx, my, ground_at(mx, my) + 1.0), "house", mode="walk", radius=0.45)
+    nx.portal("portal_home", (mx, my, ground_at(mx, my) + 1.0), "house", at="longshadow", mode="walk", radius=0.45)
     return mx, my
 
 

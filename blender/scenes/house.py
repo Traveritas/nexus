@@ -5,9 +5,10 @@
 暖光一圈圈落在近处，远处的角落是暗的；月光从客厅西墙的落地窗斜进来。
 每一扇门都能开关（走近按 E；prefabs.door），门扇开到底贴着旁边的墙，家具都让开门扇转过的那块地方。
 
-通往浅梦各世界的东西先不接：
-- 书、花瓶、一杯水不放：书桌、边几、茶几上留着它们的位置，各有一盏灯照得到那块空着的地方；
-- 床、衣柜、落地窗照常在，只是不传送（落地窗、窗口有看不见的挡板）；
+通往浅梦各世界的东西（gates()；docs/home.md「出入口」）：
+- 床 E「睡」→ 下沉；衣柜（打开柜门）走进去 → 长影；书桌上的书 E「翻开」→ 断梯；
+- 落地窗推开、走出去 → 光斑；边几上的花瓶 E「凑近」→ 花房；茶几上的一杯水 E → 浅滩；
+- 茶几上平放着罗盘（物品：地图）；从现实的床「睡」进来落在床边（到达点 wake）；
 - 大门关着；推开门外面就是原野（house_out），门洞外一道缝（nx.seam），走过门槛就站在原野上，不转场。
 
 家家家：走廊尽头那扇门后，往北一条过道，七扇门一扇比一扇小、一扇比一扇歪，一扇扇推开；
@@ -27,6 +28,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import furniture as fu  # noqa: E402
 import nx  # noqa: E402
 import prefabs as pf  # noqa: E402
+import shapes as sh  # noqa: E402
 
 EXTENT = 90
 CENTER = (5, 20)
@@ -223,7 +225,9 @@ def bedroom_things(p, ox, oy):
     fu.desk_lamp(f"{p}desk_lamp", (*at(0.25, 2.95), F + 0.74), -167, lit=True)
     nx.lamp(f"{p}desk_lamp_light", (*at(0.4, 2.6), F + 1.12), WARM, 1.9, 1.5, down=45, leak=0.15, reach=0.38, box=box)
     fu.chair(f"{p}desk_chair", (*at(1.05, 2.5), F), 90, "dining", fabric="lilac")
-    pf.wardrobe(f"{p}wardrobe", (*at(1.15, 0.125), F), 0, None, None, interactive=True)
+    # 核心卧室的衣柜通往长影（打开柜门、拨开衣服走进去）；家家家里那间一样的只是衣柜
+    pf.wardrobe(f"{p}wardrobe", (*at(1.15, 0.125), F), 0, None if p else "longshadow", None if p else "house",
+                land=1.5, interactive=True)
     fu.bookshelf(f"{p}shelf", (*at(2.65, 0.27), F), 0, w=0.8, h=1.95, seed=2)
     nx.box(f"{p}rug", (0.55, 1.6, 0.02), (*at(3.8, 2.8), F), collide=False, a="blue_pale", b="white", pattern="stripes")
     picture(f"{p}pic", (*at(2.5, BED_D - h - 0.025), F + 1.75), 180, 0.8, 0.45, dict(a="blue_pale", b="pink_pale", pattern="bands"))
@@ -275,11 +279,44 @@ def core():
     french_window()
 
     bedroom_things("", 0, 4.8)
+    gates()
     hall()
     living()
     bath()
     store()
     entry()
+
+
+def gates():
+    """家里通往浅梦各世界的东西（落地窗、衣柜在 french_window / bedroom_things 里）。各自旁边是从那边回来的到达点"""
+    nx.into("gates")
+    # 床 → 下沉（E「睡」）；从现实睡进来、从下沉回来，都醒在床边
+    nx.portal("portal_bed", (2.5, 8.11, F + 0.8), "descent", at="house", mode="key", title="睡", radius=1.3)
+    nx.arrive("descent", (3.75, 7.5, F + 0.02), facing_deg=180)
+    nx.arrive("wake", (3.1, 6.2, F + 0.02), facing_deg=50)
+    # 书桌上摊开一本书 → 断梯（E「翻开」）：台灯照着的那块
+    bx, by, bz = 0.38, 7.32, F + 0.74
+    nx.box("book_cover", (0.26, 0.36, 0.012), (bx, by, bz + 0.002), collide=False, a="violet", b="violet_deep", pattern="plain")
+    for s in (-1, 1):
+        nx.box(f"book_page{s}", (0.115, 0.33, 0.014), (bx + s * 0.064, by, bz + 0.016), rot=(0, s * -6, 0), collide=False,
+               a="white", b="mist", pattern="bands")
+    nx.box("book_ribbon", (0.012, 0.012, 0.1), (bx + 0.02, by - 0.17, bz - 0.09), collide=False, a="pink", b="rose", pattern="plain")
+    nx.portal("portal_book", (bx, by, bz + 0.2), "stair", at="house", mode="key", title="翻开", radius=0.9)
+    nx.arrive("stair", (1.7, 6.55, F + 0.02), facing_deg=-60)
+    # 边几上插着花的瓶 → 花房（E「凑近」）
+    fu.vase("gate_vase", (0.4, 0.4, F + 0.6), 0.32, "round", flowers=5, seed=4, style=dict(a="pink_pale", b="white", pattern="plain"))
+    nx.portal("portal_vase", (0.4, 0.4, F + 0.95), "glasshouse", at="house", mode="key", title="凑近", radius=0.9)
+    nx.arrive("glasshouse", (1.1, 1.45, F + 0.02), facing_deg=-45)
+    # 茶几上一杯水 → 浅滩（E「一杯水」）；旁边平放着罗盘
+    gx, gy, gz = 2.62, 2.36, F + 0.42
+    sh.tube("gate_glass", 0.075, 0.065, 0.2, (gx, gy, gz + 0.011), segments=16, collide=False, a="blue_pale", b="white", pattern="plain")
+    nx.cylinder("gate_glass_base", 0.075, 0.075, 0.01, (gx, gy, gz + 0.001), segments=16, collide=False,
+                a="white", b="blue_pale", pattern="plain")
+    nx.cylinder("gate_glass_water", 0.064, 0.064, 0.14, (gx, gy, gz + 0.012), segments=16, collide=False,
+                a="blue", b="blue_pale", pattern="bands")
+    nx.portal("portal_glass", (gx, gy, gz + 0.35), "shoal", at="house", mode="key", title="一杯水", radius=0.9)
+    nx.arrive("shoal", (2.6, 3.25, F + 0.02), facing_deg=180)
+    nx.item("compass", (2.02, 2.2, gz + 0.02), "compass", get="pick")
 
 
 def french_window():
@@ -294,7 +331,10 @@ def french_window():
     for name, y0, closed, swing in (("fw_s", c - lw, 90, -90), ("fw_n", c + lw, -90, 90)):
         pf.door(name, (x, y0, F + 0.02), closed, swing, w=lw, h=hh - 0.03 + LAP, thick=0.05, kind="glass", at=(0.3, c, F + 1.3),
                 radius=1.4, group="french", title=("推开窗", "关上窗"), style=leaf, knob_at=(lw - 0.08, 1.05))
-    nx.collider_only(nx.box("fw_block", (0.04, w, hh), (0, c, F)))
+    # 推开窗走出去 → 光斑：窗外一层膜（走近时铺满），站上窗台就走了
+    nx.veil("fw_veil", w - 0.06, hh - 0.04, (-0.16, c, F + 0.01), 90, a="white", b="pink_pale")
+    nx.portal("portal_sunpatch", (-0.42, c, F + 1.0), "sunpatch", at="house", mode="walk", radius=0.5)
+    nx.arrive("sunpatch", (1.15, c, F + 0.02), facing_deg=-90)
     nx.box("fw_sill", (0.5, w + 0.2, 0.05), (-h - 0.25, c, F - 0.05), a="mist", b="white", pattern="plain")
     curtain("fw_curtain", 0.25, c + w / 2 + 0.24, -90, 2, hh + 0.1, side=-1)
     nx.box("fw_rod", (0.05, w + 0.5, 0.05), (0.2, c + 0.2, F + hh + 0.08), collide=False, a="rose_deep", b="violet", pattern="plain")

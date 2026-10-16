@@ -70,6 +70,9 @@ export const shared = {
   uCut: { value: new THREE.Vector4(0, 0, 0, 1e9) },
   /** 循环的大地：纹样按这么大的方块首尾相接（米，0 ＝ 不循环）。走过边界被挪回另一边时，脚下的颗粒、色斑不跳 */
   uWrap: { value: 0 },
+  /** 水波光斑（atmosphere 的 nx_caustics）：x 强度（0 ＝ 关）、y 水面高（three 的 y）、z 一格网纹多大（米）、w 离水面多深亮线细一半（米）。
+      水面以下、照得到太阳的面上一层慢慢流动的亮网纹（沿太阳方向从水面投下来） */
+  uCaustic: { value: new THREE.Vector4(0, 0, 3, 12) },
 };
 
 const COMMON = /* glsl */ `
@@ -134,7 +137,7 @@ export interface MatteOpts {
   /** 主色、副色的色板编号 */
   a: number;
   b: number;
-  /** 0 颗粒 · 1 一米方砖 · 2 横纹 · 3 竖条 · 4 素面 · 5 漂（大片的地：几米一块的过渡，沿等高线拉成一道道） */
+  /** 0 颗粒 · 1 一米方砖 · 2 横纹 · 3 竖条 · 4 素面 · 5 漂（大片的地：几米一块的过渡，沿等高线拉成一道道）· 6 流（水面：几道慢慢漂过的细带，没有颗粒） */
   pattern?: number;
   /** 顶面色的色板编号：朝上的面整片，并沿侧面上沿垂下参差的几格；不给就没有 */
   top?: number;
@@ -223,8 +226,9 @@ ${OUTS}
 ${LIGHT_UNIFORMS}
 uniform vec3 uA, uB, uTop;
 uniform vec3 uRamp[3];
-uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId, uEmit, uWrap, uLitOnly;
+uniform float uPattern, uHasTop, uHasRamp, uAutoRamp, uRampRef, uId, uEmit, uWrap, uLitOnly, uTime;
 uniform vec3 uGhost;
+uniform vec4 uCaustic;
 uniform vec2 uYRange;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in float vDepth;
 ${COMMON}
@@ -289,6 +293,17 @@ void main() {
     float drift = smoothstep(0.2, 0.8, stripe * 0.5 + blot * 0.5);
     // 颗粒推得过一档：一整块同色的里面也有成团的另一色
     k = clamp(drift * 0.85 + k * 0.7 - 0.1, 0.0, 1.0);
+  } else if (uPattern == 6.0) {
+    // 流：水面。不反射，平的主色上几道副色的细带，弯弯的、慢慢漂过去；没有颗粒
+    vec2 m = tp.xz;
+    float warp = vnoise(m / 11.0 + vec2(uTime * 0.03, -uTime * 0.02), face + 51.0) * 6.0;
+    float v = m.x * 0.21 + m.y * 0.08 + warp - uTime * 0.12;
+    float gap = 2.6 + 1.4 * vnoise(vec2(floor(v / 3.0), face), 53.0);
+    float band = fract(v / gap);
+    float thin = vnoise(m / 5.0 - vec2(uTime * 0.05, 0.0), face + 55.0);
+    k = band < 0.07 && thin > 0.42 ? 0.8 : 0.0;
+    // 远一点的地方再淡淡一层大块的过渡
+    k = max(k, smoothstep(0.8, 0.95, vnoise(m / 18.0 + vec2(0.0, uTime * 0.015), face + 57.0)) * 0.3);
   } else if (uPattern == 3.0) {
     // 竖条：每条一点色偏
     float sh3 = hash13(vec3(floor(tc.x / 6.0), face, 9.0));
@@ -385,6 +400,21 @@ void main() {
     float sunK = 1.0 - sh * clamp((uShade.y - 0.85) / 0.15, 0.0, 1.0);
     col = mix(col, rc * (amb + uSunCol * 0.6 * sunK) / uRampRef * ground, rampMix);
     base = mix(base, rc, rampMix);
+  }
+
+  // 水波光斑：从水面沿太阳方向投下来的两族弯弯的亮线交成网，慢慢流动；只落在照得到太阳的面上，越深线越细
+  if (uCaustic.x > 0.0 && ndl > 0.0 && sh < 0.5 && tp.y < uCaustic.y - 0.05 && uEmit <= 0.0) {
+    float dep = uCaustic.y - tp.y;
+    vec2 q = (tp.xz + uSun.xz / max(uSun.y, 0.2) * dep) / uCaustic.z;
+    float t = uTime;
+    q += 0.55 * vec2(vnoise(q * 0.45 + vec2(t * 0.07, 0.0), 61.0), vnoise(q * 0.45 - vec2(0.0, t * 0.06), 63.0));
+    float la = abs(sin(q.x * 2.2 + t * 0.35 + 1.3 * sin(q.y * 1.6 - t * 0.27)));
+    float lb = abs(sin(q.y * 2.0 - t * 0.31 + 1.3 * sin(q.x * 1.4 + t * 0.22)));
+    float line = 1.0 - smoothstep(0.0, 0.32, min(la, lb));
+    float fade = uCaustic.w / (uCaustic.w + dep);
+    // 非亮即暗：亮线是一格格的整块，落色板时整块跳到偏冷的浅色上，不糊成抖点；颜色是水透下来的冷白，不跟着地的颜色
+    float c = step(0.45 + 0.4 * (1.0 - fade), line);
+    col += vec3(0.62, 0.70, 0.86) * uCaustic.x * c * min(ndl * 1.6, 1.0);
   }
 
   for (int i = 0; i < ${MAX_GLOWS}; i++) {

@@ -11,7 +11,7 @@ import { Diary, night, type Settings } from './diary';
 import { ItemSystem, type Promptable } from './items/system';
 import { MapView } from './mapview';
 import { SiteCard } from './sitecard';
-import { dreamt, edges, isReality, recordEdge, recordSite, sites } from './worlds';
+import { dreamt, edges, isReality, LEGACY, recordEdge, recordSite, sites } from './worlds';
 import { RealName } from './realtext';
 import { IntroPlayer, introSeen, stripIntro } from './intro';
 import { Through, seamMatrix, seamSide, seamTube, seamTurn } from './seam';
@@ -128,7 +128,7 @@ noteSites();
 
 /** 预先取一下相邻世界的场景文件（只是暖一下浏览器缓存） */
 function prefetchNeighbours(l: Level) {
-  for (const to of new Set(l.portals.map((p) => p.to))) fetch(sceneUrl(to)).catch(() => {});
+  for (const to of new Set([...l.portals.map((p) => p.to), ...(l.fall ? [l.fall.to] : [])])) fetch(sceneUrl(to)).catch(() => {});
 }
 prefetchNeighbours(level);
 items.attach(level, world);
@@ -329,8 +329,12 @@ interface Travel {
   dream: boolean;
   /** plain 同一边之间（变粗、蒙雾色）；sleep 现实 → 梦；wake 梦 → 现实 */
   kind: 'plain' | 'sleep' | 'wake';
+  /** 掉进别处（atmosphere 的 nx_fall_to）：变粗时人照样往下掉，到了从半空落在到达点上 */
+  fall: boolean;
 }
 let travel: Travel | null = null;
+/** 掉进别处时，到了从到达点上方多高落下（米；家里天花板 2.5m，眼睛不能穿出去） */
+const FALL_IN = 0.6;
 let dissolve = 0;
 const OUT = 0.75;
 const IN = 1.0;
@@ -379,7 +383,7 @@ let hand = -1;
 let travelFov = FOV;
 const fogSrgb = () => shared.uFogCol.value.clone().convertLinearToSRGB();
 
-function go(to: string, at = '', push = true, via = false, dream = false) {
+function go(to: string, at = '', push = true, via = false, dream = false, fall = false) {
   if (travel || entering || !to) return;
   const next = loadLevel(sceneUrl(to)).catch((err) => {
     console.warn('[nexus] 去不了', to, err);
@@ -387,10 +391,10 @@ function go(to: string, at = '', push = true, via = false, dream = false) {
   });
   // 回到开场的标题（日记里点 NEXUS）落在梦的画面上，不算醒来
   const kind = dream || isReality(world) === isReality(to) ? 'plain' : isReality(world) ? 'sleep' : 'wake';
-  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb(), from: world, via, dream, kind };
+  const tr: Travel = { phase: 'out', t: 0, to, at, push, next, ready: undefined, veilFrom: fogSrgb(), veilTo: fogSrgb(), from: world, via, dream, kind, fall };
   map.closeNow();
   travel = tr;
-  player.vel.set(0, 0, 0);
+  if (!fall) player.vel.set(0, 0, 0);
   next.then((l) => {
     tr.ready = l;
     // 加载新世界会改共享的天色与太阳；转场还没走完，先还给当前的世界
@@ -432,6 +436,11 @@ function stepTravel(dt: number) {
     player.setCollider(level.collider);
     lastArrival = travel.at;
     arriveAt(travel.at);
+    // 掉进来的：从到达点上方 FALL_IN 米落下，带着一点往下的速度，落地那一下看得出来
+    if (travel.fall) {
+      player.feet.y += FALL_IN;
+      player.vel.y = -3;
+    }
     markVisited(world);
     if (travel.via) recordEdge(travel.from, world);
     noteSites();
@@ -913,7 +922,10 @@ function frame(dt: number) {
   player.update(dt, !!entering || !!gaze || !!travel || book.active || items.locked || !!intro);
   crossSeam(stepFrom);
   wrapAround();
-  if (player.feet.y < -40) respawn();
+  // 掉进别处：这个世界指定了掉下去的去处，就不回出生点
+  const fall = level.fall;
+  if (!travel && fall && player.feet.y < fall.y) go(fall.to, fall.at, true, true, false, true);
+  else if (!travel && player.feet.y < -40) respawn();
   player.eyePosition(eye);
   camera.position.copy(eye);
   camera.rotation.set(player.pitch, player.yaw, 0);
@@ -956,7 +968,7 @@ function frame(dt: number) {
   field.drowse = Math.max(book.drowse, items.drowse);
   map.update(dt);
   field.dim = map.dim(items.handScreen(camera, pipe.size.w, pipe.size.h), pipe.size.w, pipe.size.h);
-  field.glow = map.layout(camera, { level, world, visited: dreamt(visited()), edges: edges(), sites: sites() }, book.active || items.ringActive || !!travel);
+  field.glow = map.layout(camera, { level, world, visited: dreamt(visited()).filter((w) => !LEGACY.has(w)), edges: edges().filter(([a, b]) => !LEGACY.has(a) && !LEGACY.has(b)), sites: sites() }, book.active || items.ringActive || !!travel);
   // 现实的世界是干净低模，不做像素化（只有转场时变粗）
   pipe.setClean(level.style === 'clean');
   // 世界自己的格子粗细与色板子集（家的室外：8px、只用几枚冷色）
@@ -1070,6 +1082,7 @@ updateHud();
     dissolve,
     portals: level.portals.map((p) => ({ to: p.to, at: p.at, mode: p.mode, title: p.title, pos: p.pos.toArray() })),
     arrivals: [...level.arrivals.keys()],
+    fall: level.fall,
     /** 到达点：名字 → [x, y, z, 朝向°] */
     arrivalAt: Object.fromEntries([...level.arrivals].map(([k, v]) => [k, [...v.pos.toArray(), v.yaw / deg]])),
     entrances: level.entrances.map((e) => e.url).filter(Boolean),

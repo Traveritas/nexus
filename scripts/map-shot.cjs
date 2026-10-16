@@ -32,13 +32,13 @@ srv.listen(0, '127.0.0.1', async () => {
   const base = `http://127.0.0.1:${srv.address().port}/`;
   await page.goto(base + '?hud=0&intro=0', { waitUntil: 'load' });
   await page.evaluate(() => {
-    localStorage.setItem('nexus:visited', JSON.stringify(['home', 'procession', 'shoal', 'isles']));
-    localStorage.setItem('nexus:edges', JSON.stringify(['home|procession', 'home|shoal', 'isles|procession']));
-    localStorage.setItem('nexus:sites', JSON.stringify(['procession']));
-    localStorage.setItem('nexus:items', JSON.stringify({ owned: [{ id: 'compass', world: 'home', night: 1 }], held: 'compass' }));
+    localStorage.setItem('nexus:visited', JSON.stringify(['house', 'house_out', 'descent', 'sunpatch', 'longshadow', 'glasshouse', 'shoal', 'stair', 'stair_b', 'isles', 'home']));
+    localStorage.setItem('nexus:edges', JSON.stringify(['house|house_out', 'descent|house', 'house|sunpatch', 'house|longshadow', 'glasshouse|house', 'house|shoal', 'house|stair', 'stair|stair_b', 'isles|stair_b', 'glasshouse|shoal', 'glasshouse|sunpatch', 'glasshouse|longshadow', 'longshadow|sunpatch', 'home|house']));
+    localStorage.setItem('nexus:sites', JSON.stringify(['descent']));
+    localStorage.setItem('nexus:items', JSON.stringify({ owned: [{ id: 'compass', world: 'house', night: 1 }], held: 'compass' }));
   });
-  // 餐桌南边，面向那杯水（→ 浅滩）
-  await page.goto(base + '?hud=0&pos=4.0,0.15,-3.3&yaw=0&pitch=-16', { waitUntil: 'load' });
+  // 家的客厅，茶几北边，面向那杯水（→ 浅滩）
+  await page.goto(base + '?world=house&hud=0&intro=0&pos=2.3,0.15,-3.4&yaw=0&pitch=-16', { waitUntil: 'load' });
   await page.waitForFunction(() => window.__nexus);
   await wait(800);
   const shot = (name) => page.screenshot({ path: path.join(OUT, `map-${name}.png`) });
@@ -55,7 +55,7 @@ srv.listen(0, '127.0.0.1', async () => {
   await wait(300);
   await shot('local-turn');
   // 抬头看天
-  await page.evaluate(() => { window.__nexus.player.yaw -= 1.4; window.__nexus.player.pitch = 1.25; });
+  await page.evaluate(() => { window.__nexus.player.yaw -= 1.4; window.__nexus.player.pitch = 1.5; });
   await wait(400);
   await shot('sky');
   await page.evaluate(() => { window.__nexus.player.pitch = -0.1; });

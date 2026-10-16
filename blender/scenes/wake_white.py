@@ -124,7 +124,7 @@ def build(extent=None):
     fu.alarm_clock("clock", (-1.2, 0.86, 0.52), -20)
     fu.chair("chair", (1.9, -1.4, 0), 150, kind="dining", fabric="white")
     fu.notebook("book", (1.55, 0.95, 0), 30)
-    nx.portal("portal_bed", (0, 0.2, 0.8), "home", at="wake", mode="key", title="睡", radius=1.3)
+    nx.portal("portal_bed", (0, 0.2, 0.8), "house", at="wake", mode="key", title="睡", radius=1.3)
     land = (1.6, 0.0, 0)
     nx.arrive("home", land, facing_deg=-120)
     nx.spawn(land, facing_deg=-120)

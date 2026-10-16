@@ -215,7 +215,7 @@ def bedroom(prefix, origin=(0, 0, 0), yaw=0.0, torn=("s", "e"), seed=0, size=(7.
 
     def world(px, py, pz):
         return (origin[0] + px * ca - py * sa, origin[1] + px * sa + py * ca, origin[2] + pz)
-    nx.portal(f"{prefix}portal_bed", world(bx, by, 0.8), "home", at="wake", mode="key", title="睡", radius=1.3)
+    nx.portal(f"{prefix}portal_bed", world(bx, by, 0.8), "house", at="wake", mode="key", title="睡", radius=1.3)
     land = world(bx + 1.9, by - 0.5, 0)
     nx.arrive("home", land, facing_deg=yaw + 90)
     return root, land, yaw + 90

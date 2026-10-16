@@ -847,6 +847,31 @@ void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
   else col = mix(col, ${lin('#fbf9f7')}, smoothstep(0.996, 0.9994, c) * 0.7);
 }`,
   },
+
+  // ── 自由 · 退潮：浅滩（shoal）。雾白偏冷，往上是很淡的蓝；海湾敞开的西边，地平线上一道亮的海天线。
+  //    雾放得远，站在东岸看得见湾心的孤洲 ──
+  ebb: {
+    label: '退潮',
+    light: {
+      fog: '#e4e3ee',
+      zenith: '#c3cde6',
+      sky: ['#d4d8f0', 0.52],
+      ground: ['#e8d6dc', 0.36],
+      sun: ['#fff2ea', 0.86],
+      glow: ['#f6c6e2', 0.85],
+      fogNear: 40,
+      fogFar: 200,
+    },
+    glsl: /* glsl */ `
+void theme(vec3 d, inout vec3 col, inout float id, inout float depth) {
+  vec2 h = normalize(d.xz + vec2(1e-5));
+  // 西边（three 的 −x）敞开的那一片：贴着地平线一道亮线，上面一层淡粉
+  float west = smoothstep(0.2, 0.85, -h.x);
+  float line = 1.0 - smoothstep(0.004, 0.018, abs(d.y - 0.006));
+  col = mix(col, ${lin('#fbf9f7')}, west * line * 0.9);
+  col = mix(col, ${lin('#f3d6d6')}, west * smoothstep(0.01, 0.05, d.y) * (1.0 - smoothstep(0.06, 0.25, d.y)) * 0.35);
+}`,
+  },
 };
 
 export const SKY_NAMES = Object.keys(THEMES);

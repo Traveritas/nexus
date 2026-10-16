@@ -21,7 +21,7 @@ P = {
     "green": 15,
 }
 
-PATTERN = {"grain": 0, "tiles": 1, "bands": 2, "stripes": 3, "plain": 4, "drift": 5}
+PATTERN = {"grain": 0, "tiles": 1, "bands": 2, "stripes": 3, "plain": 4, "drift": 5, "flow": 6}
 
 # 拼总图（blender/scenes/atlas.py）时由总图设置：
 # ATLAS=True 时，各场景的 spawn 变成路标（nx_type=waypoint，网页不认），sun / sky_sprite 不生效，只用总图自己的；
@@ -364,9 +364,10 @@ def export(name):
 # ── 天空主题 ───────────────────────────────────────────
 
 def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamps=False, wrap=None,
-               grid_lit=None, shadow_out=False, shadow_reach=None, sun_turn=None, penumbra=None):
+               grid_lit=None, shadow_out=False, shadow_reach=None, sun_turn=None, penumbra=None,
+               fall_to=None, fall_at="", fall_y=-12.0, caustics=None):
     """天空主题：blank 空白 · halo 天环 · plumb 悬锤 · horizon 远碑 · lattice 天格 ·
-    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午 · meadow 原野 · umbra 暗处 · lowsun 斜阳（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
+    dye 扎染 · silk 绸 · dawn 溶金 · night 星纸 · flux 流质 · pale 素 · noon 正午 · meadow 原野 · umbra 暗处 · lowsun 斜阳 · ebb 退潮（意图见 docs/sky.md）。一个场景放一个；总图里不生效。
     seed：程序化主题（dye、silk、plumb）按它生成，不给时为 1。
     style='clean'：这个世界是干净低模，管线不做像素化、落色板与描边（现实的世界）。
     grid：远处（没有晶体时）的格子是几级，默认 2（4px），3 ＝ 8px。
@@ -378,7 +379,11 @@ def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamp
     shadow_out=True：太阳影子图盖不到的地方算在影子里（整片在一块看不见的顶底下的世界）；默认算亮。
     shadow_reach：影子图盖多远（米，默认 40）；太阳低、影子上百米长的世界要大。
     sun_turn：太阳绕竖轴转，度每分（从 sun() 摆的方向起），每 0.25 秒走一步。
-    penumbra：半影（米）——太阳影子的边上软的一圈，明暗之间是渐变（落色板时抖成一格格的过渡）。很贵，慎用"""
+    penumbra：半影（米）——太阳影子的边上软的一圈，明暗之间是渐变（落色板时抖成一格格的过渡）。很贵，慎用。
+    fall_to / fall_at / fall_y：掉进别处——脚底掉到 fall_y 米以下，不回出生点，而是去 fall_to 世界的到达点 fall_at
+    （空＝那边的出生点）；变粗时人照样往下掉，到了从到达点上方落下（断梯掉下去回家）
+    caustics：水波光斑——水面以下、照得到太阳的面上一层慢慢流动的亮网纹（从水面沿太阳方向投下来）。
+    dict(strength=0.5, y=水面高, size=3.0 一格网纹多大（米）, depth=12.0 多深亮线细一半（米））；默认关"""
     if ATLAS:
         return None
     obj = _empty("atmosphere", (0, 0, 8), (0, 0, 0), "CUBE", 1.0)
@@ -404,6 +409,15 @@ def atmosphere(sky="blank", seed=None, style=None, grid=None, palette=None, lamp
         obj["nx_sun_turn"] = float(sun_turn)
     if penumbra:
         obj["nx_penumbra"] = float(penumbra)
+    if caustics:
+        obj["nx_caustics"] = float(caustics.get("strength", 0.5))
+        obj["nx_caustics_y"] = float(caustics.get("y", 0.0))
+        obj["nx_caustics_size"] = float(caustics.get("size", 3.0))
+        obj["nx_caustics_depth"] = float(caustics.get("depth", 12.0))
+    if fall_to:
+        obj["nx_fall_to"] = fall_to
+        obj["nx_fall_at"] = fall_at
+        obj["nx_fall_y"] = float(fall_y)
     return obj
 
 

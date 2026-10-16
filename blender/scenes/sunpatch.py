@@ -408,7 +408,7 @@ def home_window(x, y):
     nx.box("home_frame_e", (b * 2, h - 2 * b, 0.03), (x + w / 2, y, 0.008), **frame)
     nx.box("home_mull_x", (w - 2 * b, b * 1.4, 0.032), (x, y, 0.008), **frame)
     nx.box("home_mull_y", (b * 1.4, h - 2 * b, 0.034), (x, y, 0.010), **frame)
-    nx.portal("portal_home", (x, y, 0.9), "house", mode="walk", radius=0.9)
+    nx.portal("portal_home", (x, y, 0.9), "house", at="sunpatch", mode="walk", radius=0.9)
 
 
 def build(extent=EXTENT):

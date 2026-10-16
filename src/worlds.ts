@@ -2,22 +2,25 @@
 
 /** 世界的中文名；没写的显示原名 */
 export const WORLD_NAMES: Record<string, string> = {
-  home: '家',
-  procession: '回廊',
-  isles: '云阶',
+  // 浅梦（mockup/shallows-05）：家是中枢
+  house: '家',
+  house_out: '家 · 门外',
+  sunpatch: '光斑',
+  longshadow: '长影',
+  descent: '下沉',
   glasshouse: '花房',
   shoal: '浅滩',
-  descent: '下沉',
-  room: '无墙之屋',
+  stair: '断梯',
+  stair_b: '断梯 · 那边',
+  isles: '云阶',
+  // 现实
   wake_fragment: '残片',
   wake_white: '白井',
   wake_museum: '陈列',
-  // 梦里的家的原型（docs/home.md）：传送都接上以后换掉 home
-  house: '家 · 原型',
-  house_out: '家 · 门外',
-  // 浅梦第二轮的新世界（mockup/shallows-02）：还没接进家里
-  sunpatch: '光斑',
-  longshadow: '长影',
+  // 旧的（legacy）：不接进网里，不在星图上占位置；留着，也许以后作为彩蛋出现
+  home: '旧家',
+  procession: '回廊',
+  room: '无墙之屋',
 };
 
 export const worldName = (w: string) => WORLD_NAMES[w] ?? w;
@@ -29,15 +32,23 @@ export const isReality = (w: string) => REALITY.has(w);
 /** 梦里去过的（日记、星座用） */
 export const dreamt = (visited: string[]) => visited.filter((w) => !isReality(w));
 
-/** 星座图上的位置（x 向右、y 向前；家在正中）。没写的世界排在外圈 */
+/** 旧的世界（legacy）：还在、还能进（?world=），但不在星图上；以后也许作为彩蛋出现 */
+export const LEGACY = new Set(['home', 'procession', 'room']);
+
+/** 星座图上的位置（x 向右、y 向前；家在正中）。按连接排：
+    家 → 门外、下沉（往下）、断梯 → 那边 → 云阶（往上）；花房在家的右手边，光斑、长影、浅滩围着它（它们彼此相通）。
+    没写的世界排在外圈 */
 export const CONSTELLATION: Record<string, [number, number]> = {
-  home: [0, 0],
-  descent: [0.1, -1],
-  room: [-1.05, -0.55],
-  procession: [-0.85, 0.75],
-  isles: [0.25, 1.15],
-  glasshouse: [1.1, -0.35],
-  shoal: [1.25, 0.55],
+  house: [0, 0],
+  house_out: [-0.55, -0.45],
+  descent: [0.05, -1.15],
+  stair: [-0.4, 0.8],
+  stair_b: [-0.6, 1.3],
+  isles: [-0.35, 1.8],
+  glasshouse: [0.95, 0.25],
+  sunpatch: [0.75, 0.95],
+  longshadow: [0.6, -0.9],
+  shoal: [1.55, -0.15],
 };
 
 export function starAt(w: string, i: number): [number, number] {
